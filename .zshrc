@@ -2,12 +2,9 @@
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 
 # Path to your oh-my-zsh installation.
+
+
 export ZSH="$HOME/.oh-my-zsh"
-
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
-
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 
@@ -15,16 +12,81 @@ alias c="clear"
 alias vim='nvim'
 alias cat="bat"
 alias python="python3"
+#alias z="zoxide"
 
 export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
 export PATH="$HOME/.local/bin:/home/knilch/.cargo/bin:$PATH"
 export LD_LIBRARY_PATH=/usr/local/lib
 
+source $ZSH/oh-my-zsh.sh
+autoload -Uz compinit
+compinit
+### Added by Zinit's installer
+
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
+if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
+    print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
+    command mkdir -p "$HOME/.local/share/zinit" && command chmod g-rwX "$HOME/.local/share/zinit"
+    command git clone https://github.com/zdharma-continuum/zinit "$HOME/.local/share/zinit/zinit.git" && \
+        print -P "%F{33} %F{34}Installation successful.%f%b" || \
+        print -P "%F{160} The clone has failed.%f%b"
+fi
+
+source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
+autoload -Uz _zinit
+(( ${+_comps} )) && _comps[zinit]=_zinit
+
+# Plugins
+zinit light zsh-users/zsh-autosuggestions
+zinit light zsh-users/zsh-syntax-highlighting
+zinit light zsh-users/zsh-completions
+
+# For other plugins, find the corresponding Zinit command or repository.
+# E.g., for `git` related enhancements:
+zinit light zdharma-continuum/fast-syntax-highlighting
+
+## Zinit Setting
+# Must Load OMZ Git library
+zi snippet OMZL::git.zsh
+
+# Load Git plugin from OMZ
+zi snippet OMZP::git
+zi cdclear -q # <- forget completions provided up to this moment
+
+setopt promptsubst
+# Load Prompt
+zinit ice depth=1; zinit light romkatv/powerlevel10k
+
+plugins=(
+    command-not-found
+    extract
+    git
+    github
+    gitignore
+    sudo
+    web-search
+    ohmyzsh-full-autoupdate
+)
+
+eval "$(zoxide init zsh)"
+[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+if [ -x "$(command -v exa)" ]; then
+    alias lt="exa --tree --level=2"
+    alias ls="exa --icons --sort=type"
+    alias ll="exa --long --header --sort=type --icons --git"
+    alias la="exa --long --header --all --sort=type --icons --git" 
+fi
+
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
 # See https://github.com/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME="powerlevel10k/powerlevel10k"
+#ZSH_THEME="powerlevel10k/powerlevel10k"
 
 # Set list of themes to pick from when loading at random
 # Setting this variable when ZSH_THEME=random will cause zsh to load
@@ -83,37 +145,10 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 
 # Which plugins would you like to load?
 # Standard plugins can be found in $ZSH/plugins/
-# Custom plugins may be added to $ZSH_CUSTOM/plugins/
+# Custom plugins may be added to $ZSH_CUSTOM/plugins:
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
 
-[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
-source $ZSH/oh-my-zsh.sh
-autoload -Uz compinit
-compinit
-plugins=(
-    command-not-found
-    extract
-    git
-    github
-    gitignore
-    sudo
-    web-search
-    z
-    zsh-completion
-    zsh-autosuggestions
-    zsh-syntax-highlighting
-    ohmyzsh-full-autoupdate
-)
-
-#bindkey -v
-
-if [ -x "$(command -v exa)" ]; then
-    alias lt="exa --tree --level=2"
-    alias ls="exa --icons --sort=type"
-    alias ll="exa --long --header --sort=type --icons --git"
-    alias la="exa --long --header --all --sort=type --icons --git" 
-fi
 # User configuration
 
 # export MANPATH="/usr/local/man:$MANPATH"
@@ -140,4 +175,4 @@ fi
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
