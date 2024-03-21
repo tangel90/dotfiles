@@ -89,7 +89,8 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 source $ZSH/oh-my-zsh.sh
-
+autoload -Uz compinit
+compinit
 plugins=(
     command-not-found
     extract
@@ -99,6 +100,7 @@ plugins=(
     sudo
     web-search
     z
+    zsh-completion
     zsh-autosuggestions
     zsh-syntax-highlighting
     ohmyzsh-full-autoupdate
