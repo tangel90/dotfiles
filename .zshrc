@@ -13,18 +13,13 @@ export LC_ALL=en_US.UTF-8
 
 alias c="clear"
 alias vim='nvim'
-alias ls='ls --color=auto --all'
-alias cat="batcat"
-
-
-if [ -x "$(command -v exa)" ]; then
-    alias ls="exa"
-    alias la="exa --long --all --group"
-fi
+alias cat="bat"
+alias python="python3"
 
 export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
-
+export PATH="$HOME/.local/bin:/home/knilch/.cargo/bin:$PATH"
 export LD_LIBRARY_PATH=/usr/local/lib
+
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
@@ -93,23 +88,14 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 # Add wisely, as too many plugins slow down shell startup.
 
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
+source $ZSH/oh-my-zsh.sh
 
 plugins=(
-    adb
     command-not-found
     extract
-    deno
-    docker
     git
     github
     gitignore
-    history-substring-search
-    node
-    npm
-    nvm
-    yarn
-    volta
-    vscode
     sudo
     web-search
     z
@@ -117,9 +103,15 @@ plugins=(
     zsh-syntax-highlighting
     ohmyzsh-full-autoupdate
 )
-source $ZSH/oh-my-zsh.sh
-bindkey -v
 
+#bindkey -v
+
+if [ -x "$(command -v exa)" ]; then
+    alias lt="exa --tree --level=2"
+    alias ls="exa --icons --sort=type"
+    alias ll="exa --long --header --sort=type --icons --git"
+    alias la="exa --long --header --all --sort=type --icons --git" 
+fi
 # User configuration
 
 # export MANPATH="/usr/local/man:$MANPATH"
@@ -145,3 +137,5 @@ bindkey -v
 # Example aliases
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
+
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
