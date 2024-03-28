@@ -1,12 +1,12 @@
 # If you come from bash you might have to change your $PATH.
-# export PATH=$HOME/bin:/usr/local/bin:$PATH
-
+export PATH=$HOME/bin:/usr/local/bin:$PATH
+#
 # Path to your oh-my-zsh installation.
-
-
 export ZSH="$HOME/.oh-my-zsh"
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
+
+export EDITOR="nvim"
 
 alias c="clear"
 alias vim='nvim'
@@ -18,7 +18,22 @@ export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
 export PATH="$HOME/.local/bin:/home/knilch/.cargo/bin:$PATH"
 export LD_LIBRARY_PATH=/usr/local/lib
 
+plugins=(
+    command-not-found
+    extract
+    git
+    github
+    gitignore
+    sudo
+    web-search
+    ohmyzsh-full-autoupdate
+)
+
 source $ZSH/oh-my-zsh.sh
+#source $HOME/.profile
+source $HOME/.config/tmuxinator/tmuxinator.zsh
+
+
 autoload -Uz compinit
 compinit
 ### Added by Zinit's installer
@@ -36,6 +51,7 @@ if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
 fi
 
 source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
+
 autoload -Uz _zinit
 (( ${+_comps} )) && _comps[zinit]=_zinit
 
@@ -47,29 +63,16 @@ zinit light zsh-users/zsh-completions
 # For other plugins, find the corresponding Zinit command or repository.
 # E.g., for `git` related enhancements:
 zinit light zdharma-continuum/fast-syntax-highlighting
-
 ## Zinit Setting
 # Must Load OMZ Git library
 zi snippet OMZL::git.zsh
-
 # Load Git plugin from OMZ
 zi snippet OMZP::git
 zi cdclear -q # <- forget completions provided up to this moment
 
-setopt promptsubst
 # Load Prompt
+setopt promptsubst
 zinit ice depth=1; zinit light romkatv/powerlevel10k
-
-plugins=(
-    command-not-found
-    extract
-    git
-    github
-    gitignore
-    sudo
-    web-search
-    ohmyzsh-full-autoupdate
-)
 
 eval "$(zoxide init zsh)"
 [[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
@@ -82,6 +85,12 @@ if [ -x "$(command -v exa)" ]; then
     alias la="exa --long --header --all --sort=type --icons --git" 
 fi
 
+if command -v tmux &> /dev/null; then
+  if [ -z "$TMUX" ]; then
+    # Try to attach to an existing session named "default". If it doesn't exist, create it.
+    tmux attach -t default || tmux new-session -s default
+  fi
+fi
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
