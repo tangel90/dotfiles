@@ -12,6 +12,7 @@ alias c="clear"
 alias vim='nvim'
 alias cat="bat"
 alias python="python3"
+alias cd="z"
 #alias z="zoxide"
 
 export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
@@ -80,17 +81,15 @@ eval "$(zoxide init zsh)"
 
 if [ -x "$(command -v exa)" ]; then
     alias lt="exa --tree --level=2"
-    alias ls="exa --icons --sort=type"
-    alias ll="exa --long --header --sort=type --icons --git"
-    alias la="exa --long --header --all --sort=type --icons --git" 
+    alias ls="exa --long --sort=type --icons --no-permissions --no-filesize --no-user --no-time"
+    alias ll="exa --long --header --sort=type --icons --git --no-permissions --no-user"
+    alias la="exa --long --header --all --sort=type --icons --git --no-permissions --no-user" 
 fi
 
-if command -v tmux &> /dev/null; then
-  if [ -z "$TMUX" ]; then
-    # Try to attach to an existing session named "default". If it doesn't exist, create it.
-    tmux attach -t default || tmux new-session -s default
-  fi
+if command -v tmux &> /dev/null && [ -z "$TMUX" ]; then
+  exec tmux
 fi
+
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
