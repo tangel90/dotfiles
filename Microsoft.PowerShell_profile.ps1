@@ -1,14 +1,48 @@
-$dev = "D:\dev\"
-$projects = "D:\dev\projects"
-$env:PYTHONPATH = "D:\dev\projects\;D:\dev\github\;D:\dev\"
-$env:HOME = "C:\Users\Thoma"
-$jstest = "D:\dev\playground\js\test.js"
-$pytest = "D:\dev\playground\python\test.py"
+function GoUp {
+  Set-Location ..
+}
 
-oh-my-posh init pwsh | Invoke-Expression
-oh-my-posh init pwsh --config 'C:\Users\Thoma\AppData\Local\Programs\oh-my-posh\themes\froczh.omp.json' | Invoke-Expression
+function lt {
+  param (
+      [string]$path = "."
+  )
+  eza -T --all --icons $path
+}
 
-function GoUp { Set-Location .. }
-New-Alias .. GoUp
+function ll {
+  param (
+      [string]$path = "."
+  )
+  eza --long --icons --all $path
+}
 
-#conda config --set auto_activate_base false
+Set-Alias -Name ".." -Value GoUp
+Set-Alias -Name "ls" -Value eza
+Set-Alias -Name "cat" -Value bat
+Set-Alias -Name "ss" -Value Select-String
+Set-Alias -Name vim -Value nvim
+
+oh-my-posh init pwsh --config "~\dotfiles_windows\posh.json" | Invoke-Expression
+
+Set-PSReadLineKeyHandler -Key Ctrl+n -Function NextHistory
+Set-PSReadLineKeyHandler -Key Ctrl+p -Function PreviousHistory
+Set-PSReadLineKeyHandler -Key Ctrl+j -Function AcceptLine
+Set-PSReadLineKeyHandler -Key Ctrl+f -Function ForwardChar
+Set-PSReadLineKeyHandler -Key UpArrow -Function HistorySearchBackward
+Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward
+
+Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+t' -PSReadlineChordReverseHistory 'Ctrl+r'
+
+Import-Module ZLocation
+
+#Set-PSReadLineOption -EditMode Vi
+#Invoke-Expression (& { (zoxide init powershell | Out-String) })
+$profileTarget = Join-Path $dotfilesPath (gci $profile).Name
+$env:LC_MESSAGES="en-US" #said to fix german language within neovim
+$ProfilePath = (gci $profile).DirectoryName
+$PathsFile = Join-Path $ProfilePath "MyPaths.ps1"
+if (-Not (Test-Path $PathsFile)) {
+    ni $PathsFile
+}
+
+. $PathsFile
