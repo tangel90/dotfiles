@@ -3,7 +3,7 @@ $nvimConfigTarget = Join-Path $HOME "dotfiles\.config\nvim"
 $dotfiles = $dotfilesPath
 $config = $configPath
 
-$profileFileName = "Microsoft.PowerShell_profile.ps1"
+$profileFileName = "profile.ps1"
 $profileTarget = Join-Path $dotfilesPath $profileFileName
 $profile = $profileTarget
 
