@@ -1,0 +1,13 @@
+import = ["~/dotfiles/.config/alacritty/catppuccin-mocha.toml"]
+
+[font]
+size = 13.0
+
+[font.normal]
+family = "FiraCode Nerd Font"
+
+[shell]
+program = "ubuntu2404"
+
+[window]
+dimensions = {columns= 120, lines= 40}
