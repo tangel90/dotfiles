@@ -36,7 +36,17 @@ require("lazy").setup({
       require "options"
     end,
   },
-
+  {
+   "williamboman/mason.nvim",
+   opts = {
+      ensure_installed = {
+        "lua-language-server",
+        "html-lsp",
+        "prettier",
+        "stylua"
+      },
+    },
+  },
   { import = "plugins" },
 }, lazy_config)
 

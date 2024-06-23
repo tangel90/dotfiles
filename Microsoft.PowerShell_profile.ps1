@@ -32,8 +32,6 @@ Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward
 
 Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+t' -PSReadlineChordReverseHistory 'Ctrl+r'
 
-Import-Module ZLocation
-
 $dotfilesPath = [System.IO.DirectoryInfo] (Join-Path $HOME "dotfiles")
 $configPath = [System.IO.DirectoryInfo] (Join-Path $dotfilesPath ".config")
 $PSConfigPath = [System.IO.DirectoryInfo] (Join-Path $configPath "PowerShell")
@@ -47,3 +45,5 @@ if (-Not (Test-Path $MyPaths)) {
 . $MyPaths
 
 $env:LC_MESSAGES="en-US" #said to fix german language within neovim
+
+Import-Module ZLocation
