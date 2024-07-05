@@ -47,7 +47,6 @@ if (-Not (Test-Path $MyPaths)) {
 $env:LC_MESSAGES="en-US" #said to fix german language within neovim
 
 Import-Module ZLocation
-
 #region conda initialize
 # !! Contents within this block are managed by 'conda init' !!
 If (Test-Path "C:\Users\TSchulz\AppData\Local\anaconda3\Scripts\conda.exe") {
@@ -55,4 +54,3 @@ If (Test-Path "C:\Users\TSchulz\AppData\Local\anaconda3\Scripts\conda.exe") {
   conda activate integrations
 }
 #endregion
-
