@@ -2,5 +2,9 @@
 -- in order to modify the 'lspconfig' configuration
 return {
   "neovim/nvim-lspconfig",
-  opts = {}
+  config = function()
+    require("nvchad.configs.lspconfig").defaults()
+    require "configs.lspconfig"
+  end,
 }
+
