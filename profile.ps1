@@ -30,23 +30,30 @@ Set-PSReadLineKeyHandler -Key Ctrl+f -Function ForwardChar
 #Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward
 #Set-PSReadLineOption -EditMode Emacs
 
+Remove-PSReadlineKeyHandler 'Ctrl+r'
+Remove-PSReadlineKeyHandler 'Ctrl+t'
+
 Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+t' -PSReadlineChordReverseHistory 'Ctrl+r'
 
-$dotfilesPath = [System.IO.DirectoryInfo] (Join-Path $HOME "dotfiles")
-$configPath = [System.IO.DirectoryInfo] (Join-Path $dotfilesPath ".config")
-$PSConfigPath = [System.IO.DirectoryInfo] (Join-Path $configPath "PowerShell")
+$env:FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+$env:FZF_DEFAULT_OPTS="--layout=reverse --inline-info --ansi --bind ctrl-a:select-all,ctrl-d:deselect-all,ctrl-t:toggle"
+
+$dotfilesPath = Join-Path $HOME "dotfiles"
+$configPath = Join-Path $dotfilesPath ".config"
+$PSConfigPath = Join-Path $configPath "PowerShell"
+$env:Path += ";" + $PSConfigPath
 #
 oh-my-posh init pwsh --config (Join-Path $PSConfigPath "posh.json") | Invoke-Expression
 #
-$MyPaths = Join-Path $PSConfigPath "MyPaths.ps1"
-if (-Not (Test-Path $MyPaths)) {
-    ni $MyPaths
-}
-. $MyPaths
+#$MyPaths = Join-Path $PSConfigPath "MyPaths.ps1"
+#if (-Not (Test-Path $MyPaths)) {
+#    ni $MyPaths
+#}
+#. $MyPaths
 
 $env:LC_MESSAGES="en-US" #said to fix german language within neovim
 
-Import-Module ZLocation
+#Import-Module ZLocation
 #region conda initialize
 # !! Contents within this block are managed by 'conda init' !!
 If (Test-Path "C:\Users\TSchulz\AppData\Local\anaconda3\Scripts\conda.exe") {
