@@ -30,7 +30,13 @@ Set-PSReadLineKeyHandler -Key Ctrl+f -Function ForwardChar
 #Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward
 #Set-PSReadLineOption -EditMode Emacs
 
+Remove-PSReadlineKeyHandler 'Ctrl+r'
+Remove-PSReadlineKeyHandler 'Ctrl+t'
+
 Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+t' -PSReadlineChordReverseHistory 'Ctrl+r'
+
+$env:FZF_DEFAULT_COMMAND='fd --type f --hidden --follow --exclude .git'
+$env:FZF_DEFAULT_OPTS="--layout=reverse --inline-info --ansi --bind ctrl-a:select-all,ctrl-d:deselect-all,ctrl-t:toggle"
 
 $dotfilesPath = Join-Path $HOME "dotfiles"
 $configPath = Join-Path $dotfilesPath ".config"
