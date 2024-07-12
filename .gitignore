@@ -3,3 +3,5 @@ lazy-lock.json
 .config/nvim.bak.lazy
 .config/nvim.prime
 nvim-data
+.config/nvim/.github/ISSUE_TEMPLATE/bug_report.md
+.config/nvim/.github
