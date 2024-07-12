@@ -171,7 +171,7 @@ mouse:
   # The `double_click` and `triple_click` settings control the time
   # alacritty should wait for accepting multiple clicks as one double
   # or triple click.
-  double_click: { threshold: 300 }
+  # double_click: { threshold: 300 }
   triple_click: { threshold: 300 }
 
   hide_when_typing: true
@@ -209,7 +209,7 @@ theme: Catppuccin
 # Entries in shell.args are passed unmodified as arguments to the shell.
 #
 shell:
-  program: /bin/zsh
+  program: wsl.exe
 #   args:
 #     - --login
 # Key bindings
