@@ -1,8 +1,10 @@
-# "cursor.style" = "Block"
-# "debug.render_timer" = false
-# live_config_reload = true
-# theme = "Catppuccin"
-# "window.opacity" = 1.0
+#import = ["~/Appdata/Roaming/alacritty/rose-pine-moon.toml"]
+
+[cursor]
+style = "Block"
+
+[debug]
+render_timer = false
 
 [bell]
 animation = "EaseOutExpo"
@@ -11,47 +13,80 @@ duration = 0
 [colors]
 draw_bold_text_with_bright_colors = true
 
-[[colors.indexed_colors]]
-color = "0xF8BD96"
-index = 16
-
-[[colors.indexed_colors]]
-color = "0xF5E0DC"
-index = 17
-
-[colors.bright]
-black = "0x988BA2"
-blue = "0x96CDFB"
-cyan = "0x89DCEB"
-green = "0xABE9B3"
-magenta = "0xF5C2E7"
-red = "0xF28FAD"
-white = "0xD9E0EE"
-yellow = "0xFAE3B0"
+[colors.primary]
+foreground = "#e0def4"
+background = "#232136"
+dim_foreground = "#908caa"
+bright_foreground = "#e0def4"
 
 [colors.cursor]
 cursor = "0xF5E0DC"
 text = "0x1E1D2F"
 
+[colors.vi_mode_cursor]
+text = "#575279"
+cursor = "#cecacd"
+
+[colors.search.matches]
+foreground = "#797593"
+background = "#f2e9e1"
+
+[colors.search.focused_match]
+foreground = "#faf4ed"
+background = "#d7827e"
+
+[colors.hints.start]
+foreground = "#797593"
+background = "#fffaf3"
+
+[colors.hints.end]
+foreground = "#9893a5"
+background = "#fffaf3"
+
+[colors.line_indicator]
+foreground = "None"
+background = "None"
+
+[colors.footer_bar]
+foreground = "#575279"
+background = "#fffaf3"
+
+[colors.selection]
+text = "#575279"
+background = "#dfdad9"
+
 [colors.normal]
-black = "0x6E6C7E"
-blue = "0x96CDFB"
-cyan = "0x89DCEB"
-green = "0xABE9B3"
-magenta = "0xF5C2E7"
-red = "0xF28FAD"
-white = "0xD9E0EE"
-yellow = "0xFAE3B0"
+black = "#f2e9e1"
+red = "#b4637a"
+# green = "#286983"
+yellow = "#ea9d34"
+blue = "#56949f"
+magenta = "#907aa9"
+cyan = "#d7827e"
+white = "#575279"
 
-[colors.primary]
-background = "0x1E1D2F"
-foreground = "0xD9E0EE"
+[colors.bright]
+black = "#9893a5"
+red = "#b4637a"
+# green = "#286983"
+yellow = "#ea9d34"
+blue = "#56949f"
+magenta = "#907aa9"
+cyan = "#d7827e"
+white = "#575279"
 
-[env]
-TERM = "xterm-256color"
+[colors.dim]
+black = "#9893a5"
+red = "#b4637a"
+green = "#286983"
+yellow = "#ea9d34"
+blue = "#56949f"
+magenta = "#907aa9"
+cyan = "#d7827e"
+white = "#575279"
 
 [font]
-size = 16
+size = 14
 
 [font.bold]
 family = "JetBrainsMono Nerd Font"
@@ -90,7 +125,7 @@ mouse = "Middle"
 semantic_escape_chars = ",│`|:\"' ()[]{}<>"
 
 [shell]
-program = "ubuntu.exe"
+program = "wsl.exe ~"
 
 [window]
 decorations = "full"
