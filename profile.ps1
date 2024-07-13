@@ -21,6 +21,7 @@ Set-Alias -Name "ls" -Value eza
 Set-Alias -Name "cat" -Value bat
 Set-Alias -Name "ss" -Value Select-String
 Set-Alias -Name "vim" -Value nvim
+Set-Alias -Name "lg" -Value lazygit
 
 Set-PSReadLineKeyHandler -Key Ctrl+n -Function NextHistory
 Set-PSReadLineKeyHandler -Key Ctrl+p -Function PreviousHistory
