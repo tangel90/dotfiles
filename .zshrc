@@ -15,11 +15,15 @@ export LD_LIBRARY_PATH=/usr/local/lib
 export PATH="$PATH:/opt/nvim-linux64/bin"
 export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
 
+# Open in tmux popup if on tmux, otherwise use --height mode
+export FZF_DEFAULT_OPTS='--height 40% --tmux bottom,40% --layout reverse --border top'
+export FZF_DEFAULT_COMMAND='find .'
+
 alias c="clear"
 alias vim='nvim'
 alias cat="bat"
 alias python="python3"
-# alias cd="z"
+alias lg="lazygit"
 
 if [ -x "$(command -v exa)" ]; then
     alias lt="exa --tree --level=2"
@@ -80,7 +84,7 @@ zinit cdreplay -q
 bindkey -e
 bindkey '^p' history-search-backward
 bindkey '^n' history-search-forward
-#
+
 #History
 HISTSIZE=5000
 HISTFILE=~/.zsh_history
@@ -101,7 +105,7 @@ zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
 zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 
 # Shell integrations
-# [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 eval "$(zoxide init zsh --cmd cd)"
 eval "$(fzf --zsh)"
 
