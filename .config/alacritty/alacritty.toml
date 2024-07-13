@@ -66,7 +66,7 @@ cyan = "#d7827e"
 [colors.bright]
 black = "#9893a5"
 red = "#b4637a"
-green = "#286983"
+# green = "#286983"
 yellow = "#ea9d34"
 blue = "#56949f"
 magenta = "#907aa9"
