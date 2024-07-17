@@ -5,10 +5,13 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi 
 
+export LANGUAGE=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LC_CTYPE=en_US.UTF-8
+
 # If you come from bash you might have to change your $PATH.
 export PATH=$HOME/bin:/usr/local/bin:$PATH
-export LANG=en_US.UTF-8
-export LC_ALL=en_US.UTF-8
 export EDITOR="nvim"
 export PATH="$HOME/.local/bin:/home/knilch/.cargo/bin:$PATH"
 export LD_LIBRARY_PATH=/usr/local/lib
@@ -24,6 +27,7 @@ alias vim='nvim'
 alias cat="bat"
 alias python="python3"
 alias lg="lazygit"
+alias act="conda activate"
 
 if [ -x "$(command -v exa)" ]; then
     alias lt="exa --tree --level=2"
@@ -113,3 +117,19 @@ eval "$(fzf --zsh)"
 # if command -v tmux &> /dev/null && [ -z "$TMUX" ]; then
 #   exec tmux
 # fi
+
+# >>> conda initialize >>>
+# !! Contents within this block are managed by 'conda init' !!
+__conda_setup="$('/home/thomas/miniconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
+if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+else
+    if [ -f "/home/thomas/miniconda3/etc/profile.d/conda.sh" ]; then
+        . "/home/thomas/miniconda3/etc/profile.d/conda.sh"
+    else
+        export PATH="/home/thomas/miniconda3/bin:$PATH"
+    fi
+fi
+unset __conda_setup
+# <<< conda initialize <<<
+
