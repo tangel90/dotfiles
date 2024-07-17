@@ -4,6 +4,7 @@ lazy-lock.json
 .config/nvim.prime
 .config/nvim/.github
 .config/nvim/doc
+.config/tmux/plugins
 nvim-data
 nvim-data
 .config/nvim/.github/ISSUE_TEMPLATE/bug_report.md
