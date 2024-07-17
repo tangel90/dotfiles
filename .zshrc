@@ -21,6 +21,7 @@ export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
 # Open in tmux popup if on tmux, otherwise use --height mode
 export FZF_DEFAULT_OPTS='--height 40% --tmux bottom,40% --layout reverse --border top'
 export FZF_DEFAULT_COMMAND='find .'
+export FZF_TMUX_OPTS='-p80%,60%'
 
 alias c="clear"
 alias vim='nvim'
