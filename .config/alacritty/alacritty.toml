@@ -1,8 +1,13 @@
-[cursor]
-style = "Block"
+[shell]
+program = "/bin/zsh"
 
-[debug]
-render_timer = false
+[env]
+TERM = "xterm-256color"
+
+[cursor]
+blink_interval = 500
+blink_timeout = 5
+unfocused_hollow = false
 
 [bell]
 animation = "EaseOutExpo"
@@ -20,6 +25,10 @@ bright_foreground = "#e0def4"
 [colors.cursor]
 cursor = "0xF5E0DC"
 text = "0x1E1D2F"
+
+[cursor.style]
+blinking = "Off"
+shape = "Block"
 
 [colors.vi_mode_cursor]
 text = "#575279"
@@ -86,20 +95,19 @@ white = "#575279"
 [font]
 size = 14
 
-[font.bold]
-family = "JetBrainsMono Nerd Font"
-style = "Bold"
-
 [font.glyph_offset]
 x = 0
 y = 0
 
 [font.italic]
-family = "JetBrainsMono Nerd Font"
+family = "MesloLGS Nerd Font"
 
 [font.normal]
-family = "JetBrainsMono Nerd Font"
+family = "MesloLGS Nerd Font"
 style = "Regular"
+
+[font.bold]
+family = "MesloLGS Nerd Font"
 
 [font.offset]
 x = 0
@@ -122,14 +130,11 @@ mouse = "Middle"
 [selection]
 semantic_escape_chars = ",│`|:\"' ()[]{}<>"
 
-[shell]
-program = "wsl.exe ~"
-
 [window]
 decorations = "full"
 dynamic_title = true
 option_as_alt = "Both"
-startup_mode = "Maximized"
+# startup_mode = "Maximized"
 
 [window.dimensions]
 columns = 160

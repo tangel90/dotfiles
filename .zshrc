@@ -17,6 +17,9 @@ export PATH="$HOME/.local/bin:/home/knilch/.cargo/bin:$PATH"
 export LD_LIBRARY_PATH=/usr/local/lib
 export PATH="$PATH:/opt/nvim-linux64/bin"
 export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
+export ANDROID_HOME=$HOME/Android/Sdk
+export PATH=$PATH:$ANDROID_HOME/emulator
+export PATH=$PATH:$ANDROID_HOME/platform-tools
 
 # Open in tmux popup if on tmux, otherwise use --height mode
 export FZF_DEFAULT_OPTS='--height 40% --tmux bottom,40% --layout reverse --border top'
@@ -113,7 +116,6 @@ zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 eval "$(zoxide init zsh --cmd cd)"
 eval "$(fzf --zsh)"
-
 
 # if command -v tmux &> /dev/null && [ -z "$TMUX" ]; then
 #   exec tmux
