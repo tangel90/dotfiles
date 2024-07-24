@@ -92,12 +92,14 @@ zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 
 # Shell integrations
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+#eval "$(fzf --zsh)"
 eval "$(zoxide init zsh --cmd cd)"
-eval "$(fzf --zsh)"
 
 # if command -v tmux &> /dev/null && [ -z "$TMUX" ]; then
 #   exec tmux
 # fi
+
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
