@@ -129,6 +129,12 @@ require('lazy').setup({
   --  This is equivalent to:
   --    require('Comment').setup({})
   {
+    'benlubas/molten-nvim',
+    config = function()
+      require 'custom.config.molten-nvim'
+    end,
+  },
+  {
     'christoomey/vim-tmux-navigator',
     cmd = {
       'TmuxNavigateLeft',
@@ -302,7 +308,7 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
 
       vim.keymap.set('n', '<leader>ff', function()
-        builtin.find_files { find_command = { 'rg', '--ignore', '--hidden', '--files' } }
+        builtin.find_files { find_command = { 'rg', '--no-ignore', '--hidden', '--files', '-g', '!node_modules', '-g', '!__pycache__', '-g', '!.venv' } }
       end, { desc = '[F]ind [F]iles' })
 
       -- Slightly advanced example of overriding default behavior and theme
