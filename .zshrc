@@ -114,3 +114,7 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
+if command -v tmux &> /dev/null && [ -z "$TMUX" ]; then
+      tmux source "$XDG_CONFIG_HOME/tmux/tmux.conf"
+      exec tmux
+fi
