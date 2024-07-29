@@ -2,7 +2,8 @@
 
 packages:
 
-oh-my-zsh
+neovim
+lazygit
 powerline10k
 bat
 zoxide
@@ -12,10 +13,28 @@ stow
 ripgrep
 tmux
 
+
+##Neovim:
+### Linux
+
+#### Pre-built archives
+
+The [Releases](https://github.com/neovim/neovim/releases) page provides pre-built binaries for Linux systems.
+
+```sh
+curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
+sudo rm -rf /opt/nvim
+sudo tar -C /opt -xzf nvim-linux64.tar.gz
+```
+
+Then add this to your shell config (`~/.bashrc`, `~/. zshrc`, ...):
+
+    export PATH="$PATH:/opt/nvim-linux64/bin"
+
 ## manual install zinit:
 
 ###add to .zshrc:
-```
+```bash
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 [ ! -d $ZINIT_HOME ] && mkdir -p "$(dirname $ZINIT_HOME)"
 [ ! -d $ZINIT_HOME/.git ] && git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
@@ -23,7 +42,7 @@ source "${ZINIT_HOME}/zinit.zsh"
 ```
 
 ### if sourcing zinit.zsh after compinit, add following after sourcing zinit.zsh:
-```
+```bash
 autoload -Uz _zinit
 (( ${+_comps} )) && _comps[zinit]=_zinit
 ```
@@ -44,8 +63,15 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 
 install zoxide:
 ```
-curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
 #!/bin/bash
+curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
+```
+install lazygit
+```bash
+LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+tar xf lazygit.tar.gz lazygit
+sudo install lazygit /usr/local/bin
 ```
 
 install tmux
