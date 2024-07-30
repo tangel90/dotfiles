@@ -67,6 +67,7 @@ zstyle ':completion:*' menu no
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
 zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 
+export XDG_CONFIG_HOME="$HOME/.config"
 source $HOME/.zprofile
 
 # SSH_AUTH_SOCK set to GPG to enable using gpgagent as the ssh agent.
