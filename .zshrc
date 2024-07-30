@@ -5,12 +5,6 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi 
 
-source $HOME/.zprofile
-
-# SSH_AUTH_SOCK set to GPG to enable using gpgagent as the ssh agent.
-export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
-gpgconf --launch gpg-agent
-
 # Set the directory we want to store zinit and plugins
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 # Download Zinit, if it's not there yet
@@ -35,10 +29,10 @@ zinit light Aloxaf/fzf-tab
 # Add in snippets
 zinit snippet OMZP::git
 zinit snippet OMZP::sudo
-zinit snippet OMZP::archlinux
-zinit snippet OMZP::aws
-zinit snippet OMZP::kubectl
-zinit snippet OMZP::kubectx
+# zinit snippet OMZP::archlinux
+# zinit snippet OMZP::aws
+# zinit snippet OMZP::kubectl
+# zinit snippet OMZP::kubectx
 zinit snippet OMZP::command-not-found
 
 # Load completions
@@ -73,7 +67,14 @@ zstyle ':completion:*' menu no
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
 zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 
-# Shell integrations
+source $HOME/.zprofile
+
+# SSH_AUTH_SOCK set to GPG to enable using gpgagent as the ssh agent.
+export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
+gpgconf --launch gpg-agent
+
+
+ #Shell integrations
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 #eval "$(fzf --zsh)"
 eval "$(zoxide init zsh --cmd cd)"
@@ -99,7 +100,9 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
-if command -v tmux &> /dev/null && [ -z "$TMUX" ]; then
-      tmux source "$XDG_CONFIG_HOME/tmux/tmux.conf"
-      exec tmux
+LOCALENV="$XDG_CONFIG_HOME/localenv"
+if [ -d "$LOCALENV" ]; then
+    for i in $(find -L "$LOCALENV" -type f); do
+        source "$i"
+    done
 fi
