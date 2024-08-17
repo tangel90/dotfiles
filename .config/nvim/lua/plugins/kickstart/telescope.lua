@@ -48,12 +48,28 @@ return { -- Fuzzy Finder (files, lsp, etc)
       -- You can put your default mappings / updates / etc. in here
       --  All the info you're looking for is in `:help telescope.setup()`
       --
-      -- defaults = {
-      --   mappings = {
-      --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
-      --   },
-      -- },
-      -- pickers = {}
+      pickers = {
+        live_grep = {
+          additional_args = function(opts)
+            return { '--hidden' }
+          end,
+        },
+      },
+      defaults = {
+        vimgrep_arguments = {
+          'rg',
+          '--color=never',
+          '--no-heading',
+          '--with-filename',
+          '--line-number',
+          '--column',
+          '--smart-case',
+          '-u', -- thats the new thing
+        },
+        --   mappings = {
+        --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
+        --   },
+      },
       extensions = {
         ['ui-select'] = {
           require('telescope.themes').get_dropdown(),
