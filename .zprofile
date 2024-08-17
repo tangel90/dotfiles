@@ -16,11 +16,12 @@ export PATH=$PATH:$ANDROID_HOME/platform-tools
 export NVM_DIR=$HOME/.nvm
 
 # Open in tmux popup if on tmux, otherwise use --height mode
-export FZF_DEFAULT_OPTS='--height 40% --tmux bottom,40% --layout reverse --border top'
+export FZF_DEFAULT_OPTS='--height 40% --layout reverse --border top'
 export FZF_DEFAULT_COMMAND='find .'
 export FZF_TMUX_OPTS='-p80%,60%'
 
 alias c="clear"
+alias ls="ls --color"
 alias fd="fdfind"
 alias vim='nvim'
 alias cat="bat"
@@ -31,7 +32,21 @@ alias v="fd . --type f --hidden --exclude .git | fzf-tmux --border --preview='ba
 
 if [ -x "$(command -v exa)" ]; then
     alias lt="exa --tree --level=2"
-    alias ls="exa --long --sort=type --icons --no-permissions --no-filesize --no-user --no-time"
     alias ll="exa --long --header --sort=type --icons --no-permissions --no-user"
     alias la="exa --long --header --all --sort=type --icons --no-permissions --no-user" 
 fi
+
+tm () {
+    echo "Start tmux."
+    if tmux list-sessions 2> /dev/null; then
+        selected_session=$(tmux list-sessions | fzf | cut -d: -f1)
+        if [ -n "$selected_session" ]; then
+            command tmux attach-session -t "$selected_session"
+        else
+            echo "No session selected."
+        fi
+    else
+        echo "No existing sessions. Starting a new session."
+        command tmux -f ~/.config/tmux/tmux.conf
+    fi
+}
