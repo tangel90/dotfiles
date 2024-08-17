@@ -88,7 +88,7 @@ require 'config.options'
 
 require 'config.keymaps'
 
-require 'config.autocommands'
+require 'config.autocmds'
 
 require 'lazy-bootstrap'
 
