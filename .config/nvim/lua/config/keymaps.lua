@@ -13,6 +13,10 @@ map({ 'n', 'i', 'v' }, '<C-/>', '<Plug>(comment_toggle_linewise)')
 
 map({ 'n', 'i', 'v' }, '<C-s>', '<cmd> w <cr>')
 
+map('v', '<leader>p', '"_dP')
+map('n', '<leader>d', '"_d')
+map('v', '<leader>d', '"_d')
+
 --
 -- Kickstart Keymaps
 -- [[ Basic Keymaps ]]
