@@ -118,8 +118,8 @@ return {
     -- see `:h neo-tree-custom-commands-global`
     commands = {},
     window = {
-      position = 'float',
-      width = 100,
+      position = 'left',
+      width = 40,
       mapping_options = {
         noremap = true,
         nowait = true,

@@ -3,7 +3,9 @@ return {
   opts = {
 
     vim.keymap.set('n', '-', '<CMD>Oil --float<CR>', { desc = 'Open parent directory' }),
-
+    -- vim.keymap.set('n', '-', function()
+    --   vim.cmd((vim.bo.filetype == 'oil') and 'bd' or 'Oil --float')
+    -- end),
     -- Oil will take over directory buffers (e.g. `vim .` or `:e src/`)
     -- Set to false if you want some other plugin (e.g. netrw) to open when you edit directories.
     default_file_explorer = true,
@@ -121,9 +123,11 @@ return {
     -- Configuration for the floating window in oil.open_float
     float = {
       -- Padding around the floating window
-      padding = 5,
+      padding = 10,
       max_width = 0,
+      min_width = 50,
       max_height = 0,
+      min_height = 50,
       border = 'rounded',
       win_options = {
         winblend = 0,
