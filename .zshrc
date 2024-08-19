@@ -21,10 +21,10 @@ zinit ice depth=1; zinit light romkatv/powerlevel10k
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 
 # Add in zsh plugins
+zinit light Aloxaf/fzf-tab
 zinit light zsh-users/zsh-syntax-highlighting
 zinit light zsh-users/zsh-completions
 zinit light zsh-users/zsh-autosuggestions
-zinit light Aloxaf/fzf-tab
 
 # Add in snippets
 zinit snippet OMZP::git
@@ -70,19 +70,20 @@ zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 export XDG_CONFIG_HOME="$HOME/.config"
 source $HOME/.zprofile
 
+if [ -n "$TTY" ]; then
+  export GPG_TTY=$(tty)
+else
+  export GPG_TTY="$TTY"
+fi
+
 # SSH_AUTH_SOCK set to GPG to enable using gpgagent as the ssh agent.
 export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
 gpgconf --launch gpg-agent
-
 
  #Shell integrations
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 #eval "$(fzf --zsh)"
 eval "$(zoxide init zsh --cmd cd)"
-
-# if command -v tmux &> /dev/null && [ -z "$TMUX" ]; then
-#   exec tmux
-# fi
 
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 
