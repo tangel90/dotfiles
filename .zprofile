@@ -23,6 +23,8 @@ export FZF_TMUX_OPTS='-p80%,60%'
 alias c="clear"
 alias tmuxfzf='tmux attach-session -t $(tmux ls | fzf | cut -d: -f1)'
 alias tls="tmux-list-session"
+alias ls="ls --color"
+alias fd="fdfind"
 alias vim='nvim'
 alias cat="bat"
 alias python="python3"
@@ -36,7 +38,6 @@ fi
 
 if [ -x "$(command -v exa)" ]; then
     alias lt="exa --tree --level=2"
-    alias ls="exa --long --sort=type --icons --no-permissions --no-filesize --no-user --no-time"
     alias ll="exa --long --header --sort=type --icons --no-permissions --no-user"
     alias la="exa --long --header --all --sort=type --icons --no-permissions --no-user" 
 fi
