@@ -67,6 +67,39 @@ require('lazy').setup({
     opts = {},
   },
   {
+    'windwp/nvim-ts-autotag',
+    dependencies = { 'nvim-treesitter' },
+    config = function(_, opts)
+      require('nvim-ts-autotag').setup {
+        opts = {
+          -- Defaults
+          enable_close = true, -- Auto close tags
+          enable_rename = true, -- Auto rename pairs of tags
+          enable_close_on_slash = false, -- Auto close on trailing </
+        },
+        -- Also override individual filetype configs, these take priority.
+        -- Empty by default, useful if one of the "opts" global settings
+        -- doesn't work well in a specific filetype
+        per_filetype = {
+          ['html'] = {
+            enable_close = false,
+          },
+        },
+      }
+    end,
+  },
+  -- {
+  --   'OmniSharp/omnisharp-vim',
+  --   config = function() end,
+  -- },
+  { 'Hoffs/omnisharp-extended-lsp.nvim', lazy = true, opts = nil },
+  -- {
+  --   'mfussenegger/nvim-dap',
+  --   config = function()
+  --     require('dap').setup {}
+  --   end,
+  -- },
+  {
     'jiaoshijie/undotree',
     dependencies = 'nvim-lua/plenary.nvim',
     config = true,

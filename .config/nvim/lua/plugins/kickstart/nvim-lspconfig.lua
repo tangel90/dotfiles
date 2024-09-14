@@ -91,7 +91,7 @@ return { -- LSP Configuration & Plugins
 
         -- Opens a popup that displays documentation about the word under your cursor
         --  See `:help K` for why this keymap.
-        map('K', vim.lsp.buf.hover, 'Hover Documentation')
+        map('S', vim.lsp.buf.hover, 'Hover Documentation')
 
         -- WARN: This is not Goto Definition, this is Goto Declaration.
         --  For example, in C this would take you to the header.
@@ -180,7 +180,62 @@ return { -- LSP Configuration & Plugins
       --
       -- But for many setups, the LSP (`tsserver`) will work just fine
       -- tsserver = {},
+      --
+      omnisharp = {
+        filetypes = { 'cs', 'csproj' },
+        -- cmd = { 'dotnet' },
 
+        settings = {
+          FormattingOptions = {
+            -- Enables support for reading code style, naming convention and analyzer
+            -- settings from .editorconfig.
+            EnableEditorConfigSupport = true,
+            -- Specifies whether 'using' directives should be grouped and sorted during
+            -- document formatting.
+            OrganizeImports = nil,
+          },
+          MsBuild = {
+            -- If true, MSBuild project system will only load projects for files that
+            -- were opened in the editor. This setting is useful for big C# codebases
+            -- and allows for faster initialization of code navigation features only
+            -- for projects that are relevant to code that is being edited. With this
+            -- setting enabled OmniSharp may load fewer projects and may thus display
+            -- incomplete reference lists for symbols.
+            LoadProjectsOnDemand = nil,
+          },
+          RoslynExtensionsOptions = {
+            -- Enables support for roslyn analyzers, code fixes and rulesets.
+            EnableAnalyzersSupport = nil,
+            -- Enables support for showing unimported types and unimported extension
+            -- methods in completion lists. When committed, the appropriate using
+            -- directive will be added at the top of the current file. This option can
+            -- have a negative impact on initial completion responsiveness,
+            -- particularly for the first few completion sessions after opening a
+            -- solution.
+            EnableImportCompletion = nil,
+            -- Only run analyzers against open files when 'enableRoslynAnalyzers' is
+            -- true
+            AnalyzeOpenDocumentsOnly = nil,
+          },
+          Sdk = {
+            -- Specifies whether to include preview versions of the .NET SDK when
+            -- determining which version to use for project loading.
+            IncludePrereleases = true,
+          },
+        },
+        keys = {
+          {
+            'gd',
+            function()
+              require('omnisharp_extended').telescope_lsp_definitions()
+            end,
+            desc = 'Goto Definition',
+          },
+        },
+        enable_roslyn_analyzers = true,
+        organize_imports_on_format = true,
+        enable_import_completion = true,
+      },
       lua_ls = {
         -- cmd = {...},
         filetypes = { 'lua' },
@@ -213,6 +268,8 @@ return { -- LSP Configuration & Plugins
       'black', -- Used to format python code
       'ast-grep',
       'sql-formatter',
+      'csharpier',
+      'netcoredbg',
     })
     require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 

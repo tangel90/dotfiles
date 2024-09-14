@@ -2,10 +2,7 @@ return {
   'stevearc/oil.nvim',
   opts = {
 
-    vim.keymap.set('n', '-', '<CMD>Oil --float<CR>', { desc = 'Open parent directory' }),
-    -- vim.keymap.set('n', '-', function()
-    --   vim.cmd((vim.bo.filetype == 'oil') and 'bd' or 'Oil --float')
-    -- end),
+    vim.keymap.set('n', '-', '<CMD>Oil --float<CR>', { desc = 'Oil: Open parent directory of current file' }),
     -- Oil will take over directory buffers (e.g. `vim .` or `:e src/`)
     -- Set to false if you want some other plugin (e.g. netrw) to open when you edit directories.
     default_file_explorer = true,
@@ -34,7 +31,7 @@ return {
       concealcursor = 'nvic',
     },
     -- Send deleted files to the trash instead of permanently deleting them (:help oil-trash)
-    delete_to_trash = false,
+    delete_to_trash = true,
     -- Skip the confirmation popup for simple operations (:help oil.skip_confirm_for_simple_edits)
     skip_confirm_for_simple_edits = false,
     -- Selecting a new/moved/renamed file or directory will prompt you to save changes first
@@ -65,16 +62,18 @@ return {
     keymaps = {
       ['g?'] = 'actions.show_help',
       ['<CR>'] = 'actions.select',
+      ['L'] = 'actions.select',
       ['<C-s>'] = { 'actions.select', opts = { vertical = true }, desc = 'Open the entry in a vertical split' },
       ['<C-h>'] = { 'actions.select', opts = { horizontal = true }, desc = 'Open the entry in a horizontal split' },
       ['<C-t>'] = { 'actions.select', opts = { tab = true }, desc = 'Open the entry in new tab' },
       ['<C-p>'] = 'actions.preview',
-      ['<C-c>'] = 'actions.close',
+      ['_'] = 'actions.close',
       ['<C-l>'] = 'actions.refresh',
+      ['H'] = 'actions.parent',
       ['-'] = 'actions.parent',
-      ['_'] = 'actions.open_cwd',
-      ['`'] = 'actions.cd',
-      ['~'] = { 'actions.cd', opts = { scope = 'tab' }, desc = ':tcd to the current oil directory' },
+      ['`'] = 'actions.open_cwd',
+      ['~'] = 'actions.cd',
+      ['<C-c>'] = { 'actions.cd', opts = { scope = 'tab' }, desc = ':tcd to the current oil directory' },
       ['gs'] = 'actions.change_sort',
       ['gx'] = 'actions.open_external',
       ['g.'] = 'actions.toggle_hidden',
@@ -145,7 +144,7 @@ return {
       -- Width dimensions can be integers or a float between 0 and 1 (e.g. 0.4 for 40%)
       -- min_width and max_width can be a single value or a list of mixed integer/float types.
       -- max_width = {100, 0.8} means "the lesser of 100 columns or 80% of total"
-      max_width = 0.9,
+      max_width = 0.95,
       -- min_width = {40, 0.4} means "the greater of 40 columns or 40% of total"
       min_width = { 40, 0.4 },
       -- optionally define an integer/float for the exact width of the preview window
@@ -153,7 +152,7 @@ return {
       -- Height dimensions can be integers or a float between 0 and 1 (e.g. 0.4 for 40%)
       -- min_height and max_height can be a single value or a list of mixed integer/float types.
       -- max_height = {80, 0.9} means "the lesser of 80 columns or 90% of total"
-      max_height = 0.9,
+      max_height = 0.95,
       -- min_height = {5, 0.1} means "the greater of 5 columns or 10% of total"
       min_height = { 5, 0.1 },
       -- optionally define an integer/float for the exact height of the preview window

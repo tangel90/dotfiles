@@ -2,7 +2,7 @@ return {
   'freddiehaddad/feline.nvim',
   opts = {},
   config = function(_, opts)
-    require('feline').setup()
+    -- require('feline').setup()
     -- require('feline').winbar.setup() -- to use winbar
     -- require('feline').statuscolumn.setup() -- to use statuscolumn
 
@@ -105,6 +105,7 @@ return {
           },
         },
         hl = {
+          fg = 'peanut',
           style = 'bold',
         },
         left_sep = ' ',
@@ -116,21 +117,21 @@ return {
           fg = 'red',
         },
       },
-      diagnostic_warnings = {
-        provider = 'diagnostic_warnings',
-        hl = {
-          fg = 'yellow',
-        },
-      },
-      diagnostic_hints = {
-        provider = 'diagnostic_hints',
-        hl = {
-          fg = 'aqua',
-        },
-      },
-      diagnostic_info = {
-        provider = 'diagnostic_info',
-      },
+      -- diagnostic_warnings = {
+      --   provider = 'diagnostic_warnings',
+      --   hl = {
+      --     fg = 'yellow',
+      --   },
+      -- },
+      -- diagnostic_hints = {
+      --   provider = 'diagnostic_hints',
+      --   hl = {
+      --     fg = 'aqua',
+      --   },
+      -- },
+      -- diagnostic_info = {
+      --   provider = 'diagnostic_info',
+      -- },
       lsp_client_names = {
         provider = 'lsp_client_names',
         hl = {
@@ -145,7 +146,7 @@ return {
         provider = {
           name = 'file_type',
           opts = {
-            filetype_icon = true,
+            -- filetype_icon = true,
             case = 'titlecase',
           },
         },
@@ -180,20 +181,20 @@ return {
       line_percentage = {
         provider = 'line_percentage',
         hl = {
-          fg = 'aqua',
+          fg = 'green',
           bg = 'darkblue',
           style = 'bold',
         },
         left_sep = 'block',
         right_sep = 'block',
       },
-      scroll_bar = {
-        provider = 'scroll_bar',
-        hl = {
-          fg = 'yellow',
-          style = 'bold',
-        },
-      },
+      -- scroll_bar = {
+      --   provider = 'scroll_bar',
+      --   hl = {
+      --     fg = 'yellow',
+      --     style = 'bold',
+      --   },
+      -- },
     }
 
     local left = {
@@ -207,13 +208,13 @@ return {
 
     local middle = {
       c.fileinfo,
-      c.diagnostic_errors,
-      c.diagnostic_warnings,
-      c.diagnostic_info,
-      c.diagnostic_hints,
     }
 
     local right = {
+      c.diagnostic_errors,
+      -- c.diagnostic_warnings,
+      -- c.diagnostic_hints,
+      -- c.diagnostic_info,
       c.lsp_client_names,
       c.file_type,
       c.file_encoding,
