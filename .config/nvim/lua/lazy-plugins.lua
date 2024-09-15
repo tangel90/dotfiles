@@ -99,6 +99,11 @@ require('lazy').setup({
   --     require('dap').setup {}
   --   end,
   -- },
+  {
+    'OrangeT/vim-csharp',
+    config = function() end,
+  },
+  {
     'OrangeT/vim-csharp',
     config = function() end,
   },
