@@ -6,13 +6,13 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
 fi 
 
 source $HOME/.zprofile
-export GPG_TTY=$(tty)
 # SSH_AUTH_SOCK set to GPG to enable using gpgagent as the ssh agent.
 unset SSH_AGENT_PID
 if [ "${gnupg_SSH_AUTH_SOCK_by:-0}" -ne $$ ]; then
   export SSH_AUTH_SOCK="$(gpgconf --list-dirs agent-ssh-socket)"
 fi
 
+export GPG_TTY=$(tty)
 gpg-connect-agent updatestartuptty /bye >/dev/null
 gpgconf --launch gpg-agent
 
