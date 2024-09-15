@@ -99,6 +99,9 @@ require('lazy').setup({
   --     require('dap').setup {}
   --   end,
   -- },
+    'OrangeT/vim-csharp',
+    config = function() end,
+  },
   {
     'jiaoshijie/undotree',
     dependencies = 'nvim-lua/plenary.nvim',
