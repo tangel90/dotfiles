@@ -12,6 +12,10 @@ exa
 stow
 ripgrep
 tmux
+cargo
+go
+nvm
+zig
 
 
 ##Neovim:
@@ -48,6 +52,8 @@ autoload -Uz _zinit
 ```
 reload shell and run ```exec zsh```
 
+# Installations
+
 ## Exa
 
 install exa via apt
@@ -55,13 +61,14 @@ to make exa autocompletion work:
 download _exa file from https://github.com/ogham/exa/blob/master/completions/zsh/_exa
 and save it to /usr/local/share/zsh/site-functions/_exa
 
+## fzf
 install fzf via git, since apt repository is not up-to-date:
 ```
 git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 ```
 
-install zoxide:
+## zoxide:
 ```
 #!/bin/bash
 curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
@@ -74,10 +81,12 @@ tar xf lazygit.tar.gz lazygit
 sudo install lazygit /usr/local/bin
 ```
 
-install tmux
+## tmux
+
 ```
 sudo apt install tmux
 ```
+
 install tmux package manager
 ```
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
@@ -95,3 +104,20 @@ run '~/.tmux/plugins/tpm/tpm'
 # type this in terminal if tmux is already running
 tmux source ~/.tmux.conf
 ```
+
+## cargo with rustup
+Run rustup installer:
+```
+curl https://sh.rustup.rs -sSf | sh
+```
+make sure to add $HOME/.cargo/bin/ folder to PATH
+
+
+## golang
+Download latest archive and unpack to /usr/local
+```
+ rm -rf /usr/local/go && tar -C /usr/local -xzf go1.23.1.linux-amd64.tar.gz
+```
+make sure do add /usr/local/go/bin to PATH
+
+

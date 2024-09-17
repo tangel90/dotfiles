@@ -13,5 +13,10 @@ return { -- You can easily change to a different colorscheme.
 
     -- You can configure highlights by doing something like:
     vim.cmd.hi 'Comment gui=none'
+    -- vim.cmd.hi 'Normal guibg=none guifg=none'
+    -- vim.cmd.hi 'String guibg=none guifg=none'
+    -- vim.cmd.hi 'Keyword guibg=none guifg=none'
+    -- vim.cmd.hi 'Function guibg=none guifg=none'
+    -- vim.cmd.hi 'Identifier guibg=none guifg=none'
   end,
 }

@@ -1,3 +1,5 @@
+import = ["~/.config/alacritty/rose-pine.toml"]
+
 [shell]
 program = "/bin/zsh"
 
@@ -16,81 +18,9 @@ duration = 0
 [colors]
 draw_bold_text_with_bright_colors = true
 
-[colors.primary]
-foreground = "#e0def4"
-background = "#191724"
-dim_foreground = "#908caa"
-bright_foreground = "#e0def4"
-
-[colors.cursor]
-cursor = "0xF5E0DC"
-text = "0x1E1D2F"
-
 [cursor.style]
 blinking = "Off"
 shape = "Block"
-
-[colors.vi_mode_cursor]
-text = "#575279"
-cursor = "#cecacd"
-
-[colors.search.matches]
-foreground = "#797593"
-background = "#f2e9e1"
-
-[colors.search.focused_match]
-foreground = "#faf4ed"
-background = "#d7827e"
-
-[colors.hints.start]
-foreground = "#797593"
-background = "#fffaf3"
-
-[colors.hints.end]
-foreground = "#9893a5"
-background = "#fffaf3"
-
-[colors.line_indicator]
-foreground = "None"
-background = "None"
-
-[colors.footer_bar]
-foreground = "#575279"
-background = "#fffaf3"
-
-[colors.selection]
-text = "#575279"
-background = "#dfdad9"
-
-[colors.normal]
-black = "#f2e9e1"
-red = "#b4637a"
-# green = "#286983"
-yellow = "#ea9d34"
-blue = "#56949f"
-magenta = "#907aa9"
-cyan = "#d7827e"
-# white = "#575279"
-
-[colors.bright]
-black = "#9893a5"
-red = "#b4637a"
-# green = "#286983"
-yellow = "#ea9d34"
-blue = "#56949f"
-magenta = "#907aa9"
-cyan = "#d7827e"
-# white = "#575279"
-
-[colors.dim]
-black = "#9893a5"
-red = "#b4637a"
-green = "#286983"
-yellow = "#ea9d34"
-blue = "#56949f"
-magenta = "#907aa9"
-cyan = "#d7827e"
-white = "#575279"
 
 [font]
 size = 16
@@ -114,18 +44,18 @@ x = 0
 y = 0
 
 [mouse]
-# faux_scrolling_lines = 1
+faux_scrolling_lines = 1
 hide_when_typing = true
 
 [[mouse.bindings]]
 action = "PasteSelection"
 mouse = "Middle"
 
-# [mouse.double_click]
-# threshold = 300
+[mouse.double_click]
+threshold = 300
 
-# [mouse.triple_click]
-# threshold = 300
+[mouse.triple_click]
+threshold = 300
 
 [selection]
 semantic_escape_chars = ",│`|:\"' ()[]{}<>"
@@ -133,13 +63,12 @@ semantic_escape_chars = ",│`|:\"' ()[]{}<>"
 [window]
 decorations = "full"
 dynamic_title = true
-option_as_alt = "Both"
 # startup_mode = "Maximized"
 
 [window.dimensions]
 columns = 160
 lines = 80
 
-[window.padding]
-x = 4
-y = 0
+# [window.padding]
+# x = 4
+# y = 0

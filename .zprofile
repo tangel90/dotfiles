@@ -5,11 +5,14 @@ export LC_CTYPE=en_US.UTF-8
 
 # If you come from bash you might have to change your $PATH.
 
-export PATH=$HOME/bin:/usr/local/bin:$PATH
-export PATH="$HOME/.local/bin:/home/knilch/.cargo/bin:$PATH"
-export PATH="$PATH:/opt/nvim-linux64/bin"
+export PATH=$PATH:$HOME/.local/bin:$HOME/bin:/usr/local/bin
+export PATH=$PATH:$HOME/.cargo/bin
+#
+##TODO: these paths belong into .config/localenv/.zprofile
+export PATH=$PATH:/opt/nvim-linux64/bin
 export PATH=$PATH:$ANDROID_HOME/emulator
 export PATH=$PATH:$ANDROID_HOME/platform-tools
+
 export LD_LIBRARY_PATH=/usr/local/lib
 export ANDROID_HOME=$HOME/Android/Sdk
 export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
