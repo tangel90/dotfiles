@@ -31,12 +31,21 @@ return {
 
     dap.configurations.python = {
       {
-        type = 'python',
+        type = 'python (conda base)',
         request = 'launch',
         name = 'Launch file',
         program = '${file}',
         pythonPath = function()
           return '/home/thomas/miniconda3/bin/python3'
+        end,
+      },
+      {
+        type = 'python (system integrations)',
+        request = 'launch',
+        name = 'Launch file',
+        program = '${file}',
+        pythonPath = function()
+          return '/mnt/d/system_integrations/python/virtualenv/Scripts/python.exe'
         end,
       },
     }

@@ -67,14 +67,6 @@ require('lazy').setup({
     opts = {},
   },
   {
-    'mbbill/undotree',
-    opts = {},
-    config = function()
-      -- require('undotree').setup()
-      vim.keymap.set('n', '<leader>u', vim.cmd.UndotreeToggle)
-    end,
-  },
-  {
     'windwp/nvim-ts-autotag',
     dependencies = { 'nvim-treesitter' },
     config = function(_, opts)
@@ -101,39 +93,33 @@ require('lazy').setup({
     config = function() end,
   },
   { 'Hoffs/omnisharp-extended-lsp.nvim', lazy = true, opts = nil },
-  -- {
-  --   'mfussenegger/nvim-dap',
-  --   config = function()
-  --     require('dap').setup {}
-  --   end,
-  -- },
-  -- {
-  --   'jiaoshijie/undotree',
-  --   dependencies = 'nvim-lua/plenary.nvim',
-  --   config = true,
-  --   opts = {
-  --     float_diff = false, -- using float window previews diff, set this `true` will disable layout option
-  --     layout = 'left_bottom', -- "left_bottom", "left_left_bottom"
-  --     position = 'left', -- "right", "bottom"
-  --     ignore_filetype = { 'undotree', 'undotreeDiff', 'qf', 'TelescopePrompt', 'spectre_panel', 'tsplayground' },
-  --     window = {
-  --       winblend = 0,
-  --     },
-  --     keymaps = {
-  --       ['j'] = 'move_next',
-  --       ['k'] = 'move_prev',
-  --       ['gj'] = 'move2parent',
-  --       ['J'] = 'move_change_next',
-  --       ['K'] = 'move_change_prev',
-  --       ['<cr>'] = 'action_enter',
-  --       ['p'] = 'enter_diffbuf',
-  --       ['q'] = 'quit',
-  --     },
-  --   },
-  --   keys = { -- load the plugin only when using it's keybinding:
-  --     { '<leader>u', "<cmd>lua require('undotree').toggle()<cr>", desc = 'Toogle UndoTree' },
-  --   },
-  -- },
+  {
+    'jiaoshijie/undotree',
+    dependencies = 'nvim-lua/plenary.nvim',
+    config = true,
+    opts = {
+      float_diff = false, -- using float window previews diff, set this `true` will disable layout option
+      layout = 'left_bottom', -- "left_bottom", "left_left_bottom"
+      position = 'left', -- "right", "bottom"
+      ignore_filetype = { 'undotree', 'undotreeDiff', 'qf', 'TelescopePrompt', 'spectre_panel', 'tsplayground' },
+      window = {
+        winblend = 0,
+      },
+      keymaps = {
+        ['j'] = 'move_next',
+        ['k'] = 'move_prev',
+        ['gj'] = 'move2parent',
+        ['J'] = 'move_change_next',
+        ['K'] = 'move_change_prev',
+        ['<cr>'] = 'action_enter',
+        ['p'] = 'enter_diffbuf',
+        ['q'] = 'quit',
+      },
+    },
+    keys = { -- load the plugin only when using it's keybinding:
+      { '<leader>u', "<cmd>lua require('undotree').toggle()<cr>", desc = 'Toogle UndoTree' },
+    },
+  },
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- place them in the correct locations.
