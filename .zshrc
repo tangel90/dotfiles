@@ -12,9 +12,9 @@ if [ "${gnupg_SSH_AUTH_SOCK_by:-0}" -ne $$ ]; then
   export SSH_AUTH_SOCK="$(gpgconf --list-dirs agent-ssh-socket)"
 fi
 
-export GPG_TTY=$(tty)
 gpg-connect-agent updatestartuptty /bye >/dev/null
 gpgconf --launch gpg-agent
+export GPG_TTY=$(tty)
 
 # Set the directory we want to store zinit and plugins
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"

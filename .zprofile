@@ -30,6 +30,7 @@ alias c="clear"
 alias tmuxfzf='tmux attach-session -t $(tmux ls | fzf | cut -d: -f1)'
 alias tls="tmux-list-session"
 alias fd="fdfind"
+alias ls="ls --color=auto -X"
 alias vim='nvim'
 alias cat="bat"
 alias python="python3"
