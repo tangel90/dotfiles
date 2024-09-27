@@ -22,11 +22,15 @@ require('lazy').setup({
   require 'plugins.custom.oil',
   require 'plugins.custom.harpoon',
   require 'plugins.custom.vim-tmux-navigator',
-  require 'plugins.custom.molten-nvim',
-  require 'plugins.custom.lazygit',
+  require 'plugins.custom.nvim-lightbulb',
+  require 'plugins.custom.undotree',
   require 'plugins.custom.rosepine',
-  require 'plugins.custom.neo-tree',
+  require 'plugins.custom.lsp_signature',
   require 'plugins.custom.feline',
+  -- require 'plugins.custom.molten-nvim',
+  -- require 'plugins.custom.lazygit',
+  -- require 'plugins.custom.neo-tree',
+  -- require 'plugins.custom.toggleterm',
 
   -- Kickstart standard plugins
   require 'plugins.kickstart.nvim-lspconfig',
@@ -39,96 +43,50 @@ require('lazy').setup({
   require 'plugins.kickstart.gitsigns',
   require 'plugins.kickstart.mini',
   require 'plugins.kickstart.autopairs',
+  require 'plugins.kickstart.autotag',
   require 'plugins.kickstart.indent_line',
+  -- require 'plugins.kickstart.lint',
 
-  -- require 'kickstart.plugins.lint',
-
-  -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
-  -- NOTE: Plugins can also be added by using a table,
-  -- with the first argument being the link and the following
-  -- keys can be used to configure plugin behavior/loading/etc.
-  --
-  -- Use `opts = {}` to force a plugin to be loaded.
-  --
-  --  This is equivalent to:
-  --    require('Comment').setup({})
-  --
-  --
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
-
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
-
   -- "gc" to comment visual regions/lines
   { 'numToStr/Comment.nvim', opts = {} },
-
+  -- Lua
+  {
+    'folke/zen-mode.nvim',
+    opts = {
+      window = {
+        backdrop = 0.95, -- shade the backdrop of the Zen window. Set to 1 to keep the same as Normal
+        -- height and width can be:
+        -- * an absolute number of cells when > 1
+        -- * a percentage of the width / height of the editor when <= 1
+        -- * a function that returns the width or the height
+        width = 0.70, -- width of the Zen window
+        height = 1, -- height of the Zen window
+        -- by default, no options are changed for the Zen window
+        -- uncomment any of the options below, or add other vim.wo options you want to apply
+        options = {
+          -- signcolumn = "no", -- disable signcolumn
+          -- number = false, -- disable number column
+          -- relativenumber = false, -- disable relative numbers
+          -- cursorline = false, -- disable cursorline
+          -- cursorcolumn = false, -- disable cursor column
+          -- foldcolumn = "0", -- disable fold column
+          -- list = false, -- disable whitespace characters
+        },
+      },
+    },
+  },
   {
     'sindrets/diffview.nvim',
     opts = {},
   },
   {
-    'windwp/nvim-ts-autotag',
-    dependencies = { 'nvim-treesitter' },
-    config = function(_, opts)
-      require('nvim-ts-autotag').setup {
-        opts = {
-          -- Defaults
-          enable_close = true, -- Auto close tags
-          enable_rename = true, -- Auto rename pairs of tags
-          enable_close_on_slash = false, -- Auto close on trailing </
-        },
-        -- Also override individual filetype configs, these take priority.
-        -- Empty by default, useful if one of the "opts" global settings
-        -- doesn't work well in a specific filetype
-        per_filetype = {
-          ['html'] = {
-            enable_close = false,
-          },
-        },
-      }
-    end,
-  },
-  {
     'OmniSharp/omnisharp-vim',
     config = function() end,
   },
-  { 'Hoffs/omnisharp-extended-lsp.nvim', lazy = true, opts = nil },
-  {
-    'jiaoshijie/undotree',
-    dependencies = 'nvim-lua/plenary.nvim',
-    config = true,
-    opts = {
-      float_diff = false, -- using float window previews diff, set this `true` will disable layout option
-      layout = 'left_bottom', -- "left_bottom", "left_left_bottom"
-      position = 'left', -- "right", "bottom"
-      ignore_filetype = { 'undotree', 'undotreeDiff', 'qf', 'TelescopePrompt', 'spectre_panel', 'tsplayground' },
-      window = {
-        winblend = 0,
-      },
-      keymaps = {
-        ['j'] = 'move_next',
-        ['k'] = 'move_prev',
-        ['gj'] = 'move2parent',
-        ['J'] = 'move_change_next',
-        ['K'] = 'move_change_prev',
-        ['<cr>'] = 'action_enter',
-        ['p'] = 'enter_diffbuf',
-        ['q'] = 'quit',
-      },
-    },
-    keys = { -- load the plugin only when using it's keybinding:
-      { '<leader>u', "<cmd>lua require('undotree').toggle()<cr>", desc = 'Toogle UndoTree' },
-    },
-  },
-  -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
-  -- init.lua. If you want these files, they are in the repository, so you can just download them and
-  -- place them in the correct locations.
-
-  -- NOTE: Next step on your Neovim journey: Add/Configure additional plugins for Kickstart
-  --
-  --  Here are some example plugins that I've included in the Kickstart repository.
-  --  Uncomment any of the lines below to enable them (you will need to restart nvim).
-  --
+  { 'Hoffs/omnisharp-extended-lsp.nvim', lazy = true, opts = nil }, -- necessary to get LSP to work with external files
 }, {
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the

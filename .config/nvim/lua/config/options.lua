@@ -1,3 +1,4 @@
+vim.opt.clipboard = 'unnamedplus'
 -- Enable break indent
 vim.opt.breakindent = true
 
@@ -8,6 +9,8 @@ vim.opt.expandtab = true
 
 -- Show which line your cursor is on
 vim.opt.cursorline = true
+
+vim.g.OmniSharp_server_use_net6 = 1
 
 vim.diagnostic.config {
   virtual_text = {
@@ -53,7 +56,6 @@ vim.opt.hlsearch = true
 -- Sync clipboard between OS and Neovim.
 --  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
-vim.opt.clipboard = 'unnamedplus'
 
 -- Save undo history
 vim.opt.undofile = true

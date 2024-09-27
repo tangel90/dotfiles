@@ -1,7 +1,6 @@
 return {
   'stevearc/oil.nvim',
   opts = {
-
     vim.keymap.set('n', '-', '<CMD>Oil --float<CR>', { desc = 'Oil: Open parent directory of current file' }),
     -- Oil will take over directory buffers (e.g. `vim .` or `:e src/`)
     -- Set to false if you want some other plugin (e.g. netrw) to open when you edit directories.
@@ -21,7 +20,7 @@ return {
     },
     -- Window-local options to use for oil buffers
     win_options = {
-      wrap = false,
+      wrap = true,
       signcolumn = 'no',
       cursorcolumn = false,
       foldcolumn = '0',
@@ -90,7 +89,7 @@ return {
       end,
       -- This function defines what will never be shown, even when `show_hidden` is set
       is_always_hidden = function(name, bufnr)
-        return false
+        return name == '..' or name == '.git'
       end,
       -- Sort file names in a more intuitive order for humans. Is less performant,
       -- so you may want to set to false if you work with large directories.
@@ -123,8 +122,8 @@ return {
     float = {
       -- Padding around the floating window
       padding = 10,
-      max_width = 0,
-      min_width = 50,
+      max_width = 120,
+      min_width = 40,
       max_height = 0,
       min_height = 50,
       border = 'rounded',

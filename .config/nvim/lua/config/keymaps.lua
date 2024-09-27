@@ -7,6 +7,8 @@ map({ 'n', 'v' }, 'J', 'L')
 map({ 'n', 'v' }, 'K', 'H')
 map({ 'n', 'v' }, 'L', '%')
 
+map({ 'n', 'i' }, '<C-x>', ':!dotnet run<CR>')
+
 map({ 'n', 'i', 'v' }, '<C-d>', '<C-d>zz')
 map({ 'n', 'i', 'v' }, '<C-u>', '<C-u>zz')
 map('n', 'n', 'nzzzv')
@@ -45,7 +47,7 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 --
 -- NOTE: This won't work in all terminal emulators/tmux/etc. Try your own mapping
 -- or just use <C-\><C-n> to exit terminal mode
--- vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
+vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
 -- TIP: Disable arrow keys in normal mode
 -- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')

@@ -7,9 +7,7 @@
 -- kickstart.nvim and not kitchen-sink.nvim ;)
 
 return {
-  -- NOTE: Yes, you can install new plugins here!
   'mfussenegger/nvim-dap',
-  -- NOTE: And you can specify dependencies as well
   dependencies = {
     -- Creates a beautiful debugger UI
     'rcarriga/nvim-dap-ui',
@@ -49,6 +47,49 @@ return {
         end,
       },
     }
+    -- Configure the CoreCLR adapter
+    dap.adapters.coreclr = {
+      type = 'executable',
+      command = 'netcoredbg', -- Ensure netcoredbg is in your PATH
+      args = { '--interpreter=vscode' },
+    }
+
+    -- Common configuration for .NET projects
+    local common_config = {
+      type = 'coreclr',
+      request = 'launch',
+      name = 'Launch .NET Core App',
+      cwd = '${workspaceFolder}',
+      stopAtEntry = false,
+      args = {}, -- To be filled per project
+      env = {}, -- To be filled per project
+    }
+
+    -- Configuration for Etl
+    local etl_config = vim.tbl_deep_extend('force', common_config, {
+      name = 'Launch Etl',
+      program = '${workspaceFolder}/bin/Debug/net8.0/Etl.dll', -- Update net7.0 if different
+      args = {}, -- Add arguments if needed
+      env = {
+        DOTNET_ENVIRONMENT = 'Development',
+      },
+    })
+
+    -- Assign the Etl configuration
+    dap.configurations.cs = dap.configurations.cs or {}
+    table.insert(dap.configurations.cs, etl_config)
+
+    -- Optional: Configuration for Etl.Client (if applicable)
+    local etl_client_config = vim.tbl_deep_extend('force', common_config, {
+      name = 'Launch Etl.Client',
+      program = '${workspaceFolder}/bin/Debug/net8.0/EMCDRETL.dll', -- Use .exe if available
+      args = { 'etl', '--project', 'CARDIO_TEST_TS', '--processType', 'Subjects' },
+      env = {
+        -- Add environment variables if needed
+      },
+    })
+
+    table.insert(dap.configurations.cs, etl_client_config)
     require('mason-nvim-dap').setup {
       -- Makes a best effort to setup the various debuggers with
       -- reasonable debug configurations
