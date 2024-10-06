@@ -13,8 +13,6 @@ map({ 'n', 'i', 'v' }, '<C-d>', '<C-d>zz')
 map({ 'n', 'i', 'v' }, '<C-u>', '<C-u>zz')
 map('n', 'n', 'nzzzv')
 map('n', 'N', 'Nzzzv')
-map('n', '<TAB>', ':bnext<CR>')
-map('n', '<S-TAB>', ':bprevious<CR>')
 map('n', '<leader>x', ':bdelete<CR>', { desc = 'Close current buffer' })
 -- map({ 'n', 'i', 'v' }, '<C-/>', '<Plug>(comment_toggle_linewise)')
 
@@ -27,7 +25,17 @@ map('v', '<leader>d', '"_d')
 map('n', 'zk', 'zt')
 map('n', 'zj', 'zb')
 
---
+vim.api.nvim_set_keymap('n', '<Tab>', ':lua ToggleBuffers()<CR>', { noremap = true, silent = true })
+
+-- <Tab> will only switch between two files
+function ToggleBuffers()
+  local current = vim.fn.bufnr '%'
+  local last = vim.fn.bufnr '#'
+  if last ~= -1 and last ~= current then
+    vim.cmd('buffer ' .. last)
+  end
+end
+
 -- Kickstart Keymaps
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
