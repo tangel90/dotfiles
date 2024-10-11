@@ -2,15 +2,17 @@
 local map = vim.keymap.set
 
 map('i', 'kj', '<ESC>')
-map({ 'n', 'v' }, 'H', 'J')
+map({ 'n', 'v' }, 'L', '%')
 map({ 'n', 'v' }, 'J', 'L')
 map({ 'n', 'v' }, 'K', 'H')
-map({ 'n', 'v' }, 'L', '%')
+map({ 'n', 'v' }, 'H', 'J')
+map({ 'n', 'v' }, '<C-e>', 'J')
 
-map({ 'n', 'i' }, '<C-x>', ':!dotnet run<CR>')
+-- map({ 'n', 'i' }, '<C-x>', ':!dotnet run<CR>')
+map({ 'n', 'i' }, '<C-x>', ':!python %<CR>')
 
-map({ 'n', 'i', 'v' }, '<C-d>', '<C-d>zz')
-map({ 'n', 'i', 'v' }, '<C-u>', '<C-u>zz')
+map({ 'n', 'v' }, '<C-d>', '<C-d>zz')
+map({ 'n', 'v' }, '<C-u>', '<C-u>zz')
 map('n', 'n', 'nzzzv')
 map('n', 'N', 'Nzzzv')
 map('n', '<leader>x', ':bdelete<CR>', { desc = 'Close current buffer' })

@@ -84,9 +84,9 @@ return {
     -- note: on_attach deprecated
     require('lsp_signature').on_attach(opts, bufnr) -- no need to specify bufnr if you don't use toggle_key
 
-    vim.keymap.set({ 'n' }, '<Leader>i', function()
-      require('lsp_signature').toggle_float_win()
-    end, { silent = true, noremap = true, desc = 'toggle signature' })
+    -- vim.keymap.set({ 'n' }, '<Leader>i', function()
+    --   require('lsp_signature').toggle_float_win()
+    -- end, { silent = true, noremap = true, desc = 'toggle signature' })
 
     vim.keymap.set({ 'n' }, '<Leader>k', function()
       vim.lsp.buf.signature_help()
