@@ -65,13 +65,39 @@ return {
         end,
         opts = { noremap = false, expr = true, buffer = true },
       },
-      -- Toggle check-boxes.
-      ['<leader>on'] = {
-        action = function()
-          return { action = '<cmd>ObsidianNew<CR>', opts = { buffer = true, desc = 'Toggle Checkbox' } }
-        end,
-        opts = { buffer = true },
+      ['<leader>og'] = {
+        action = '<cmd>ObsidianSearch<CR>',
+        opts = { buffer = true, desc = '[G]rep in Notes' },
       },
+      ['<leader>oo'] = {
+        action = '<cmd>ObsidianQuickSwitch<CR>',
+        opts = { buffer = true, desc = '[O]pen QuickSwitch' },
+      },
+      ['<leader>ot'] = {
+        action = '<cmd>ObsidianTOC<CR>',
+        opts = { buffer = true, desc = '[T]oc' },
+      },
+      ['<leader>od'] = {
+        action = '<cmd>ObsidianDailies<CR>',
+        opts = { buffer = true, desc = '[D]ailies' },
+      },
+      ['<leader>or'] = {
+        action = '<cmd>ObsidianRename<CR>',
+        opts = { buffer = true, desc = '[R]ename Note' },
+      },
+      ['<leader>of'] = {
+        action = '<cmd>ObsidianTag<CR>',
+        opts = { buffer = true, desc = '[F]ind by Tag' },
+      },
+      ['<leader>ow'] = {
+        action = '<cmd>ObsidianWorkspace<CR>',
+        opts = { buffer = true, desc = 'Select [W]orkspace' },
+      },
+      ['<leader>on'] = {
+        action = '<cmd>ObsidianNew<CR>',
+        opts = { buffer = true, desc = '[N]ew Note' },
+      },
+      -- Toggle check-boxes.
       ['<leader><leader>'] = {
         action = function()
           return require('obsidian').util.toggle_checkbox()
