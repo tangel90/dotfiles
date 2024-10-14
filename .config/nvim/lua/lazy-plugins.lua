@@ -27,6 +27,8 @@ require('lazy').setup({
   require 'plugins.custom.rosepine',
   require 'plugins.custom.lsp_signature',
   require 'plugins.custom.feline',
+  require 'plugins.custom.obsidian',
+  -- require 'plugins.custom.render-markdown',
   -- require 'plugins.custom.molten-nvim',
   -- require 'plugins.custom.lazygit',
   -- require 'plugins.custom.neo-tree',
@@ -66,6 +68,13 @@ require('lazy').setup({
   -- "gc" to comment visual regions/lines
   { 'numToStr/Comment.nvim', opts = {} },
   -- Lua
+  -- {
+  -- 'git@github.com:tangel90/iris.nvim.git',
+  -- opts = {},
+  -- config = function(_, opts)
+  --   require('iris').setup(opts)
+  -- end,
+  -- },
   {
     'folke/zen-mode.nvim',
     opts = {

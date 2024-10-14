@@ -42,9 +42,9 @@ end
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
-vim.api.nvim_set_keymap('n', '<leader>i', ':lua require("plugins.custom.iris").toggle_quick_menu()<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<leader>co', ':lua require("plugins.custom.iris").prompt_openai()<CR>', { noremap = true, silent = true })
-vim.api.nvim_set_keymap('n', '<leader>cc', ':lua require("plugins.custom.iris").prompt_claudeai()<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<leader>i', ':lua require("iris").toggle_quick_menu()<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<leader>co', ':lua require("iris").prompt_openai()<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap('n', '<leader>cc', ':lua require("iris").prompt_claudeai()<CR>', { noremap = true, silent = true })
 
 -- Set highlight on search, but clear on pressing <Esc> in normal mode
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
