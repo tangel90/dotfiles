@@ -31,7 +31,7 @@ return {
 
     close_timeout = 4000, -- close floating window after ms when laster parameter is entered
     fix_pos = false, -- set to true, the floating window will not auto-close until finish all parameters
-    hint_enable = true, -- virtual hint enable
+    hint_enable = false, -- virtual hint enable
     hint_prefix = '🐼 ', -- Panda for parameter, NOTE: for the terminal not support emoji, might crash
     -- or, provide a table with 3 icons
     -- hint_prefix = {
@@ -84,12 +84,12 @@ return {
     -- note: on_attach deprecated
     require('lsp_signature').on_attach(opts, bufnr) -- no need to specify bufnr if you don't use toggle_key
 
-    vim.keymap.set({ 'n' }, '<Leader>i', function()
+    vim.keymap.set({ 'n' }, '<Leader>k', function()
       require('lsp_signature').toggle_float_win()
     end, { silent = true, noremap = true, desc = 'toggle signature' })
 
-    vim.keymap.set({ 'n' }, '<Leader>k', function()
-      vim.lsp.buf.signature_help()
-    end, { silent = true, noremap = true, desc = 'toggle signature' })
+    -- vim.keymap.set({ 'n' }, '<Leader>k', function()
+    --   vim.lsp.buf.signature_help()
+    -- end, { silent = true, noremap = true, desc = 'toggle signature' })
   end,
 }

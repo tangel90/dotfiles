@@ -1,7 +1,18 @@
+function _G.get_oil_winbar()
+  local dir = require('oil').get_current_dir()
+  if dir then
+    return vim.fn.fnamemodify(dir, ':~')
+  else
+    -- If there is no current directory (e.g. over ssh), just show the buffer name
+    return vim.api.nvim_buf_get_name(0)
+  end
+end
+
 return {
   'stevearc/oil.nvim',
+
   opts = {
-    vim.keymap.set('n', '-', '<CMD>Oil --float<CR>', { desc = 'Oil: Open parent directory of current file' }),
+    vim.keymap.set('n', '-', '<CMD>Oil<CR>', { desc = 'Oil: Open parent directory of current file' }),
     -- Oil will take over directory buffers (e.g. `vim .` or `:e src/`)
     -- Set to false if you want some other plugin (e.g. netrw) to open when you edit directories.
     default_file_explorer = true,
@@ -28,6 +39,7 @@ return {
       list = false,
       conceallevel = 3,
       concealcursor = 'nvic',
+      winbar = '%!v:lua.get_oil_winbar()',
     },
     -- Send deleted files to the trash instead of permanently deleting them (:help oil-trash)
     delete_to_trash = true,
@@ -77,6 +89,17 @@ return {
       ['gx'] = 'actions.open_external',
       ['g.'] = 'actions.toggle_hidden',
       ['g\\'] = 'actions.toggle_trash',
+      ['gd'] = {
+        desc = 'Toggle file detail view',
+        callback = function()
+          detail = not detail
+          if detail then
+            require('oil').set_columns { 'icon', 'permissions', 'size', 'mtime' }
+          else
+            require('oil').set_columns { 'icon' }
+          end
+        end,
+      },
     },
     -- Set to false to disable all of the above keymaps
     use_default_keymaps = true,
@@ -126,7 +149,7 @@ return {
       min_width = 40,
       max_height = 0,
       min_height = 50,
-      border = 'rounded',
+      border = 'single',
       win_options = {
         winblend = 0,
       },
