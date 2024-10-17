@@ -114,6 +114,7 @@ unset __conda_setup
 
 LOCALENV="$XDG_CONFIG_HOME/localenv"
 if [ -d "$LOCALENV" ]; then
+    export "LOCALPROFILE=$LOCALENV/.zprofile"
     for i in $(find -L "$LOCALENV" -type f); do
         source "$i"
     done
