@@ -9,7 +9,7 @@ map({ 'n', 'v' }, 'H', 'J')
 map({ 'n', 'v' }, '<C-e>', 'J')
 
 -- map({ 'n', 'i' }, '<C-x>', ':!dotnet run<CR>')
-map({ 'n', 'i' }, '<C-x>', ':!python %<CR>')
+map({ 'n', 'i' }, '<C-x>', ':!python main.py<CR>')
 
 map({ 'n', 'v' }, '<C-d>', '<C-d>zz')
 map({ 'n', 'v' }, '<C-u>', '<C-u>zz')
