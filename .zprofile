@@ -19,6 +19,7 @@ export FZF_DEFAULT_OPTS='--height 40% --layout reverse --border top'
 export FZF_DEFAULT_COMMAND='find .'
 export FZF_TMUX_OPTS='-p80%,60%'
 
+alias vimdev='NVIM_APPNAME=nvim-dev nvim'
 alias c="clear"
 alias tmuxfzf='tmux attach-session -t $(tmux ls | fzf | cut -d: -f1)'
 alias tls="tmux-list-session"
@@ -41,6 +42,11 @@ if [ -x "$(command -v exa)" ]; then
     alias ll="exa --long --header --sort=type --icons --no-permissions --no-user"
     alias la="exa --long --header --all --sort=type --icons --no-permissions --no-user" 
 fi
+
+vv() {
+  select config in nvim nvim-dev
+  do NVIM_APPNAME=nvim-$config nvim $@; break; done
+}
 
 tmux-list-session () {
     if tmux list-sessions 2> /dev/null; then
