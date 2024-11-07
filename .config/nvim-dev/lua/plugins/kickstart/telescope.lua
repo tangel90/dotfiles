@@ -130,5 +130,9 @@ return { -- Fuzzy Finder (files, lsp, etc)
     vim.keymap.set('n', '<leader>fo', function()
       builtin.find_files { cwd = '~/obsidian/personal' }
     end, { desc = '[F]ind [O]bsidian notes' })
+
+    vim.keymap.set('n', '<leader>fl', function()
+      builtin.find_files { cwd = '~/projects' }
+    end, { desc = '[F]ind in /home/projects' })
   end,
 }

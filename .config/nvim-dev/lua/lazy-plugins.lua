@@ -29,7 +29,7 @@ require('lazy').setup({
   require 'plugins.custom.feline',
   require 'plugins.custom.obsidian',
   -- require 'plugins.custom.render-markdown',
-  -- require 'plugins.custom.molten-nvim',
+  require 'plugins.custom.molten-nvim',
   -- require 'plugins.custom.lazygit',
   -- require 'plugins.custom.neo-tree',
   -- require 'plugins.custom.toggleterm',
@@ -47,7 +47,7 @@ require('lazy').setup({
   require 'plugins.kickstart.autopairs',
   require 'plugins.kickstart.autotag',
   require 'plugins.kickstart.indent_line',
-  -- require 'plugins.kickstart.lint',
+  require 'plugins.kickstart.lint',
 
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
   -- Highlight todo, notes, etc in comments
@@ -113,5 +113,8 @@ require('lazy').setup({
       task = '📌',
       lazy = '💤 ',
     },
+  },
+  rocks = {
+    hererocks = true, -- recommended if you do not have global installation of Lua 5.1.
   },
 })

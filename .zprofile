@@ -44,8 +44,13 @@ if [ -x "$(command -v exa)" ]; then
 fi
 
 vv() {
-  select config in nvim nvim-dev
-  do NVIM_APPNAME=nvim-$config nvim $@; break; done
+    local CONFIG_DIRS=$(find -L $XDG_CONFIG_HOME -type d -name "nvim*")
+    selected_config=$(echo "$CONFIG_DIRS" | fzf --prompt "Nvim Config > ")
+
+    [[ -z $selected_config ]] && echo "No config selected" && return
+
+    echo "Config selected: $selected_config"
+    # NVIM_APPNAME=$(basename $selected_config) nvim $@
 }
 
 tmux-list-session () {
