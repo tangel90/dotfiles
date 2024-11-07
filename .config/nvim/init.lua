@@ -88,12 +88,15 @@ require 'config.options'
 
 require 'config.autocmds'
 
+require 'config.usercmds'
+
 require 'config.keymaps'
 
 require 'lazy-bootstrap'
 
 require 'lazy-plugins'
 
+require('luasnip.loaders.from_lua').load { paths = { '~/.config/nvim/lua/config/snippets.lua' } }
 -- local iris = require 'iris'
 -- iris.setup {
 --   window = {

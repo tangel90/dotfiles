@@ -16,6 +16,16 @@ return { -- Collection of various small independent plugins/modules
     -- - sr)'  - [S]urround [R]eplace [)] [']
     require('mini.surround').setup()
 
+    vim.keymap.set('n', '<leader>ss', ':normal saiw"<CR>', { noremap = true, silent = true })
+    vim.keymap.set('n', '<leader>sS', ':normal saiW"<CR>', { noremap = true, silent = true })
+
+    vim.keymap.set('n', '<leader>s"', ':normal saiw"<CR>', { noremap = true, silent = true })
+    vim.keymap.set('n', '<leader>sq', ':normal saiw"<CR>', { noremap = true, silent = true })
+    vim.keymap.set('n', '<leader>sb', ':normal saiw)<CR>', { noremap = true, silent = true })
+    vim.keymap.set('n', '<leader>S"', ':normal saiW"<CR>', { noremap = true, silent = true })
+    vim.keymap.set('n', '<leader>Sq', ':normal saiW"<CR>', { noremap = true, silent = true })
+    vim.keymap.set('n', '<leader>Sb', ':normal saiW)<CR>', { noremap = true, silent = true })
+
     -- Simple and easy statusline.
     --  You could remove this setup call if you don't like it,
     --  and try some other statusline plugin

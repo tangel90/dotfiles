@@ -124,5 +124,13 @@ fi
 # [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
-  exec tmux
+    export sessions=$(tmux list-sessions 2>/dev/null)
+    echo "Sessions: $sessions"
+    if [[ -z $"sessions" ]]; then
+        echo "No sessions found!"
+        exec tmux
+    else
+        echo "Sessions found!"
+        exec tmux-list-session
+    fi
 fi
