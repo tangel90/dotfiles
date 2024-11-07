@@ -26,6 +26,19 @@ return {
       --   name = 'work',
       --   path = '~/obsidian/whoishydra',
       -- },
+      {
+        name = 'no-vault',
+        path = function()
+          -- alternatively use the CWD:
+          -- return assert(vim.fn.getcwd())
+          return assert(vim.fs.dirname(vim.api.nvim_buf_get_name(0)))
+        end,
+        disable_frontmatter = true,
+        overrides = {
+          notes_subdir = vim.NIL, -- have to use 'vim.NIL' instead of 'nil'
+          new_notes_location = 'current_dir',
+        },
+      },
     },
 
     notes_subdir = 'notes',
