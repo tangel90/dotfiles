@@ -1,23 +1,40 @@
-export LANGUAGE=en_US.UTF-8
-export LC_ALL=en_US.UTF-8
-export LANG=en_US.UTF-8
-export LC_CTYPE=en_US.UTF-8
-
-# If you come from bash you might have to change your $PATH.
-
+export XDG_CONFIG_HOME="$HOME/.config"
+export NOTES_HOME="$HOME/obsidian/personal/notes"
+export PROJECTS_HOME="$HOME/projects"
 export PATH=$PATH:$HOME/.local/bin:$HOME/bin:/usr/local/bin
 export LD_LIBRARY_PATH=/usr/local/lib
 export ANDROID_HOME=$HOME/Android/Sdk
 export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
 export NVM_DIR=$HOME/.nvm
-
 export EDITOR="nvim"
 export TERM="xterm-256color"
 
-# Open in tmux popup if on tmux, otherwise use --height mode
+export LANGUAGE=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LC_CTYPE=en_US.UTF-8
+
 export FZF_DEFAULT_OPTS='--height 40% --layout reverse --border top'
 export FZF_DEFAULT_COMMAND='find .'
 export FZF_TMUX_OPTS='-p80%,60%'
+
+unset SSH_AGENT_PID
+if [ "${gnupg_SSH_AUTH_SOCK_by:-0}" -ne $$ ]; then
+  export SSH_AUTH_SOCK="$(gpgconf --list-dirs agent-ssh-socket)"
+fi
+
+if [ -n "$TTY" ]; then
+  export GPG_TTY=$(tty)
+else
+  export GPG_TTY="$TTY"
+fi
+
+# Open in tmux popup if on tmux, otherwise use --height mode
+
+bindkey -v
+bindkey -M viins '^F' forward-char
+bindkey '^p' history-search-backward
+bindkey '^n' history-search-forward
 
 alias vimdev='NVIM_APPNAME=nvim-dev nvim'
 alias c="clear"

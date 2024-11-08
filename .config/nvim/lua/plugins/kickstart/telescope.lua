@@ -128,11 +128,21 @@ return { -- Fuzzy Finder (files, lsp, etc)
     end, { desc = '[F]ind [N]eovim files' })
 
     vim.keymap.set('n', '<leader>fo', function()
-      builtin.find_files { cwd = '~/obsidian/personal' }
+      local notes_home = os.getenv 'NOTES_HOME'
+      if not notes_home then
+        print 'Please set $NOTES_HOME environment variable.'
+      else
+        builtin.find_files { cwd = notes_home }
+      end
     end, { desc = '[F]ind [O]bsidian notes' })
 
     vim.keymap.set('n', '<leader>fi', function()
-      builtin.find_files { cwd = '/mnt/d/projects' }
-    end, { desc = '[F]ind [i]n /mnt/d/projects' })
+      local projects_home = os.getenv 'PROJECTS_HOME'
+      if not projects_home then
+        print 'Please set $PROJECTS_HOME environment variable.'
+      else
+        builtin.find_files { cwd = projects_home }
+      end
+    end, { desc = '[F]ind [i]n projects' })
   end,
 }

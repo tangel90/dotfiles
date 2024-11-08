@@ -28,8 +28,8 @@ require('lazy').setup({
   require 'plugins.custom.lsp_signature',
   require 'plugins.custom.feline',
   require 'plugins.custom.obsidian',
+  require 'plugins.custom.molten-nvim',
   -- require 'plugins.custom.render-markdown',
-  -- require 'plugins.custom.molten-nvim',
   -- require 'plugins.custom.lazygit',
   -- require 'plugins.custom.neo-tree',
   -- require 'plugins.custom.toggleterm',
@@ -86,6 +86,9 @@ require('lazy').setup({
         },
       },
     },
+    config = function(_, opts)
+      vim.keymap.set('n', '<leader>z', ':ZenMode<CR>', { desc = '[Z]en Mode' })
+    end,
   },
   {
     'sindrets/diffview.nvim',

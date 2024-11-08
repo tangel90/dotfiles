@@ -16,6 +16,7 @@ cargo
 go
 nvm
 zig
+glow
 
 
 ##Neovim:
