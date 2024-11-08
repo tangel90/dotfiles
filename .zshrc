@@ -4,18 +4,7 @@
 # if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
 #   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 # fi 
-
-source $HOME/.zprofile
 # SSH_AUTH_SOCK set to GPG to enable using gpgagent as the ssh agent.
-unset SSH_AGENT_PID
-if [ "${gnupg_SSH_AUTH_SOCK_by:-0}" -ne $$ ]; then
-  export SSH_AUTH_SOCK="$(gpgconf --list-dirs agent-ssh-socket)"
-fi
-
-gpg-connect-agent updatestartuptty /bye >/dev/null
-gpgconf --launch gpg-agent
-export GPG_TTY=$TTY
-
 # Set the directory we want to store zinit and plugins
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 # Download Zinit, if it's not there yet
@@ -43,7 +32,6 @@ zinit snippet OMZP::sudo
 # zinit snippet OMZP::kubectx
 zinit snippet OMZP::command-not-found
 
-# Load completions
 autoload -Uz compinit && compinit
 
 zinit cdreplay -q
@@ -51,13 +39,6 @@ zinit cdreplay -q
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
-# Keybindings
-# bindkey -e
-bindkey -v
-bindkey '^p' history-search-backward
-bindkey '^n' history-search-forward
-
-#History
 HISTSIZE=5000
 HISTFILE=~/.zsh_history
 SAVEHIST=$HISTSIZE
@@ -76,27 +57,10 @@ zstyle ':completion:*' menu no
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls $realpath'
 zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls $realpath'
 
-export XDG_CONFIG_HOME="$HOME/.config"
-source $HOME/.zprofile
-
-if [ -n "$TTY" ]; then
-  export GPG_TTY=$(tty)
-else
-  export GPG_TTY="$TTY"
-fi
-
-# SSH_AUTH_SOCK set to GPG to enable using gpgagent as the ssh agent.
-export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
-gpgconf --launch gpg-agent
-
-
 # Shell integrations
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 eval "$(fzf --zsh)"
 eval "$(zoxide init zsh --cmd cd)"
-
-
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
@@ -113,6 +77,9 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
+# >>> initialize environment >>>
+source $HOME/.zprofile
+
 LOCALENV="$XDG_CONFIG_HOME/localenv"
 if [ -d "$LOCALENV" ]; then
     export "LOCALPROFILE=$LOCALENV/.zprofile"
@@ -120,18 +87,24 @@ if [ -d "$LOCALENV" ]; then
         source "$i"
     done
 fi
+# <<< initialize environment <<<
 
-# # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-# [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+gpgconf --launch gpg-agent
+gpg-connect-agent updatestartuptty /bye >/dev/null
+
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 
 if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
     export sessions=$(tmux list-sessions 2>/dev/null)
-    echo "Sessions: $sessions"
     if [[ -z $"sessions" ]]; then
         echo "No sessions found!"
-        exec tmux
+        tmux new-session
     else
-        echo "Sessions found!"
-        exec tmux-list-session
+        if command -v tmux-list-session; then
+            tmux-list-session
+        else
+            echo "Tmux sessions found. Trying to attach ..."
+            tmux attach
+        fi
     fi
 fi
