@@ -95,8 +95,8 @@ gpg-connect-agent updatestartuptty /bye >/dev/null
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 
 if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
-    export sessions=$(tmux list-sessions 2>/dev/null)
-    if [[ -z $"sessions" ]]; then
+    sessions=$(tmux list-sessions 2>/dev/null)
+    if [ -z "$sessions" ]; then
         echo "No sessions found!"
         tmux new-session
     else

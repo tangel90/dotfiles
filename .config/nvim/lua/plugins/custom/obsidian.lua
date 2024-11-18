@@ -20,7 +20,7 @@ return {
     workspaces = {
       {
         name = 'personal',
-        path = '~/obsidian/personal',
+        path = '~/obsidian/personal/notes',
       },
       -- {
       --   name = 'work',
@@ -41,7 +41,7 @@ return {
       },
     },
 
-    notes_subdir = 'notes',
+    -- notes_subdir = 'notes',
 
     -- Optional, set the log level for obsidian.nvim. This is an integer corresponding to one of the log
     -- levels defined by "vim.log.levels.*".
