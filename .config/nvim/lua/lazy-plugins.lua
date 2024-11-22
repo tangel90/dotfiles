@@ -50,6 +50,12 @@ require('lazy').setup({
   -- require 'plugins.kickstart.lint',
 
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
+  -- {
+  --   'willothy/wezterm.nvim',
+  --   opts = {
+  --     create_commands = false,
+  --   },
+  -- },
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
   -- "gc" to comment visual regions/lines
