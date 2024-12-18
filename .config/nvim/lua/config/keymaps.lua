@@ -1,7 +1,7 @@
 --- custom keymaps --
 local map = vim.keymap.set
 
-map('i', 'kj', '<ESC>')
+map('i', 'kj', '<ESC>', { noremap = true })
 map({ 'n', 'v' }, 'L', '%')
 map({ 'n', 'v' }, 'J', 'L')
 map({ 'n', 'v' }, 'K', 'H')
@@ -9,7 +9,20 @@ map({ 'n', 'v' }, 'H', 'J')
 map({ 'n', 'v' }, '<C-e>', 'J')
 
 -- map({ 'n', 'i' }, '<C-x>', ':!dotnet run<CR>')
-map({ 'n', 'i' }, '<leader>x', ':!python main.py --config=/mnt/d/projects/study_metrics/project_config.json<CR>')
+map({ 'n' }, '<leader>xx', ':!python main.py<CR>', { desc = 'python main.py' })
+map({ 'n' }, '<leader>xm', ':!python main.py --settings_path=/mnt/d/projects/study_metrics/project_settings.json<CR>', { desc = 'Study [M]etrics Prod' })
+map(
+  { 'n' },
+  '<leader>xd',
+  ':!python main.py --settings_path=/mnt/d/clinical_data_repository/modules/settings/etl_settings_dev.json<CR>',
+  { desc = 'EDC-Flex [D]ev' }
+)
+map(
+  { 'n' },
+  '<leader>xc',
+  ':!python main.py --settings_path=/mnt/d/clinical_data_repository/modules/settings/etl_settings_cyntegrity.json --project=PM-0059 --process=Cyntegrity<CR>',
+  { desc = 'Etl [C]yntegrity' }
+)
 map('n', '<leader>y', 'yiw', { noremap = true, silent = true })
 
 map({ 'n', 'v' }, '<C-d>', '<C-d>zz')
@@ -28,7 +41,7 @@ map('v', '<leader>d', '"_d')
 map('n', 'zk', 'zt')
 map('n', 'zj', 'zb')
 
-vim.api.nvim_set_keymap('n', '<Tab>', ':lua ToggleBuffers()<CR>', { noremap = true, silent = true })
+map({ 'n', 'v' }, '<Tab>', ':lua ToggleBuffers()<CR>', { noremap = true, silent = true })
 
 -- <Tab> will only switch between two files
 function ToggleBuffers()
