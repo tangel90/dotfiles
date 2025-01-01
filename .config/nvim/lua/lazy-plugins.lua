@@ -28,7 +28,7 @@ require('lazy').setup({
   require 'plugins.custom.lsp_signature',
   require 'plugins.custom.feline',
   require 'plugins.custom.obsidian',
-  require 'plugins.custom.molten-nvim',
+  -- require 'plugins.custom.molten-nvim',
   -- require 'plugins.custom.render-markdown',
   -- require 'plugins.custom.lazygit',
   -- require 'plugins.custom.neo-tree',
@@ -49,6 +49,12 @@ require('lazy').setup({
   require 'plugins.kickstart.indent_line',
   -- require 'plugins.kickstart.lint',
 
+  {
+    'norcalli/nvim-colorizer.lua',
+    config = function()
+      require('colorizer').setup()
+    end,
+  },
   'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },

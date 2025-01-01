@@ -4,7 +4,7 @@
 # if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
 #   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 # fi 
-# SSH_AUTH_SOCK set to GPG to enable using gpgagent as the ssh agent.
+
 # Set the directory we want to store zinit and plugins
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 # Download Zinit, if it's not there yet
@@ -62,28 +62,13 @@ zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls $realpath'
 eval "$(fzf --zsh)"
 eval "$(zoxide init zsh --cmd cd)"
 
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/thomas/miniconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/thomas/miniconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/thomas/miniconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/thomas/miniconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
-
 # >>> initialize environment >>>
 source $HOME/.zprofile
 
-LOCALENV="$XDG_CONFIG_HOME/localenv"
-if [ -d "$LOCALENV" ]; then
-    export "LOCALPROFILE=$LOCALENV/.zprofile"
-    for i in $(find -L "$LOCALENV" -type f); do
+export LOCALCONFIG="$HOME/.localconfig"
+if [ -d "$LOCALCONFIG" ]; then
+    export "LOCALPROFILE=$LOCALCONFIG/.zprofile"
+    for i in $(find -L "$LOCALCONFIG" -type f); do
         source "$i"
     done
 fi
@@ -91,8 +76,6 @@ fi
 
 gpgconf --launch gpg-agent
 gpg-connect-agent updatestartuptty /bye >/dev/null
-
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 
 if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
     sessions=$(tmux list-sessions 2>/dev/null)
