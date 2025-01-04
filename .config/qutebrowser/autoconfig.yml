@@ -62,6 +62,7 @@ settings:
     global: true
   content.javascript.clipboard:
     https://chatgpt.com: access-paste
+    https://docs.expo.dev: access-paste
     https://github.com: access-paste
   input.insert_mode.auto_leave:
     global: false
@@ -83,10 +84,14 @@ settings:
     global: always
   tabs.last_close:
     global: default-page
+  tabs.pinned.frozen:
+    global: true
+  tabs.pinned.shrink:
+    global: true
   tabs.position:
     global: left
   tabs.show:
-    global: never
+    global: always
   tabs.title.format:
     global: '{audio} {index} {current_title}'
   tabs.title.format_pinned:

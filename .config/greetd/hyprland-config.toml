@@ -1,0 +1,6 @@
+exec = sh -c "regreet; hyprctl dispatch exit"
+misc {
+    disable_hyprland_logo = false
+    disable_splash_rendering = false
+    disable_hyprland_qtutils_check = true
+}

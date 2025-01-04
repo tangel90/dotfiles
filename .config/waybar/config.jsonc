@@ -17,14 +17,11 @@
         "mpd",
         "wireplumber",
         "network",
-        // "cpu",
-        // "memory",
         "temperature",
         "hyprland/language",
         "battery",
-        "battery#bat2",
         "clock",
-        "tray"
+        "custom/power",
     ],
     // Modules configuration
     "hyprland/workspaces": {
@@ -44,7 +41,10 @@
         }
     },
     "hyprland/submap": {
-        "format": "<span style=\"italic\">{}</span>"
+        // "format": "<span style=\"italic\">{}</span>"
+        "format": "✌️ {}",
+        "max-length": 8,
+        "tooltip": false,
     },
     "mpd": {
         "format": "{stateIcon} {consumeIcon}{randomIcon}{repeatIcon}{singleIcon}{artist} - {album} - {title} ({elapsedTime:%M:%S}/{totalTime:%M:%S}) ⸨{songPosition}|{queueLength}⸩ {volume}% ",
@@ -150,14 +150,14 @@
     },
     "custom/power": {
         "format" : "⏻ ",
-		"tooltip": false,
-		"menu": "on-click",
-		"menu-file": "$HOME/.config/waybar/power_menu.xml", // Menu file in resources folder
-		"menu-actions": {
-			"shutdown": "shutdown",
-			"reboot": "reboot",
-			"suspend": "systemctl suspend",
-			"hibernate": "systemctl hibernate"
-		}
+        "tooltip": false,
+        "menu": "on-click",
+        "menu-file": "$HOME/.config/waybar/power_menu.xml", // Menu file in resources folder
+        "menu-actions": {
+                "shutdown": "poweroff",
+                "reboot": "reboot",
+                "logout": "hyprctl dispatch exit",
+                
+        }
     }
 }
