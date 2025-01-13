@@ -1,4 +1,5 @@
 lazy-lock.json
+.gnupg
 .config/nvim.backup
 .config/nvim.bak.lazy
 .config/nvim.prime
@@ -9,3 +10,4 @@ nvim-data
 nvim-data
 .config/nvim/.github/ISSUE_TEMPLATE/bug_report.md
 .config/nvim/.github
+flavors/

@@ -1,0 +1,204 @@
+@define-color black #26233a;
+@define-color red #eb6f92;
+@define-color green #31748f;
+@define-color yellow #f6c177;
+@define-color blue #9ccfd8;
+@define-color magenta #c4a7e7;
+@define-color cyan #ebbcba;
+@define-color white #e0def4;
+@define-color foreground #e0def4;
+@define-color background #191724;
+@define-color background-bright #6e6a86;
+
+* {
+    /* `otf-font-awesome` is required to be installed for icons */
+    font-family: FontAwesome, Roboto, Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    color: @white;
+}
+
+#mpd,
+#wireplumber,
+#network,
+#temperature,
+#language,
+#network,
+#battery,
+#power,
+#clock {
+    /* border-right: 1px solid @green; */
+    margin: 0 8px;
+}
+
+window#waybar {
+    background-color: @background;
+    /* color: @red !important; */
+    font-weight: bold;
+    border-bottom: 1px solid @black;
+    /* color: @white; */
+    transition-property: background-color;
+    transition-duration: .5s;
+}
+
+window#waybar.hidden {
+    opacity: 0.2;
+}
+
+/* If workspaces is the leftmost module, omit left margin */
+.modules-left > widget:first-child > #workspaces {
+    margin-left: 0;
+}
+
+/* If workspaces is the rightmost module, omit right margin */
+.modules-right > widget:last-child > #workspaces {
+    margin-right: 0;
+}
+
+#temperature.critical {
+    background-color: @yellow;
+}
+
+#temperature.critical {
+    background-color: @red;
+}
+
+#battery.critical:not(.charging) {
+    background-color: @red;
+    color: @white;
+    animation-name: blink;
+    animation-duration: 0.5s;
+    animation-timing-function: steps(12);
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+window#waybar.termite {
+    background-color: @background-bright;
+}
+
+window#waybar.chromium {
+    background-color: @background;
+    border: none;
+}
+
+button {
+    /* Use box-shadow instead of border so the text isn't offset */
+    box-shadow: inset 0 -3px transparent;
+    /* Avoid rounded borders under each button name */
+    border: none;
+    border-radius: 0;
+}
+
+/* https://github.com/Alexays/Waybar/wiki/FAQ#the-workspace-buttons-have-a-strange-hover-effect */
+button:hover {
+    background: inherit;
+    box-shadow: inset 0 -3px @white;
+}
+
+/* :hover { */
+/*     background-color: @background-bright; */
+/* } */
+
+#workspaces button {
+    padding: 0 4px;
+    /* background-color: transparent; */
+}
+
+#workspaces button:hover {
+    /* background: rgba(0, 0, 0, 0.2); */
+}
+
+#workspaces button.focused {
+    background-color: @background-bright;
+    box-shadow: inset 0 -3px @white;
+}
+
+#workspaces button.urgent {
+    background-color: @red;
+}
+
+/*
+window#waybar.empty {
+    background-color: transparent;
+}
+window#waybar.solo {
+    background-color: @white;
+}
+*/
+
+@keyframes blink {
+    to {
+        background-color: @white;
+        color: @black;
+    }
+}
+
+/* Using steps() instead of linear as a timing function to limit cpu usage */
+
+label:focus {
+    background-color: @black;
+}
+
+#custom-media {
+    background-color: @green;
+    color: @white;
+    min-width: 100px;
+}
+
+#custom-media.custom-spotify {
+    background-color: @green;
+}
+
+#custom-media.custom-vlc {
+    background-color: @yellow;
+}
+
+#tray {
+    background-color: @blue;
+}
+
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+    -gtk-icon-effect: highlight;
+    background-color: @red;
+}
+
+#mpd {
+    color: @green;
+}
+
+#mpd.disconnected {
+    background-color: #f53c3c;
+}
+
+#mpd.stopped {
+    background-color: #90b1b1;
+}
+
+#mpd.paused {
+    background-color: #51a37a;
+}
+
+#privacy {
+    padding: 0;
+}
+
+#privacy-item {
+    padding: 0 5px;
+    color: white;
+}
+
+#privacy-item.screenshare {
+    background-color: #cf5700;
+}
+
+#privacy-item.audio-in {
+    background-color: #1ca000;
+}
+
+#privacy-item.audio-out {
+    background-color: #0069d4;
+}

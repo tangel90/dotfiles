@@ -16,7 +16,9 @@ cargo
 go
 nvm
 zig
+jq
 glow
+unzip
 
 
 ##Neovim:
