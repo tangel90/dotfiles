@@ -98,7 +98,7 @@ if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] &&
     sessions=$(tmux list-sessions 2>/dev/null)
     if [ -z "$sessions" ]; then
         echo "No sessions found!"
-        tmux new-session
+        tmux
     else
         if command -v tmux-list-session; then
             tmux-list-session

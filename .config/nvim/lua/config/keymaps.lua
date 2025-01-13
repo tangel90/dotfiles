@@ -17,6 +17,8 @@ map(
   ':!python main.py --settings_path=/mnt/d/clinical_data_repository/modules/settings/etl_settings_dev.json<CR>',
   { desc = 'EDC-Flex [D]ev' }
 )
+map({ 'n' }, '<leader>xpn', ':!python main.py --project NGGT002-P-2301<CR>', { desc = 'EDC-Flex [P]roject [N]ggt' })
+map({ 'n' }, '<leader>xpp', ':!python main.py --project PM-0059<CR>', { desc = 'EDC-Flex [P]roject [P]M-0059' })
 map(
   { 'n' },
   '<leader>xc',
