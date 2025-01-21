@@ -10,7 +10,12 @@ map({ 'n', 'v' }, '<C-e>', 'J')
 
 -- map({ 'n', 'i' }, '<C-x>', ':!dotnet run<CR>')
 map({ 'n' }, '<leader>xx', ':!python3 main.py<CR>', { desc = 'python main.py' })
-map({ 'n' }, '<leader>xm', ':!python3 main.py --settings_path=/mnt/d/projects/study_metrics/project_settings.json<CR>', { desc = 'Study [M]etrics Prod' })
+map(
+  { 'n' },
+  '<leader>xm',
+  ':!python3 main.py --settings_path=/mnt/c/Users/TSchulz/projects/study_metrics/project_settings.json<CR>',
+  { desc = 'Study [M]etrics Prod' }
+)
 map(
   { 'n' },
   '<leader>xd',
@@ -70,8 +75,8 @@ vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
 vim.keymap.set('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
 
-vim.keymap.set('n', '<leader>de', vim.diagnostic.open_float, { desc = 'Show diagnostic [E]rror messages' })
-vim.keymap.set('n', '<leader>df', vim.diagnostic.setloclist, { desc = 'Open diagnostic quick[f]ix list' })
+vim.keymap.set('n', '<leader>de', vim.diagnostic.open_float, { desc = 'Show [d]iagnostic [E]rror messages' })
+vim.keymap.set('n', '<leader>dq', vim.diagnostic.setloclist, { desc = 'Open [d]iagnostic [q]uickfix list' })
 -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
 -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
 -- is not what someone will guess without a bit more experience.

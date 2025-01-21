@@ -11,43 +11,40 @@
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
 
-  -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
+  -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/plugins/*.lua`
   --    This is the easiest way to modularize your config.
   --
-  --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
+  --  Uncomment the following line and add your plugins to `lua/plugins/*.lua` to get going.
   --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
-  -- { import = 'plugins' },
+  { import = 'plugins' },
   --
-  -- custom plugins
-  require 'plugins.custom.oil',
-  require 'plugins.custom.harpoon',
-  require 'plugins.custom.vim-tmux-navigator',
-  require 'plugins.custom.nvim-lightbulb',
-  require 'plugins.custom.undotree',
-  require 'plugins.custom.rosepine',
-  require 'plugins.custom.lsp_signature',
-  require 'plugins.custom.feline',
-  require 'plugins.custom.obsidian',
-  -- require 'plugins.custom.molten-nvim',
-  -- require 'plugins.custom.render-markdown',
-  -- require 'plugins.custom.lazygit',
-  -- require 'plugins.custom.neo-tree',
-  -- require 'plugins.custom.toggleterm',
-
-  -- Kickstart standard plugins
-  require 'plugins.kickstart.nvim-lspconfig',
-  require 'plugins.kickstart.telescope',
-  require 'plugins.kickstart.nvim-treesitter',
-  require 'plugins.kickstart.conform',
-  require 'plugins.kickstart.nvim-cmp',
-  require 'plugins.kickstart.nvim-dap',
-  require 'plugins.kickstart.which-key',
-  require 'plugins.kickstart.gitsigns',
-  require 'plugins.kickstart.mini',
-  require 'plugins.kickstart.autopairs',
-  require 'plugins.kickstart.autotag',
-  require 'plugins.kickstart.indent_line',
-  -- require 'plugins.kickstart.lint',
+  require 'plugins.oil',
+  require 'plugins.harpoon',
+  require 'plugins.vim-tmux-navigator',
+  require 'plugins.nvim-lightbulb',
+  require 'plugins.undotree',
+  require 'plugins.rosepine',
+  require 'plugins.lsp_signature',
+  require 'plugins.feline',
+  require 'plugins.obsidian',
+  require 'plugins.nvim-lspconfig',
+  require 'plugins.telescope',
+  require 'plugins.nvim-treesitter',
+  require 'plugins.conform',
+  require 'plugins.nvim-cmp',
+  require 'plugins.nvim-dap',
+  require 'plugins.which-key',
+  require 'plugins.gitsigns',
+  require 'plugins.mini',
+  require 'plugins.autopairs',
+  require 'plugins.autotag',
+  require 'plugins.indent_line',
+  -- require 'plugins.molten-nvim',
+  -- require 'plugins.render-markdown',
+  -- require 'plugins.lazygit',
+  -- require 'plugins.neo-tree',
+  -- require 'plugins.toggleterm',
+  -- require 'plugins.lint',
 
   {
     'norcalli/nvim-colorizer.lua',
