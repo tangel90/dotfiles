@@ -81,7 +81,6 @@ return { -- LSP Configuration & Plugins
         --  Similar to document symbols, except searches over your entire project.
         map('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
 
-        map('<leader>dk', vim.lsp.buf.signature_help, 'Signature Help')
         -- map('<leader>wa', vim.lsp.buf.add_workspace_folder(), '[W]orkspace: [A]dd Folder')
         -- map('<leader>wr', vim.lsp.buf.remove_workspace_folder(), '[W]orkspace: [R]emove Folder')
         -- map('<leader>wl', print(vim.inspect(vim.lsp.buf.list_workspace_folders())), '[W]orkspace: [L]ist Folders')
@@ -162,6 +161,9 @@ return { -- LSP Configuration & Plugins
       -- clangd = {},
       -- gopls = {},
       -- pyright = {},
+      jqls = {
+        filetypes = { 'json', 'jq' },
+      },
       basedpyright = {
         settings = {
           basedpyright = {
@@ -270,7 +272,9 @@ return { -- LSP Configuration & Plugins
     vim.list_extend(ensure_installed, {
       'stylua', -- Used to format Lua code
       'black', -- Used to format python code
+      'jqls',
       'ast-grep',
+      'csharpier',
       'black',
       'basedpyright',
       'lua-language-server',

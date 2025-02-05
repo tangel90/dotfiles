@@ -120,7 +120,7 @@ return { -- Fuzzy Finder (files, lsp, etc)
 
     vim.keymap.set('n', '<leader>fd', function()
       builtin.find_files { cwd = '~/dotfiles', find_command = { 'rg', '--ignore', '--hidden', '--files' }, prompt_prefix = '🔍 ' }
-    end, { desc = '[F]ind Do[t]files' })
+    end, { desc = '[F]ind [D]otfiles' })
 
     -- Shortcut for searching your Neovim configuration files
     vim.keymap.set('n', '<leader>fn', function()

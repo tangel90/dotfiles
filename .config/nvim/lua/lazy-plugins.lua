@@ -17,35 +17,6 @@ require('lazy').setup({
   --  Uncomment the following line and add your plugins to `lua/plugins/*.lua` to get going.
   --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
   { import = 'plugins' },
-  --
-  require 'plugins.oil',
-  require 'plugins.harpoon',
-  require 'plugins.vim-tmux-navigator',
-  require 'plugins.nvim-lightbulb',
-  require 'plugins.undotree',
-  require 'plugins.rosepine',
-  require 'plugins.lsp_signature',
-  require 'plugins.feline',
-  require 'plugins.obsidian',
-  require 'plugins.nvim-lspconfig',
-  require 'plugins.telescope',
-  require 'plugins.nvim-treesitter',
-  require 'plugins.conform',
-  require 'plugins.nvim-cmp',
-  require 'plugins.nvim-dap',
-  require 'plugins.which-key',
-  require 'plugins.gitsigns',
-  require 'plugins.mini',
-  require 'plugins.autopairs',
-  require 'plugins.autotag',
-  require 'plugins.indent_line',
-  -- require 'plugins.molten-nvim',
-  -- require 'plugins.render-markdown',
-  -- require 'plugins.lazygit',
-  -- require 'plugins.neo-tree',
-  -- require 'plugins.toggleterm',
-  -- require 'plugins.lint',
-
   {
     'norcalli/nvim-colorizer.lua',
     config = function()
