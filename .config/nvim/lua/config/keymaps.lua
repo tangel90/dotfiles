@@ -10,24 +10,14 @@ map({ 'n', 'v' }, '<C-e>', 'J')
 
 -- map({ 'n', 'i' }, '<C-x>', ':!dotnet run<CR>')
 map({ 'n' }, '<leader>xx', ':!python3 main.py<CR>', { desc = 'python main.py' })
-map(
-  { 'n' },
-  '<leader>xm',
-  ':!python3 main.py --settings_path=/mnt/c/Users/TSchulz/projects/study_metrics/project_settings.json<CR>',
-  { desc = 'Study [M]etrics Prod' }
-)
-map(
-  { 'n' },
-  '<leader>xd',
-  ':!python3 main.py --settings_path=/mnt/d/clinical_data_repository/modules/settings/etl_settings_dev.json<CR>',
-  { desc = 'EDC-Flex [D]ev' }
-)
+map({ 'n' }, '<leader>xm', ':!python3 main.py --settings_path=project_settings.json<CR>', { desc = 'Study [M]etrics Prod' })
+map({ 'n' }, '<leader>xd', ':!python3 main.py --settings_path=etl_settings_dev.json<CR>', { desc = 'EDC-Flex [D]ev' })
 map({ 'n' }, '<leader>xpn', ':!python3 main.py --project NGGT002-P-2301<CR>', { desc = 'EDC-Flex [P]roject [N]ggt' })
 map({ 'n' }, '<leader>xpp', ':!python3 main.py --project PM-0059<CR>', { desc = 'EDC-Flex [P]roject [P]M-0059' })
 map(
   { 'n' },
   '<leader>xc',
-  ':!python3 main.py --settings_path=/mnt/d/clinical_data_repository/modules/settings/etl_settings_cyntegrity.json --project=PM-0059 --process=Cyntegrity<CR>',
+  ':!python3 main.py --settings_path=etl_settings_cyntegrity.json --project=PM-0059 --process=Cyntegrity<CR>',
   { desc = 'Etl [C]yntegrity' }
 )
 map('n', '<leader>y', 'yiw', { noremap = true, silent = true })
