@@ -90,10 +90,10 @@ button {
 }
 
 /* https://github.com/Alexays/Waybar/wiki/FAQ#the-workspace-buttons-have-a-strange-hover-effect */
-button:hover {
-    background: inherit;
-    box-shadow: inset 0 -3px @white;
-}
+/* button:hover { */
+/*     background: inherit; */
+/*     box-shadow: inset 0 -3px @white; */
+/* } */
 
 /* :hover { */
 /*     background-color: @background-bright; */
@@ -104,14 +104,14 @@ button:hover {
     /* background-color: transparent; */
 }
 
-#workspaces button:hover {
-    /* background: rgba(0, 0, 0, 0.2); */
+#workspaces button:active {
+    background: rgba(0, 0, 0, 0.2);
 }
 
-#workspaces button.focused {
-    background-color: @background-bright;
-    box-shadow: inset 0 -3px @white;
-}
+/* #workspaces button.focused { */
+/*     background-color: @background-bright; */
+/*     box-shadow: inset 0 -3px @white; */
+/* } */
 
 #workspaces button.urgent {
     background-color: @red;

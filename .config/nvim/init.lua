@@ -92,6 +92,8 @@ require 'config.usercmds'
 
 require 'config.keymaps'
 
+require 'config.functions'
+
 require 'lazy-bootstrap'
 
 require 'lazy-plugins'

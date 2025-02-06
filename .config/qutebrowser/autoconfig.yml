@@ -8,6 +8,17 @@ config_version: 2
 settings:
   auto_save.session:
     global: true
+  bindings.key_mappings:
+    global:
+      <Ctrl-6>: <Ctrl-^>
+      <Ctrl-Enter>: <Ctrl-Return>
+      <Ctrl-I>: <Tab>
+      <Ctrl-J>: <Return>
+      <Ctrl-M>: <Return>
+      <Ctrl-[>: <Escape>
+      <Enter>: <Return>
+      <Shift-Enter>: <Return>
+      <Shift-Return>: <Return>
   colors.completion.item.selected.border.bottom:
     global: '#bbbb00'
   colors.hints.match.fg:
@@ -63,6 +74,7 @@ settings:
   content.javascript.clipboard:
     https://chatgpt.com: access-paste
     https://docs.expo.dev: access-paste
+    https://eu-north-1.console.aws.amazon.com: access-paste
     https://github.com: access-paste
   input.insert_mode.auto_leave:
     global: false

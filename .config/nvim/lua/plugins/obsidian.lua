@@ -118,6 +118,13 @@ return {
         opts = { buffer = true },
       },
       -- Smart action depending on context, either follow link or toggle checkbox.
+      ['gd'] = {
+        action = function()
+          return require('obsidian').util.smart_action()
+        end,
+        opts = { buffer = true, expr = true },
+      },
+
       ['<cr>'] = {
         action = function()
           return require('obsidian').util.smart_action()
@@ -166,6 +173,17 @@ return {
         ObsidianBlockID = { italic = true, fg = '#89ddff' },
         ObsidianHighlightText = { bg = '#75662e' },
       },
+
+      -- Optional, by default when you use `:ObsidianFollowLink` on a link to an external
+      -- URL it will be ignored but you can customize this behavior here.
+      ---@param url string
+      follow_url_func = function(url)
+        -- Open the URL in the default web browser.
+        -- vim.fn.jobstart { 'open', url } -- Mac OS
+        -- vim.fn.jobstart { 'xdg-open', url } -- linux
+        -- vim.cmd(':silent exec "!start ' .. url .. '"') -- Windows
+        vim.ui.open(url) -- need Neovim 0.10.0+
+      end,
     },
   },
   config = function(_, opts)
