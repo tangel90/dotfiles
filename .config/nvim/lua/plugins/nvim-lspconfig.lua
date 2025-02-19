@@ -117,9 +117,9 @@ return { -- LSP Configuration & Plugins
       jqls = {
         filetypes = { 'json', 'jq' },
       },
-      basedpyright = {
+      pyright = {
         settings = {
-          basedpyright = {
+          pyright = {
             analysis = {
               autoSearchPaths = true,
               diagnosticMode = 'openFilesOnly',
@@ -229,7 +229,7 @@ return { -- LSP Configuration & Plugins
       'ast-grep',
       'csharpier',
       'black',
-      'basedpyright',
+      'pyright',
       'lua-language-server',
       'debugpy',
       'sql-formatter',

@@ -26,7 +26,7 @@ zinit light zsh-users/zsh-autosuggestions
 # Add in snippets
 zinit snippet OMZP::git
 zinit snippet OMZP::sudo
-# zinit snippet OMZP::archlinux
+zinit snippet OMZP::archlinux
 # zinit snippet OMZP::aws
 # zinit snippet OMZP::kubectl
 # zinit snippet OMZP::kubectx
