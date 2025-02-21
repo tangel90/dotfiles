@@ -18,6 +18,13 @@ require('lazy').setup({
   --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
   { import = 'plugins' },
   {
+    'willothy/wezterm.nvim',
+    config = true,
+    opts = {
+      create_commands = false,
+    },
+  },
+  {
     'norcalli/nvim-colorizer.lua',
     config = function()
       require('colorizer').setup()

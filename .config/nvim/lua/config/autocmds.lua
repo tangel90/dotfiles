@@ -12,6 +12,15 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   end,
 })
 
+-- if vim.fn.has 'wsl' == 1 then
+--   vim.api.nvim_create_autocmd('TextYankPost', {
+--     group = vim.api.nvim_create_augroup('Yank', { clear = true }),
+--     callback = function()
+--       vim.fn.system('clip.exe', vim.fn.getreg '"')
+--     end,
+--   })
+-- end
+--
 local function augroup(name)
   return vim.api.nvim_create_augroup('lazyvim_' .. name, { clear = true })
 end
@@ -25,7 +34,6 @@ vim.filetype.add {
     },
   },
 }
-
 vim.api.nvim_create_autocmd({ 'FileType' }, {
   group = augroup 'bigfile',
   pattern = 'bigfile',

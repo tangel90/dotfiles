@@ -1,4 +1,7 @@
-vim.opt.clipboard = 'unnamedplus'
+-- Sync clipboard between OS and Neovim.
+--  Remove this option if you want your OS clipboard to remain independent.
+--  See `:help 'clipboard'`
+vim.opt.clipboard:append 'unnamedplus'
 -- Enable break indent
 vim.opt.breakindent = true
 
@@ -64,10 +67,6 @@ vim.opt.mouse = 'a'
 vim.opt.showmode = false
 
 vim.opt.hlsearch = false
-
--- Sync clipboard between OS and Neovim.
---  Remove this option if you want your OS clipboard to remain independent.
---  See `:help 'clipboard'`
 
 -- Save undo history
 vim.opt.undofile = true
