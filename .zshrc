@@ -74,7 +74,6 @@ if [ -d "$LOCALCONFIG" ]; then
 fi
 # <<< initialize environment <<<
 
-
 if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
     sessions=$(tmux list-sessions 2>/dev/null)
     if [ -z "$sessions" ]; then
