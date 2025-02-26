@@ -3,7 +3,6 @@ export PATH=$PATH:$HOME/.local/bin:$HOME/bin:/usr/local/bin
 export LD_LIBRARY_PATH=/usr/local/lib
 export ANDROID_HOME=$HOME/Android/Sdk
 export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
-export NVM_DIR=$HOME/.nvm
 export EDITOR="nvim"
 export TERM="xterm-256color"
 
@@ -47,6 +46,7 @@ alias python="python3"
 alias lg="lazygit"
 alias v="fd . --type f --hidden --exclude .git | fzf-tmux --border --preview='bat --style=numbers --color=always {}' -p 80%,80% | xargs nvim"
 alias chat="chatgpt"
+alias gg="gpg-unlock"
 
 if [ -x "$(command -v yazi)" ]; then
     alias e="yazi-cwd"
@@ -61,6 +61,11 @@ if [ -x "$(command -v exa)" ]; then
     alias ll="exa --long --header --sort=type --icons --no-permissions --no-user"
     alias la="exa --long --header --all --sort=type --icons --no-permissions --no-user" 
 fi
+
+function gpg-unlock() {
+    gpg-connect-agent updatestartuptty /bye >/dev/null
+    git fetch
+}
 
 function vv() {
     local CONFIG_DIRS=$(find -L $XDG_CONFIG_HOME -type d -name "nvim*")
