@@ -64,7 +64,7 @@ fi
 
 function gpg-unlock() {
     gpg-connect-agent updatestartuptty /bye >/dev/null
-    git fetch
+    command git fetch
 }
 
 function vv() {

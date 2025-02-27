@@ -236,7 +236,7 @@ return { -- LSP Configuration & Plugins
     })
     require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
-    require('lspconfig').jedi_language_server.setup {}
+    -- require('lspconfig').jedi_language_server.setup {}
     require('mason-lspconfig').setup {
       handlers = {
         function(server_name)
