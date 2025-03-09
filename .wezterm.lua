@@ -16,6 +16,6 @@ config.cursor_blink_ease_in = "Constant"
 config.cursor_blink_ease_out = "Constant"
 config.force_reverse_video_cursor = false
 config.hide_tab_bar_if_only_one_tab = true
-config.font_size = 12.0
+config.font_size = 16.0
 -- and finally, return the configuration to wezterm
 return config

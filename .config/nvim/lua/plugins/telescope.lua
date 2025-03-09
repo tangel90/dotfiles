@@ -90,7 +90,7 @@ return { -- Fuzzy Finder (files, lsp, etc)
     vim.keymap.set('n', '<leader>fw', builtin.grep_string, { desc = '[F]ind Current [W]ord' })
     vim.keymap.set('n', '<leader>fp', builtin.git_files, { desc = '[F]ind [G]it Project Files' })
     vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = '[F]ind by [G]rep' })
-    vim.keymap.set('n', '<leader>fd', builtin.diagnostics, { desc = '[F]ind [D]iagnostics' })
+    vim.keymap.set('n', '<leader>df', builtin.diagnostics, { desc = '[F]ind [D]iagnostics' })
     -- vim.keymap.set('n', '<leader>fr', builtin.resume, { desc = '[F]ind [R]esume' })
     vim.keymap.set('n', '<leader>f.', builtin.oldfiles, { desc = '[F]ind Recent Files ("." for repeat)' })
     vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = '[ ] Find existing buffers' })
@@ -118,9 +118,9 @@ return { -- Fuzzy Finder (files, lsp, etc)
       }
     end, { desc = '[F]ind [/] in Open Files' })
 
-    vim.keymap.set('n', '<leader>ft', function()
+    vim.keymap.set('n', '<leader>fd', function()
       builtin.find_files { cwd = '~/dotfiles', find_command = { 'rg', '--ignore', '--hidden', '--files' }, prompt_prefix = '🔍 ' }
-    end, { desc = '[F]ind Do[t]files' })
+    end, { desc = '[F]ind [D]otfiles' })
 
     -- Shortcut for searching your Neovim configuration files
     vim.keymap.set('n', '<leader>fn', function()
@@ -144,5 +144,9 @@ return { -- Fuzzy Finder (files, lsp, etc)
         builtin.find_files { cwd = projects_home }
       end
     end, { desc = '[F]ind [i]n projects' })
+
+    vim.keymap.set('n', '<leader>fm', function()
+      builtin.find_files { cwd = '/mnt/d/clinical_data_repository/modules/' }
+    end, { desc = '[F]ind in CDR [M]odules' })
   end,
 }

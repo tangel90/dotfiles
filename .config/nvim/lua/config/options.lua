@@ -1,4 +1,7 @@
-vim.opt.clipboard = 'unnamedplus'
+-- Sync clipboard between OS and Neovim.
+--  Remove this option if you want your OS clipboard to remain independent.
+--  See `:help 'clipboard'`
+vim.opt.clipboard:append 'unnamedplus'
 -- Enable break indent
 vim.opt.breakindent = true
 
@@ -12,6 +15,16 @@ vim.opt.conceallevel = 2
 vim.opt.cursorline = true
 
 vim.g.OmniSharp_server_use_net6 = 1
+
+-- Hide deprecation warnings
+vim.g.deprecation_warnings = false
+-- Set filetype to `bigfile` for files larger than 1.5 MB
+-- Only vim syntax will be enabled (with the correct filetype)
+-- LSP, treesitter and other ft plugins will be disabled.
+-- mini.animate will also be disabled.
+vim.g.bigfile_size = 1024 * 1024 * 1.5 -- 1.5 MB
+-- Show the current document symbols location from Trouble in lualine
+vim.g.trouble_lualine = true
 
 vim.diagnostic.config {
   virtual_text = {
@@ -54,10 +67,6 @@ vim.opt.mouse = 'a'
 vim.opt.showmode = false
 
 vim.opt.hlsearch = false
-
--- Sync clipboard between OS and Neovim.
---  Remove this option if you want your OS clipboard to remain independent.
---  See `:help 'clipboard'`
 
 -- Save undo history
 vim.opt.undofile = true

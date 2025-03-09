@@ -46,7 +46,7 @@ return {
 
       -- 2. Virtual text.
       virtual_text = {
-        enabled = false,
+        enabled = true,
         -- Text to show in the virt_text.
         text = '💡',
         -- Position of virtual text given to |nvim_buf_set_extmark|.
@@ -62,7 +62,7 @@ return {
 
       -- 3. Floating window.
       float = {
-        enabled = false,
+        enabled = true,
         -- Text to show in the floating window.
         text = '💡',
         -- Highlight group to highlight the floating window.
