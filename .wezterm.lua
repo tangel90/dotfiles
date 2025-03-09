@@ -9,7 +9,7 @@ local config = wezterm.config_builder()
 -- For example, changing the color scheme:
 config.color_scheme = "rose-pine"
 config.font = wezterm.font("JetBrainsMono Nerd Font")
-config.default_prog = { "wsl.exe" }
+config.default_prog = { "Arch" }
 config.term = "xterm-256color"
 config.cursor_blink_rate = 500
 config.cursor_blink_ease_in = "Constant"

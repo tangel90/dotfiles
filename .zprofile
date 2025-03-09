@@ -1,5 +1,6 @@
 export XDG_CONFIG_HOME="$HOME/.config"
 export PATH=$PATH:$HOME/.local/bin:$HOME/bin:/usr/local/bin
+export PATH=$PATH:$HOME/.local/scripts
 export LD_LIBRARY_PATH=/usr/local/lib
 export ANDROID_HOME=$HOME/Android/Sdk
 export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
