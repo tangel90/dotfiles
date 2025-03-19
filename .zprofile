@@ -28,18 +28,19 @@ else
   export GPG_TTY="$TTY"
 fi
 
-# Open in tmux popup if on tmux, otherwise use --height mode
+zle -N open_tmux_session 'tmux-sessionizer'
+zle -N yazi-cwd
 
 bindkey -v
 bindkey -M viins '^F' forward-char
 bindkey '^p' history-search-backward
 bindkey '^n' history-search-forward
+bindkey '^o' open_tmux_session
+bindkey '^e' yazi-cwd
 
 alias vimdev='NVIM_APPNAME=nvim-dev nvim'
 alias c="clear"
-alias tmuxfzf='tmux attach-session -t $(tmux ls | fzf | cut -d: -f1)'
 alias tls="tmux-list-session"
-alias fd="fdfind"
 alias ls="ls --color=auto -X"
 alias vim='nvim'
 alias cat="bat"
