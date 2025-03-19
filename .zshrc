@@ -66,7 +66,7 @@ eval "$(zoxide init zsh --cmd cd)"
 # >>> initialize environment >>>
 source $HOME/.zprofile
 
-export LOCALCONFIG="$HOME/.localconfig"
+export LOCALCONFIG="$HOME/.local/config"
 if [ -d "$LOCALCONFIG" ]; then
     export "LOCALPROFILE=$LOCALCONFIG/.zprofile"
     for i in $(find -L "$LOCALCONFIG" -type f); do
@@ -81,7 +81,7 @@ if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] &&
         echo "No sessions found!"
         # gpgconf --launch gpg-agent
         # gpg-connect-agent updatestartuptty /bye >/dev/null
-        tmux
+        tmux new-session -s "Default"
     else
         if command -v tmux-list-session; then
             tmux-list-session

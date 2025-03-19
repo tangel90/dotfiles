@@ -28,15 +28,14 @@ else
   export GPG_TTY="$TTY"
 fi
 
-zle -N open_tmux_session 'tmux-sessionizer'
-zle -N yazi-cwd
+# zle -N y
 
 bindkey -v
 bindkey -M viins '^F' forward-char
 bindkey '^p' history-search-backward
 bindkey '^n' history-search-forward
 bindkey '^o' open_tmux_session
-bindkey '^e' yazi-cwd
+# bindkey '^e' y
 
 alias vimdev='NVIM_APPNAME=nvim-dev nvim'
 alias c="clear"
@@ -48,9 +47,10 @@ alias lg="lazygit"
 alias v="fd . --type f --hidden --exclude .git | fzf-tmux --border --preview='bat --style=numbers --color=always {}' -p 80%,80% | xargs nvim"
 alias chat="chatgpt"
 alias gg="gpg-unlock"
+alias g="tmux-open-chatgpt"
 
 if [ -x "$(command -v yazi)" ]; then
-    alias e="yazi-cwd"
+    alias e="y"
 fi
 
 if [ -x "$(command -v fdfind)" ]; then
@@ -75,10 +75,10 @@ function vv() {
     [[ -z $selected_config ]] && echo "No config selected" && return
 
     echo "Config selected: $selected_config"
-    # NVIM_APPNAME=$(basename $selected_config) nvim $@
+    NVIM_APPNAME=$(basename $selected_config) nvim $@
 }
 
-function yazi-cwd() {
+function y() {
     local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
     yazi "$@" --cwd-file="$tmp"
     if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
@@ -93,4 +93,18 @@ function tmux-list-session () {
     else
         echo "No active tmux sessions."
     fi
+}
+
+function tmux-open-chatgpt() {
+    if ! tmux has-session -t LLM 2>/dev/null; then
+        tmux new-session -d -s LLM -n ChatGPT "$(which chatgpt)"
+    fi
+    tmux switch-client -t LLM
+}
+
+function tmux-open-notes() {
+    if ! tmux has-session -t Notes 2>/dev/null; then
+        tmux new-session -d -s Notes -n TODO "cd $NOTES_HOME && nvim TODO.md"
+    fi
+    tmux switch-client -t Notes
 }

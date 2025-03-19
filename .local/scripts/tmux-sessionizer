@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 
 if [[ $# -eq 1 ]]; then
-    selected=$1
+    selected=$(find $1 -mindepth 1 -maxdepth 1 -type d | fzf)
 else
-    dirs=$(find -L $HOME/projects -mindepth 1 -maxdepth 1 -type d)
-    selected=$(printf "%s\n%s\n%s\n%s" "$dirs" "$HOME/Documents/notes" "$HOME/build" "$HOME/.dotfiles" | fzf)
+    selected=$(find ~/projects ~/ "${PROJECTS_HOME}/" -mindepth 1 -maxdepth 1 -type d | fzf)
 fi
 
 if [[ -z $selected ]]; then
