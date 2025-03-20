@@ -101,7 +101,7 @@ function tmux-open-chatgpt() {
     tmux switch-client -t LLM
 }
 
-function tmux-open-notes() {
+function tmux-open-todo() {
     if ! tmux has-session -t Notes 2>/dev/null; then
         tmux new-session -d -s Notes -n TODO "cd $NOTES_HOME && nvim TODO.md"
     fi

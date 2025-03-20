@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
 if [[ $# -eq 1 ]]; then
-    selected=$(find $1 -mindepth 1 -maxdepth 1 -type d | fzf)
+    selected=$1
 else
-    selected=$(find ~/projects ~/ "${PROJECTS_HOME}/" -mindepth 1 -maxdepth 1 -type d | fzf)
+    echo 'Projects Home: ' + $PROJECTS_HOME
+    selected=$(find ~/projects ~/playground ~/ $PROJECTS_HOME $MODULES_HOME ${MODULES_HOME}/reporting -mindepth 1 -maxdepth 1 -type d | fzf)
 fi
 
 if [[ -z $selected ]]; then
@@ -22,6 +23,9 @@ fi
 # OK - tmux is running but client is not attached, session with selected_name does not exist
 if [[ -z $TMUX ]] && ! tmux has-session -t=$selected_name 2> /dev/null; then
     tmux new-session -s $selected_name -c "$selected"
+    if ! [[ "$selected_name" == "data" || "$selected_name" == "reports" ]]; then
+        tmux send-keys -t $selected_name "nvim" ENTER
+    fi
     tmux a -t $selected_name
     exit 0
 fi
@@ -35,6 +39,9 @@ fi
 # OK - tmux is running and client is attached, session with selected_name does not exist
 if [[ ! -z $TMUX ]] && ! tmux has-session -t=$selected_name 2> /dev/null; then
     tmux new-session -ds $selected_name -c "$selected"
+    if ! [[ "$selected_name" == "data" || "$selected_name" == "reports" ]]; then
+        tmux send-keys -t $selected_name "nvim" ENTER
+    fi
     tmux switch-client -t $selected_name
     exit 0
 fi
