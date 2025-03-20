@@ -28,14 +28,13 @@ else
   export GPG_TTY="$TTY"
 fi
 
-# zle -N y
+zle -N yazi-cwd
 
 bindkey -v
 bindkey -M viins '^F' forward-char
 bindkey '^p' history-search-backward
 bindkey '^n' history-search-forward
-bindkey '^o' open_tmux_session
-# bindkey '^e' y
+bindkey '^e' yazi-cwd
 
 alias vimdev='NVIM_APPNAME=nvim-dev nvim'
 alias c="clear"
@@ -50,7 +49,7 @@ alias gg="gpg-unlock"
 alias g="tmux-open-chatgpt"
 
 if [ -x "$(command -v yazi)" ]; then
-    alias e="y"
+    alias e="yazi-cwd"
 fi
 
 if [ -x "$(command -v fdfind)" ]; then
@@ -78,7 +77,7 @@ function vv() {
     NVIM_APPNAME=$(basename $selected_config) nvim $@
 }
 
-function y() {
+function yazi-cwd() {
     local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
     yazi "$@" --cwd-file="$tmp"
     if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
