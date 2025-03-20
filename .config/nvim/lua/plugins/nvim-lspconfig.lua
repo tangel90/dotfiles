@@ -209,14 +209,17 @@ return { -- LSP Configuration & Plugins
 
     local ensure_installed = vim.tbl_keys(servers or {})
     vim.list_extend(ensure_installed, {
-      'pyright',
-      'debugpy',
       'stylua', -- Used to format Lua code
+      'black', -- Used to format python code
       'jqls',
+      'ast-grep',
+      'csharpier',
+      'black',
+      'pyright',
       'lua-language-server',
       'sql-formatter',
+      'debugpy',
       'netcoredbg',
-      'csharpier',
     })
     require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 

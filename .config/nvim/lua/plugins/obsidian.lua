@@ -20,7 +20,7 @@ return {
     workspaces = {
       {
         name = 'personal',
-        path = '~/obsidian/personal/notes',
+        path = os.getenv 'NOTES_HOME' or '~/obsidian/personal/notes',
       },
       -- {
       --   name = 'work',

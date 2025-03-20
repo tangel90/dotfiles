@@ -3,8 +3,7 @@
 if [[ $# -eq 1 ]]; then
     selected=$1
 else
-    echo 'Projects Home: ' + $PROJECTS_HOME
-    selected=$(find ~/projects ~/playground ~/ $PROJECTS_HOME $MODULES_HOME ${MODULES_HOME}/reporting -mindepth 1 -maxdepth 1 -type d | fzf)
+    selected=$(find ~/playground ~/ $PROJECTS_HOME $MODULES_HOME ${MODULES_HOME}/reporting -mindepth 1 -maxdepth 1 -type d | fzf)
 fi
 
 if [[ -z $selected ]]; then
