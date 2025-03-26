@@ -26,6 +26,11 @@ vim.g.bigfile_size = 1024 * 1024 * 1.5 -- 1.5 MB
 -- Show the current document symbols location from Trouble in lualine
 vim.g.trouble_lualine = true
 
+-- Set Environment Variables
+vim.env.DOTNET_ROOT = os.getenv 'HOME' .. '/.dotnet'
+vim.env.PATH = os.getenv 'PATH' .. ':' .. os.getenv 'HOME' .. '/.dotnet:' .. os.getenv 'HOME' .. '/.dotnet/tools'
+vim.g.OmniSharp_server_use_net6 = 1
+
 vim.diagnostic.config {
   virtual_text = {
     severity = { min = vim.diagnostic.severity.WARN },

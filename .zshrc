@@ -27,6 +27,7 @@ zinit light Aloxaf/fzf-tab
 zinit light zsh-users/zsh-syntax-highlighting
 zinit light zsh-users/zsh-completions
 zinit light zsh-users/zsh-autosuggestions
+zinit light jeffreytse/zsh-vi-mode
 zinit wait lucid for MichaelAquilina/zsh-autoswitch-virtualenv
 
 # Add in snippets

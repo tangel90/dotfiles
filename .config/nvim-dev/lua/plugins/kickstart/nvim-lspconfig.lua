@@ -186,7 +186,8 @@ return { -- LSP Configuration & Plugins
       -- tsserver = {},
       --
       omnisharp = {
-        filetypes = { 'cs', 'csx' },
+        filetypes = { 'cs', 'csproj', 'csx' },
+        useModernNet = true,
         -- cmd = { 'dotnet' },
 
         settings = {
@@ -197,6 +198,9 @@ return { -- LSP Configuration & Plugins
             -- Specifies whether 'using' directives should be grouped and sorted during
             -- document formatting.
             OrganizeImports = nil,
+          },
+          OmniSharp = {
+            useModernNet = true,
           },
           MsBuild = {
             -- If true, MSBuild project system will only load projects for files that
