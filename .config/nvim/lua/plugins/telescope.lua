@@ -90,7 +90,7 @@ return { -- Fuzzy Finder (files, lsp, etc)
     vim.keymap.set('n', '<leader>fw', builtin.grep_string, { desc = '[F]ind Current [W]ord' })
     vim.keymap.set('n', '<leader>fp', builtin.git_files, { desc = '[F]ind [G]it Project Files' })
     vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = '[F]ind by [G]rep' })
-    vim.keymap.set('n', '<leader>df', builtin.diagnostics, { desc = '[F]ind [D]iagnostics' })
+    vim.keymap.set('n', '<leader>df', builtin.diagnostics, { desc = 'List [D]iagnostics' })
     -- vim.keymap.set('n', '<leader>fr', builtin.resume, { desc = '[F]ind [R]esume' })
     vim.keymap.set('n', '<leader>f.', builtin.oldfiles, { desc = '[F]ind Recent Files ("." for repeat)' })
     vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = '[ ] Find existing buffers' })
@@ -125,25 +125,29 @@ return { -- Fuzzy Finder (files, lsp, etc)
     -- Shortcut for searching your Neovim configuration files
     vim.keymap.set('n', '<leader>fn', function()
       builtin.find_files { cwd = vim.fn.stdpath 'config' }
-    end, { desc = '[F]ind [N]eovim files' })
+    end, { desc = '[F]ind Files in Neo[v]im Configuration' })
 
-    vim.keymap.set('n', '<leader>fo', function()
+    vim.keymap.set('n', '<leader>ft', function()
       local notes_home = os.getenv 'NOTES_HOME'
       if not notes_home then
         print 'Please set $NOTES_HOME environment variable.'
       else
         builtin.find_files { cwd = notes_home }
       end
-    end, { desc = '[F]ind [O]bsidian notes' })
+    end, { desc = '[F]ind in Notes' })
 
-    vim.keymap.set('n', '<leader>fi', function()
+    vim.keymap.set('n', '<leader>f~', function()
+      builtin.find_files { cwd = '~/', find_command = { 'rg', '--hidden', '--files' }, prompt_prefix = '🔍 ' }
+    end, { desc = '[F]ind Files in Home Directory' })
+
+    vim.keymap.set('n', '<leader>fo', function()
       local projects_home = os.getenv 'PROJECTS_HOME'
       if not projects_home then
         print 'Please set $PROJECTS_HOME environment variable.'
       else
-        builtin.find_files { cwd = projects_home }
+        builtin.find_files { cwd = projects_home, find_command = { 'rg', '--ignore', '--hidden', '--files' }, prompt_prefix = '🔍 ' }
       end
-    end, { desc = '[F]ind [i]n projects' })
+    end, { desc = '[F]ind in Projects' })
 
     vim.keymap.set('n', '<leader>fm', function()
       builtin.find_files { cwd = '/mnt/d/clinical_data_repository/modules/' }
