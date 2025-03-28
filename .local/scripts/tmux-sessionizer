@@ -3,7 +3,7 @@
 if [[ $# -eq 1 ]]; then
     selected=$1
 else
-    selected=$(find ~/playground ~/ $PROJECTS_HOME $MODULES_HOME ${MODULES_HOME}/reporting -mindepth 1 -maxdepth 1 -type d | fzf)
+    selected=$(find ~/playground ~/projects ~/ $PROJECTS_HOME $MODULES_HOME ${MODULES_HOME}/reporting -mindepth 1 -maxdepth 1 -type d | fzf)
 fi
 
 if [[ -z $selected ]]; then
@@ -24,6 +24,7 @@ if [[ -z $TMUX ]] && ! tmux has-session -t=$selected_name 2> /dev/null; then
     tmux new-session -s $selected_name -c "$selected"
     if ! [[ "$selected_name" == "data" || "$selected_name" == "reports" ]]; then
         tmux send-keys -t $selected_name "nvim" ENTER
+        tmux send-keys -t $selected_name "-"
     fi
     tmux a -t $selected_name
     exit 0
@@ -40,6 +41,7 @@ if [[ ! -z $TMUX ]] && ! tmux has-session -t=$selected_name 2> /dev/null; then
     tmux new-session -ds $selected_name -c "$selected"
     if ! [[ "$selected_name" == "data" || "$selected_name" == "reports" ]]; then
         tmux send-keys -t $selected_name "nvim" ENTER
+        tmux send-keys -t $selected_name "-"
     fi
     tmux switch-client -t $selected_name
     exit 0
