@@ -112,7 +112,7 @@ return { -- Fuzzy Finder (files, lsp, etc)
     --  See `:help telescope.builtin.live_grep()` for information about particular keys
     vim.keymap.set('n', '<leader>f/', function()
       builtin.live_grep {
-        find_command = { 'rg', '--hidden' },
+        find_command = { 'rg', '--hidden', '--glob', '!.git/', '--glob', '!__pycache__/', '--glob', '!.venv/', '--glob', '!node_modules/' },
         grep_open_files = false,
         prompt_title = 'Live Grep in Open Files',
       }
