@@ -38,6 +38,7 @@ map('v', '<leader>d', '"_d')
 map('n', 'zk', 'zt')
 map('n', 'zj', 'zb')
 
+map({ 'n', 'v' }, '<Leader>n', ':enew<CR>', { noremap = true, silent = true })
 map({ 'n', 'v' }, '<Tab>', ':lua ToggleBuffers()<CR>', { noremap = true, silent = true })
 
 -- <Tab> will only switch between two files
