@@ -36,6 +36,9 @@ sudo tar -C /opt -xzf nvim-linux64.tar.gz
 #### Get Clipboard working in WSL:
 Download win32yank.exe and copy it to /usr/local/bin
 ```
+ssh config for gpg-agent:
+~/.ssh/config
+Match host * exec "gpg-connect-agent UPDATESTARTUPTTY /bye"
 
 Then add this to your shell config (`~/.bashrc`, `~/. zshrc`, ...):
 

@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+if [[ $# -eq 1 ]]; then
+    selected=$1
+    selected=$(find $1 -mindepth 0 -maxdepth 3 -type f | fzf)
+else
+    selected=$(find ~/playground ~/projects ~/ $PROJECTS_HOME $MODULES_HOME ${MODULES_HOME}/reporting -mindepth 0 -maxdepth 2 -type f | fzf)
+fi
+
+if [[ -z $selected ]]; then
+    exit 0
+fi
+
+parent_dir=$(dirname "$selected")
+first_parent=$(basename  "$parent_dir" | tr . _)
+grandparent_dir=$(dirname "$parent_dir")
+second_parent=$(basename "$grandparent_dir" | tr . _)
+
+window_name="${second_parent}_${first_parent}"
+file_name=$(basename  "$selected")
+tmux_running=$(pgrep tmux)
+
+# OK - tmux is not running
+if [[ -z $tmux_running ]]; then
+    tmux new-session -s $selected_name -c "$dir_name"
+    exit 0
+fi
+
+# OK - tmux is running and client is attached, window with selected_name does not exist
+if [[ ! -z $TMUX ]]; then
+    if ! tmux list-windows | grep "$window_name"; then
+        tmux new-window -n "$window_name" -c "$parent_dir"
+    else
+        window_name="${window_name}2"
+        tmux new-window -n "$window_name" -c "$parent_dir"
+    fi
+    if [[ "$first_parent" == *data* || "$first_parent" == "reports" ]]; then
+        tmux send-keys -t $window_name "vd $file_name" ENTER
+    else
+        tmux send-keys -t $window_name "nvim $file_name" ENTER
+    fi
+    tmux select-window -t $window_name
+    exit 0
+fi
+
+echo "Instructions Unclear!"

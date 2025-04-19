@@ -27,6 +27,7 @@ zinit light Aloxaf/fzf-tab
 zinit light zsh-users/zsh-syntax-highlighting
 zinit light zsh-users/zsh-completions
 zinit light zsh-users/zsh-autosuggestions
+zinit light jeffreytse/zsh-vi-mode
 zinit wait lucid for MichaelAquilina/zsh-autoswitch-virtualenv
 
 # Add in snippets
@@ -79,8 +80,6 @@ if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] &&
     sessions=$(tmux list-sessions 2>/dev/null)
     if [ -z "$sessions" ]; then
         echo "No sessions found!"
-        # gpgconf --launch gpg-agent
-        # gpg-connect-agent updatestartuptty /bye >/dev/null
         tmux new-session -s "Default"
     else
         if command -v tmux-list-session; then

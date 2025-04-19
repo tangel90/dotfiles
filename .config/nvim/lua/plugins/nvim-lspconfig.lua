@@ -108,7 +108,7 @@ return { -- LSP Configuration & Plugins
     --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
     local servers = {
       -- clangd = {},
-      -- gopls = {},
+      gopls = {},
       jqls = {
         filetypes = { 'json', 'jq' },
       },
@@ -126,7 +126,7 @@ return { -- LSP Configuration & Plugins
       --   },
       -- },
       -- sqlls = {},
-      -- rust_analyzer = {},
+      rust_analyzer = {},
       -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
       --
       -- Some languages (like typescript) have entire language plugins that can be useful:
