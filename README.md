@@ -27,26 +27,32 @@ unzip
 #### Pre-built archives
 
 The [Releases](https://github.com/neovim/neovim/releases) page provides pre-built binaries for Linux systems.
-
 ```sh
 curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
-sudo rm -rf /opt/nvim
+sudo rm -rf /opt/nvim 
 sudo tar -C /opt -xzf nvim-linux64.tar.gz
+```
+Then add this to your shell config (`~/.bashrc`, `~/. zshrc`, ...):
+```sh
+export PATH="$PATH:/opt/nvim-linux64/bin"
+```
 
 #### Get Clipboard working in WSL:
 Download win32yank.exe and copy it to /usr/local/bin
+
+### GnuPG setup for ssh-keys
+default ssh-agent can be used for adding the key:
+```bash
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/rsa
 ```
-ssh config for gpg-agent:
-~/.ssh/config
+fix gpg pinentry issue within tmux, add to first line of ~/.ssh/config:
+```bash
 Match host * exec "gpg-connect-agent UPDATESTARTUPTTY /bye"
-
-Then add this to your shell config (`~/.bashrc`, `~/. zshrc`, ...):
-
-    export PATH="$PATH:/opt/nvim-linux64/bin"
+```
 
 ## manual install zinit:
-
-###add to .zshrc:
+add to .zshrc:
 ```bash
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 [ ! -d $ZINIT_HOME ] && mkdir -p "$(dirname $ZINIT_HOME)"
