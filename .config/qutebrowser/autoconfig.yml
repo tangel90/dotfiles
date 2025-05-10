@@ -76,6 +76,7 @@ settings:
     https://docs.expo.dev: access-paste
     https://eu-north-1.console.aws.amazon.com: access-paste
     https://github.com: access-paste
+    https://platform.openai.com: access-paste
   input.insert_mode.auto_leave:
     global: false
   input.insert_mode.auto_load:
