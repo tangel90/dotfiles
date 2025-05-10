@@ -1,5 +1,6 @@
 lazy-lock.json
-.gnupg
+.gnupg/private*
+.gnupg/*key*
 .config/go/
 .config/nvim.backup
 .config/nvim.bak.lazy
