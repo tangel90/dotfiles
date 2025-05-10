@@ -14,26 +14,23 @@ if [ ! -d "$ZINIT_HOME" ]; then
 fi
 source "${ZINIT_HOME}/zinit.zsh"
 
-# Shell integrations
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-eval "$(fzf --zsh)"
-eval "$(zoxide init zsh --cmd cd)"
-
 # Add in Powerlevel10k
 zinit ice depth=1; zinit light romkatv/powerlevel10k
 
 # Add in zsh plugins
+zinit light jeffreytse/zsh-vi-mode
 zinit light Aloxaf/fzf-tab
 zinit light zsh-users/zsh-syntax-highlighting
 zinit light zsh-users/zsh-completions
 zinit light zsh-users/zsh-autosuggestions
-zinit light jeffreytse/zsh-vi-mode
 zinit wait lucid for MichaelAquilina/zsh-autoswitch-virtualenv
 
 # Add in snippets
 zinit snippet OMZP::git
 zinit snippet OMZP::sudo
 zinit snippet OMZP::archlinux
+zinit ice lucid wait
+zinit snippet OMZP::fzf
 # zinit snippet OMZP::aws
 # zinit snippet OMZP::kubectl
 # zinit snippet OMZP::kubectx
@@ -63,6 +60,11 @@ zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 zstyle ':completion:*' menu no
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls $realpath'
 zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls $realpath'
+
+# Shell integrations
+# [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+# eval "$(fzf --zsh)"
+eval "$(zoxide init zsh --cmd cd)"
 
 # >>> initialize environment >>>
 source $HOME/.zprofile
