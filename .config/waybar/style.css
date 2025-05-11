@@ -7,14 +7,14 @@
 @define-color cyan #ebbcba;
 @define-color white #e0def4;
 @define-color foreground #e0def4;
-@define-color background #191724;
+@define-color background #31748f;
 @define-color background-bright #6e6a86;
 
 * {
     /* `otf-font-awesome` is required to be installed for icons */
     font-family: FontAwesome, Roboto, Helvetica, Arial, sans-serif;
     font-size: 13px;
-    color: @white;
+    color: @black;
 }
 
 #mpd,
@@ -38,6 +38,10 @@ window#waybar {
     /* color: @white; */
     transition-property: background-color;
     transition-duration: .5s;
+}
+
+#waybar {
+    opacity: 0.95;
 }
 
 window#waybar.hidden {
