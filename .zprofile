@@ -28,13 +28,12 @@ else
   export GPG_TTY="$TTY"
 fi
 
-zle -N yazi-cwd
+# zle -N yazi-cwd # Widget breaks yazi on some machines ...
 
 bindkey -v
 bindkey -M viins '^F' forward-char
 bindkey '^p' history-search-backward
 bindkey '^n' history-search-forward
-bindkey '^e' yazi-cwd
 
 alias vimdev='NVIM_APPNAME=nvim-dev nvim'
 alias c="clear"
@@ -49,6 +48,7 @@ alias gg="gpg-unlock"
 alias g="tmux-open-chatgpt"
 
 if [ -x "$(command -v yazi)" ]; then
+    bindkey -s "^e" "yazi-cwd\n"
     alias e="yazi-cwd"
 fi
 
@@ -79,7 +79,7 @@ function vv() {
 
 function yazi-cwd() {
     local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
-    yazi "$@" --cwd-file="$tmp"
+    yazi "$@" --cwd-file="$tmp" < /dev/tty
     if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
         builtin cd -- "$cwd"
     fi
@@ -99,6 +99,13 @@ function tmux-open-chatgpt() {
         tmux new-session -d -s LLM -n ChatGPT "$(which chatgpt)"
     fi
     tmux switch-client -t LLM
+}
+
+function tmux-open-dotfiles() {
+    if ! tmux has-session -t dotfiles 2>/dev/null; then
+        tmux new-session -d -s dotfiles -n dotfiles "cd ~/dotfiles && nvim"
+    fi
+    tmux switch-client -t dotfiles
 }
 
 function tmux-open-todo() {

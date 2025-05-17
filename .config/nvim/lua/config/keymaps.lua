@@ -9,7 +9,7 @@ map({ 'n', 'v' }, 'H', 'J')
 map({ 'n', 'v' }, '<C-e>', 'J')
 
 -- map({ 'n', 'i' }, '<C-x>', ':!dotnet run<CR>')
-map({ 'n' }, '<leader>xx', ':!python3 main.py<CR>', { desc = 'python main.py' })
+map({ 'n' }, '<leader>xx', ':!python3 %<CR>', { desc = 'python main.py' })
 map({ 'n' }, '<leader>xm', ':!python3 main.py --settings_path=project_settings.json<CR>', { desc = 'Study [M]etrics Prod' })
 map({ 'n' }, '<leader>xd', ':!python3 main.py --settings_path=etl_settings_dev.json<CR>', { desc = 'EDC-Flex [D]ev' })
 map({ 'n' }, '<leader>xpn', ':!python3 main.py --project NGGT002-P-2301<CR>', { desc = 'EDC-Flex [P]roject [N]ggt' })

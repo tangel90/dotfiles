@@ -80,6 +80,7 @@ return {
       ['<C-t>'] = { 'actions.select', opts = { tab = true }, desc = 'Open the entry in new tab' },
       ['<C-p>'] = 'actions.preview',
       ['-'] = 'actions.close',
+      ['<ESC><Esc>'] = 'actions.close',
       ['<C-l>'] = 'actions.refresh',
       ['H'] = 'actions.parent',
       ['`'] = 'actions.parent',

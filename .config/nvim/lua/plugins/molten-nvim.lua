@@ -11,14 +11,16 @@ return {
     end,
     -- opts = {},
     config = function()
-      vim.keymap.set('n', '<localleader>mi', ':MoltenInit<CR>', { silent = true, desc = '[I]nitialize Molten' })
-      vim.keymap.set('n', '<localleader>mo', ':MoltenEvaluateOperator<CR>', { silent = true, desc = 'run operator selection' })
-      vim.keymap.set('n', '<localleader>e', ':MoltenEvaluateLine<CR>', { silent = true, desc = '[E]valuate Line' })
-      vim.keymap.set('n', '<localleader>rr', ':MoltenReevaluateCell<CR>', { silent = true, desc = 're-evaluate cell' })
-      vim.keymap.set('v', '<localleader>e', ':<C-u>MoltenEvaluateVisual<CR>gv', { silent = true, desc = 'evaluate visual selection' })
-      vim.keymap.set('n', '<localleader>md', ':MoltenDelete<CR>', { silent = true, desc = 'molten delete cell' })
-      vim.keymap.set('n', '<localleader>j', ':MoltenHideOutput<CR>', { silent = true, desc = 'hide output' })
-      vim.keymap.set('n', '<localleader>me', ':noautocmd MoltenEnterOutput<CR>', { silent = true, desc = 'show/enter output' })
+      vim.keymap.set('n', '<localleader>mi', ':MoltenInit<CR>', { silent = true, desc = 'Molten Initialize' })
+      vim.keymap.set('n', '<localleader>mo', ':MoltenEvaluateOperator<CR>', { silent = true, desc = 'Molten Run Operator Selection' })
+      vim.keymap.set('n', '<localleader>mr', ':MoltenRestart<CR>', { silent = true, desc = 'Molten Restart Kernel' })
+      vim.keymap.set('n', '<localleader>mq', ':MoltenDeinit<CR>', { silent = true, desc = 'Molten Deinit (Quit) Instance' })
+      vim.keymap.set('n', '<localleader>e', ':MoltenEvaluateLine<CR>', { silent = true, desc = 'Molten Evaluate Line' })
+      vim.keymap.set('n', '<localleader>rr', ':MoltenReevaluateCell<CR>', { silent = true, desc = 'Molten re-evaluate cell' })
+      vim.keymap.set('v', '<localleader>e', ':<C-u>MoltenEvaluateVisual<CR>gv', { silent = true, desc = 'Molten evaluate visual selection' })
+      vim.keymap.set('n', '<localleader>md', ':MoltenDelete<CR>', { silent = true, desc = 'Molten Delete Cell' })
+      vim.keymap.set('n', '<localleader>j', ':MoltenHideOutput<CR>', { silent = true, desc = 'Molten Hide Output' })
+      vim.keymap.set('n', '<localleader>me', ':noautocmd MoltenEnterOutput<CR>', { silent = true, desc = 'Molten Show/Enter Output' })
     end,
   },
   {
