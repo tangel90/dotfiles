@@ -87,7 +87,7 @@ function yazi-cwd() {
 }
 
 function tmux-list-session () {
-    if tmux list-sessions 2> /dev/null; then
+    if tmux list-sessions >/dev/null 2>&1; then
         selected=$(tmux list-sessions | fzf | cut -d: -f1) && [ -n "$selected" ] && tmux attach-session -t "$selected"
     else
         echo "No active tmux sessions."
@@ -103,7 +103,8 @@ function tmux-open-chatgpt() {
 
 function tmux-open-dotfiles() {
     if ! tmux has-session -t dotfiles 2>/dev/null; then
-        tmux new-session -d -s dotfiles -n dotfiles "cd ~/dotfiles && nvim"
+        tmux new-session -d -s dotfiles -n nvim "cd ~/dotfiles && nvim"
+        tmux new-window -c "#{current_pane_path}"
     fi
     tmux switch-client -t dotfiles
 }

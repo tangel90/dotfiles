@@ -28,7 +28,7 @@ zinit wait lucid for MichaelAquilina/zsh-autoswitch-virtualenv
 # Add in snippets
 zinit snippet OMZP::git
 zinit snippet OMZP::sudo
-zinit snippet OMZP::archlinux
+# zinit snippet OMZP::archlinux
 zinit ice lucid wait
 zinit snippet OMZP::fzf
 # zinit snippet OMZP::aws
@@ -61,11 +61,6 @@ zstyle ':completion:*' menu no
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls $realpath'
 zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls $realpath'
 
-# Shell integrations
-# [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-# eval "$(fzf --zsh)"
-eval "$(zoxide init zsh --cmd cd)"
-
 # >>> initialize environment >>>
 source $HOME/.zprofile
 
@@ -78,13 +73,18 @@ if [ -d "$LOCALCONFIG" ]; then
 fi
 # <<< initialize environment <<<
 
+# Shell integrations
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+eval "$(fzf --zsh)"
+eval "$(zoxide init zsh --cmd cd)"
+
 if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
     sessions=$(tmux list-sessions 2>/dev/null)
     if [ -z "$sessions" ]; then
         echo "No sessions found!"
         tmux new-session -s "Default"
     else
-        if command -v tmux-list-session; then
+        if command -v tmux-list-session >/dev/null 2>&1; then
             tmux-list-session
         else
             echo "Tmux sessions found. Trying to attach ..."
