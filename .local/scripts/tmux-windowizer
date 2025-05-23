@@ -16,8 +16,10 @@ first_parent=$(basename  "$parent_dir" | tr . _)
 grandparent_dir=$(dirname "$parent_dir")
 second_parent=$(basename "$grandparent_dir" | tr . _)
 
-window_name="${second_parent}_${first_parent}"
 file_name=$(basename  "$selected")
+file_stem="${file_name%.*}"
+window_name="${second_parent}_${file_stem}"
+alt_window_name="${window_name}_$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c2)" #Generate 2 random characters for duplicate names
 tmux_running=$(pgrep tmux)
 
 # OK - tmux is not running
@@ -31,7 +33,7 @@ if [[ ! -z $TMUX ]]; then
     if ! tmux list-windows | grep "$window_name"; then
         tmux new-window -n "$window_name" -c "$parent_dir"
     else
-        window_name="${window_name}2"
+        window_name="${alt_window_name}"
         tmux new-window -n "$window_name" -c "$parent_dir"
     fi
     if [[ "$first_parent" == *data* || "$first_parent" == "reports" ]]; then
