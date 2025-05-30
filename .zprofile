@@ -103,7 +103,7 @@ function tmux-open-chatgpt() {
 
 function tmux-open-dotfiles() {
     if ! tmux has-session -t dotfiles 2>/dev/null; then
-        tmux new-session -d -s dotfiles -n nvim "cd ~/dotfiles && nvim"
+        tmux new-session -d -s dotfiles -n nvim "cd ~/dotfiles && nvim ."
         tmux new-window -c "#{current_pane_path}"
     fi
     tmux switch-client -t dotfiles
