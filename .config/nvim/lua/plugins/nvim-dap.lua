@@ -29,21 +29,35 @@ return {
 
     dap.configurations.python = {
       {
-        type = 'python (conda base)',
+        type = 'python',
         request = 'launch',
-        name = 'Launch file',
+        name = 'Launch file (/usr/bin/python3)',
         program = '${file}',
         pythonPath = function()
-          return '/home/thomas/miniconda3/bin/python3'
+          return '/usr/bin/python3'
         end,
       },
       {
-        type = 'python (system integrations)',
+        type = 'python',
         request = 'launch',
-        name = 'Launch file',
+        name = 'Launch main.py with Args (/usr/bin/python3)',
+        program = 'main.py',
+        args = function()
+          local input = vim.fn.input 'Arguments: '
+          return vim.split(input, ' ')
+        end,
+        console = 'integratedTerminal',
+        pythonPath = function()
+          return '/usr/bin/python3'
+        end,
+      },
+      {
+        type = 'python (conda base)',
+        request = 'launch',
+        name = 'Launch file (conda base)',
         program = '${file}',
         pythonPath = function()
-          return '/mnt/d/system_integrations/python/virtualenv/Scripts/python.exe'
+          return '/home/thomas/miniconda3/bin/python3'
         end,
       },
     }
