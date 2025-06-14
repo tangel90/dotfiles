@@ -22,10 +22,12 @@ return { -- Collection of various small independent plugins/modules
     vim.keymap.set('n', '<leader>s"', ':normal saiw"<CR>', { noremap = true, silent = true })
     vim.keymap.set('n', '<leader>sq', ':normal saiw"<CR>', { noremap = true, silent = true })
     vim.keymap.set('n', '<leader>sb', ':normal saiw)<CR>', { noremap = true, silent = true })
+    vim.keymap.set('n', '<leader>s]', ':normal saiw]<CR>', { noremap = true, silent = true })
     vim.keymap.set('n', '<leader>S"', ':normal saiW"<CR>', { noremap = true, silent = true })
     vim.keymap.set('n', '<leader>Sq', ':normal saiW"<CR>', { noremap = true, silent = true })
     vim.keymap.set('n', '<leader>Sb', ':normal saiW)<CR>', { noremap = true, silent = true })
     vim.keymap.set('n', '<leader>SB', ':normal saiW}<CR>', { noremap = true, silent = true })
+    vim.keymap.set('n', '<leader>S]', ':normal saiW]<CR>', { noremap = true, silent = true })
 
     -- Simple and easy statusline.
     --  You could remove this setup call if you don't like it,

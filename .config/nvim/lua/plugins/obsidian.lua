@@ -185,9 +185,8 @@ return {
         elseif vim.fn.has 'wsl' == 1 then
           os.execute('wsl-open ' .. url) -- WSL
         else
-          print 'Unsupported OS'
+          vim.ui.open(url) -- need Neovim 0.10.0+
         end
-        -- vim.ui.open(url) -- need Neovim 0.10.0+
       end,
     },
   },

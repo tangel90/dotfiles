@@ -8,8 +8,8 @@ local config = wezterm.config_builder()
 
 -- For example, changing the color scheme:
 config.color_scheme = "rose-pine-moon"
-config.font = wezterm.font("JetBrainsMono Nerd Font")
-config.default_prog = { "Arch" }
+-- config.default_prog =t("JetBrainsMono Nerd Font") { "Arch" }
+config.font = wezterm.font("JetBrainsMono Nerd Font", { weight = "Regular" })
 config.term = "xterm-256color"
 config.cursor_blink_rate = 500
 config.cursor_blink_ease_in = "Constant"
