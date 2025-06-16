@@ -17,6 +17,19 @@ require('lazy').setup({
   --  Uncomment the following line and add your plugins to `lua/plugins/*.lua` to get going.
   --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
   { import = 'plugins' },
+
+  {
+    'goerz/jupytext.nvim',
+    version = '0.2.0',
+    opts = {
+      jupytext = 'jupytext',
+      format = 'markdown',
+      update = true,
+      sync_patterns = { '*.md', '*.py', '*.jl', '*.R', '*.Rmd', '*.qmd' },
+      autosync = true,
+      handle_url_schemes = true,
+    }, -- see Options
+  },
   {
     'norcalli/nvim-colorizer.lua',
     config = function()
