@@ -76,39 +76,39 @@ return {
         action = function()
           return require('obsidian').util.gf_passthrough()
         end,
-        opts = { noremap = false, expr = true, buffer = true },
+        opts = { noremap = false, expr = true, buffer = true, desc = 'Obsidian: gf_passthrough' },
       },
       ['<leader>og'] = {
         action = '<cmd>ObsidianSearch<CR>',
-        opts = { buffer = true, desc = '[G]rep in Notes' },
+        opts = { buffer = true, desc = 'Obsidian: [G]rep in Notes' },
       },
       ['<leader>oo'] = {
         action = '<cmd>ObsidianQuickSwitch<CR>',
-        opts = { buffer = true, desc = '[O]pen QuickSwitch' },
+        opts = { buffer = true, desc = 'Obsidian: [O]pen QuickSwitch' },
       },
       ['<leader>ot'] = {
         action = '<cmd>ObsidianTOC<CR>',
-        opts = { buffer = true, desc = '[T]oc' },
+        opts = { buffer = true, desc = 'Obsidian: Show [T]oc' },
       },
       ['<leader>od'] = {
         action = '<cmd>ObsidianDailies<CR>',
-        opts = { buffer = true, desc = '[D]ailies' },
+        opts = { buffer = true, desc = 'Obsidian: Open [D]ailies' },
       },
       ['<leader>or'] = {
         action = '<cmd>ObsidianRename<CR>',
-        opts = { buffer = true, desc = '[R]ename Note' },
+        opts = { buffer = true, desc = 'Obsidian: [R]ename Note' },
       },
       ['<leader>of'] = {
         action = '<cmd>ObsidianTag<CR>',
-        opts = { buffer = true, desc = '[F]ind by Tag' },
+        opts = { buffer = true, desc = 'Obsidian: [F]ind by Tag' },
       },
       ['<leader>ow'] = {
         action = '<cmd>ObsidianWorkspace<CR>',
-        opts = { buffer = true, desc = 'Select [W]orkspace' },
+        opts = { buffer = true, desc = 'Obsidian: Select [W]orkspace' },
       },
       ['<leader>on'] = {
         action = '<cmd>ObsidianNew<CR>',
-        opts = { buffer = true, desc = '[N]ew Note' },
+        opts = { buffer = true, desc = 'Obsidian: [N]ew Note' },
       },
       -- Toggle check-boxes.
       ['<leader><leader>'] = {
@@ -122,14 +122,14 @@ return {
         action = function()
           return require('obsidian').util.smart_action()
         end,
-        opts = { buffer = true, expr = true },
+        opts = { buffer = true, expr = true, desc = 'Obsidian: Smart Action' },
       },
 
       ['<cr>'] = {
         action = function()
           return require('obsidian').util.smart_action()
         end,
-        opts = { buffer = true, expr = true },
+        opts = { buffer = true, expr = true, desc = 'Obsidian: Smart Action' },
       },
     },
     ui = {

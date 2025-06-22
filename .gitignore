@@ -12,4 +12,5 @@ nvim-data
 nvim-data
 .config/nvim/.github/ISSUE_TEMPLATE/bug_report.md
 .config/nvim/.github
+.config/claude/
 flavors/

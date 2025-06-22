@@ -12,6 +12,11 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   end,
 })
 
+vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
+  pattern = '.chatgpt_history',
+  command = 'set filetype=markdown',
+})
+
 -- if vim.fn.has 'wsl' == 1 then
 --   vim.api.nvim_create_autocmd('TextYankPost', {
 --     group = vim.api.nvim_create_augroup('Yank', { clear = true }),

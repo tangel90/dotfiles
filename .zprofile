@@ -6,6 +6,7 @@ export ANDROID_HOME=$HOME/Android/Sdk
 export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
 export EDITOR="nvim"
 export TERM="xterm-256color"
+export TMPDIR="$HOME/.local/tmp"
 
 export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
@@ -94,11 +95,24 @@ function tmux-list-session () {
     fi
 }
 
+function tmux-open-claude() {
+    if ! tmux has-session -t LLM 2>/dev/null; then
+        tmux new-session -d -s LLM -n Claude "claude"
+    elif ! tmux list-windows -t LLM | grep -q 'Claude'; then
+        tmux new-window -t LLM -n Claude -c "$PROJECTS_HOME" "claude"
+    fi
+    tmux switch-client -t LLM
+    tmux select-window -t Claude
+}
+
 function tmux-open-chatgpt() {
     if ! tmux has-session -t LLM 2>/dev/null; then
         tmux new-session -d -s LLM -n ChatGPT "$(which chatgpt)"
+    elif ! tmux list-windows -t LLM | grep -q 'ChatGPT'; then
+        tmux new-window -t LLM -n ChatGPT "$(which chatgpt)"
     fi
     tmux switch-client -t LLM
+    tmux select-window -t ChatGPT
 }
 
 function tmux-open-dotfiles() {
@@ -108,6 +122,15 @@ function tmux-open-dotfiles() {
         tmux last-window
     fi
     tmux switch-client -t dotfiles
+}
+
+function tmux-open-tmp() {
+    ext=$(echo -e "md\npy\ngo" | fzf)
+    [[ -z $ext ]] && { echo "No extension selected"; return 1 }
+    local tmpdir="${TMPDIR:-/tmp}"
+    local tmpfile="$(mktemp $tmpdir/tmp.XXXXXX.$ext)"
+    local w_name=$(basename "$tmpfile" | tr . _)
+    tmux new-window -n "$w_name" -c "$tmpdir" "nvim \"$tmpfile\""
 }
 
 function tmux-open-todo() {

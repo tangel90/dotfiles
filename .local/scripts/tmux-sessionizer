@@ -7,7 +7,7 @@ fi
 if [[ $# -eq 1 ]]; then
     selected=$(find $1 -maxdepth 2 -type d | fzf)
 else
-    selected=$(find $PROJECTS_HOME $PLAYGROUND_HOME -mindepth 1 -maxdepth 4 -type d | fzf)
+    selected=$(find $PROJECTS_HOME $PLAYGROUND_HOME -mindepth 1 -maxdepth 5 -type d | fzf)
 fi
 
 if [[ -z $selected ]]; then
@@ -27,9 +27,11 @@ fi
 if [[ -z $TMUX ]] && ! tmux has-session -t=$selected_name 2> /dev/null; then
     tmux new-session -s $selected_name -c "$selected"
     tmux a -t $selected_name
-    if ! [[ "$selected_name" == "data" || "$selected_name" == "reports" ]]; then
+    if ! [[ "$selected_name" == *data || "$selected_name" == "reports" ]]; then
         tmux send-keys -t $selected_name "nvim" ENTER
         tmux send-keys -t $selected_name "-"
+    else
+        tmux send-keys -t $selected_name "vd" ENTER
     fi
     exit 0
 fi
@@ -44,9 +46,11 @@ fi
 if [[ ! -z $TMUX ]] && ! tmux has-session -t=$selected_name 2> /dev/null; then
     tmux new-session -ds $selected_name -c "$selected"
     tmux switch-client -t $selected_name
-    if ! [[ "$selected_name" == "data" || "$selected_name" == "reports" ]]; then
+    if ! [[ "$selected_name" == *data || "$selected_name" == "reports" ]]; then
         tmux send-keys -t $selected_name "nvim" ENTER
         tmux send-keys -t $selected_name "-"
+    else
+        tmux send-keys -t $selected_name "vd" ENTER
     fi
     exit 0
 fi
