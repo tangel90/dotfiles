@@ -45,7 +45,6 @@ alias cat="bat"
 alias lg="gpg-unlock-lazygit"
 alias v="fd . --type f --hidden --exclude .git | fzf-tmux --border --preview='bat --style=numbers --color=always {}' -p 80%,80% | xargs nvim"
 alias chat="chatgpt"
-alias gg="gpg-unlock"
 alias g="tmux-open-chatgpt"
 
 if [ -x "$(command -v yazi)" ]; then
@@ -97,12 +96,14 @@ function tmux-list-session () {
 
 function tmux-open-claude() {
     if ! tmux has-session -t LLM 2>/dev/null; then
-        tmux new-session -d -s LLM -n Claude "claude"
+        echo "Creating new session."
+        tmux new-session -d -s LLM -n Claude -c "$PROJECTS_HOME" "/home/thomas/.config/claude/local/claude" 
     elif ! tmux list-windows -t LLM | grep -q 'Claude'; then
-        tmux new-window -t LLM -n Claude -c "$PROJECTS_HOME" "claude"
+        echo "Creating new window."
+        tmux new-window -t LLM -n Claude -c "$PROJECTS_HOME" "/home/thomas/.config/claude/local/claude"
     fi
     tmux switch-client -t LLM
-    tmux select-window -t Claude
+    tmux select-window -t LLM:Claude
 }
 
 function tmux-open-chatgpt() {
@@ -112,7 +113,7 @@ function tmux-open-chatgpt() {
         tmux new-window -t LLM -n ChatGPT "$(which chatgpt)"
     fi
     tmux switch-client -t LLM
-    tmux select-window -t ChatGPT
+    tmux select-window -t LLM:ChatGPT
 }
 
 function tmux-open-dotfiles() {
