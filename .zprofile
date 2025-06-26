@@ -45,7 +45,6 @@ alias cat="bat"
 alias lg="gpg-unlock-lazygit"
 alias v="fd . --type f --hidden --exclude .git | fzf-tmux --border --preview='bat --style=numbers --color=always {}' -p 80%,80% | xargs nvim"
 alias chat="chatgpt"
-alias gg="gpg-unlock"
 alias g="tmux-open-chatgpt"
 
 if [ -x "$(command -v yazi)" ]; then
@@ -80,10 +79,9 @@ function vv() {
 
 function yazi-cwd() {
     local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
-    yazi "$@" --cwd-file="$tmp" < /dev/tty
-    if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
-        builtin cd -- "$cwd"
-    fi
+    yazi "$@" --cwd-file="$tmp"
+    IFS= read -r -d '' cwd < "$tmp"
+    [ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
     rm -f -- "$tmp"
 }
 
@@ -97,22 +95,34 @@ function tmux-list-session () {
 
 function tmux-open-claude() {
     if ! tmux has-session -t LLM 2>/dev/null; then
-        tmux new-session -d -s LLM -n Claude "claude"
+        echo "Creating new session."
+        tmux new-session -d -s LLM -n Claude -c "$PROJECTS_HOME" "/home/thomas/.config/claude/local/claude" 
     elif ! tmux list-windows -t LLM | grep -q 'Claude'; then
-        tmux new-window -t LLM -n Claude -c "$PROJECTS_HOME" "claude"
+        echo "Creating new window."
+        tmux new-window -t LLM -n Claude -c "$PROJECTS_HOME" "/home/thomas/.config/claude/local/claude"
     fi
     tmux switch-client -t LLM
-    tmux select-window -t Claude
+    tmux select-window -t LLM:Claude
+}
+
+function tmux-open-codex() {
+    if ! tmux has-session -t LLM 2>/dev/null; then
+        tmux new-session -d -s LLM -n Codex -c "$PROJECTS_HOME" "$(which codex)"
+    elif ! tmux list-windows -t LLM | grep -q 'Codex'; then
+        tmux new-window -t LLM -n Codex -c "$PROJECTS_HOME" "$(which codex)"
+    fi
+    tmux switch-client -t LLM
+    tmux select-window -t LLM:Codex
 }
 
 function tmux-open-chatgpt() {
     if ! tmux has-session -t LLM 2>/dev/null; then
-        tmux new-session -d -s LLM -n ChatGPT "$(which chatgpt)"
+        tmux new-session -d -s LLM -n ChatGPT -c "$PROJECTS_HOME" "$(which chatgpt)"
     elif ! tmux list-windows -t LLM | grep -q 'ChatGPT'; then
-        tmux new-window -t LLM -n ChatGPT "$(which chatgpt)"
+        tmux new-window -t LLM -n ChatGPT -c "$PROJECTS_HOME" "$(which chatgpt)"
     fi
     tmux switch-client -t LLM
-    tmux select-window -t ChatGPT
+    tmux select-window -t LLM:ChatGPT
 }
 
 function tmux-open-dotfiles() {
