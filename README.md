@@ -20,7 +20,7 @@ jq
 glow
 unzip
 
-##Neovim:
+## Build Neovim:
 
 ### Linux
 

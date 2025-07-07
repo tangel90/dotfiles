@@ -7,7 +7,10 @@ fi
 if [[ $# -eq 1 ]]; then
     selected=$(find $1 -maxdepth 2 -type d | fzf)
 else
-    selected=$(find $PROJECTS_HOME $PLAYGROUND_HOME -mindepth 1 -maxdepth 5 -type d | fzf)
+    selected=$(find "$PROJECTS_HOME" "$PLAYGROUND_HOME" \
+        -mindepth 1 -maxdepth 4 \
+         \( -name node_modules -o -name .git -o -name venv -o -name __pycache__ \) -prune -o \
+        -type d -print | fzf)
 fi
 
 if [[ -z $selected ]]; then
