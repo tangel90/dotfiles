@@ -30,7 +30,8 @@ else
 fi
 
 # zle -N yazi-cwd # Widget breaks yazi on some machines ...
-
+#
+bindkey -r '^L' #removes C-l for clear-console
 bindkey -v
 bindkey -M viins '^F' forward-char
 bindkey '^p' history-search-backward
