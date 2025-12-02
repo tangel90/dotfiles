@@ -32,7 +32,6 @@ if [[ -z $TMUX ]] && ! tmux has-session -t=$selected_name 2> /dev/null; then
     tmux a -t $selected_name
     if ! [[ "$selected_name" == *data || "$selected_name" == "reports" ]]; then
         tmux send-keys -t $selected_name "nvim" ENTER
-        tmux send-keys -t $selected_name "-"
     else
         tmux send-keys -t $selected_name "vd" ENTER
     fi
@@ -51,7 +50,6 @@ if [[ ! -z $TMUX ]] && ! tmux has-session -t=$selected_name 2> /dev/null; then
     tmux switch-client -t $selected_name
     if ! [[ "$selected_name" == *data || "$selected_name" == "reports" ]]; then
         tmux send-keys -t $selected_name "nvim" ENTER
-        tmux send-keys -t $selected_name "-"
     else
         tmux send-keys -t $selected_name "vd" ENTER
     fi

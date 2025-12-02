@@ -12,7 +12,7 @@ return {
   'stevearc/oil.nvim',
 
   opts = {
-    vim.keymap.set('n', '-', '<CMD>Oil<CR>', { desc = 'Oil: Open parent directory of current file' }),
+    vim.keymap.set('n', '-', '<CMD>Oil --float<CR>', { desc = 'Oil: Open parent directory of current file' }),
     vim.keymap.set('n', '<leader>o~', ':cd /home/thomas/obsidian/personal/notes<CR>', { desc = 'Change into Obsidian Directory' }),
     -- Oil will take over directory buffers (e.g. `vim .` or `:e src/`)
     -- Set to false if you want some other plugin (e.g. netrw) to open when you edit directories.
@@ -40,7 +40,7 @@ return {
       list = false,
       conceallevel = 3,
       concealcursor = 'nvic',
-      winbar = '%!v:lua.get_oil_winbar()',
+      -- winbar = '%!v:lua.get_oil_winbar()',
     },
     -- Send deleted files to the trash instead of permanently deleting them (:help oil-trash)
     delete_to_trash = true,
