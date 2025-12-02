@@ -78,11 +78,29 @@ function vv() {
     NVIM_APPNAME=$(basename $selected_config) nvim $@
 }
 
+
+function load_conda() {
+    __conda_setup="$('/home/thomas/.local/opt/miniconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
+    if [ $? -eq 0 ]; then
+        eval "$__conda_setup"
+    else
+        if [ -f "/home/thomas/.local/opt/miniconda3/etc/profile.d/conda.sh" ]; then
+            . "/home/thomas/.local/opt/miniconda3/etc/profile.d/conda.sh"
+        else
+            export PATH="/home/thomas/.local/opt/miniconda3/bin:$PATH"
+        fi
+    fi
+    unset __conda_setup
+}
+
 function yazi-cwd() {
     local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+    echo "in"
     yazi "$@" --cwd-file="$tmp"
     IFS= read -r -d '' cwd < "$tmp"
+    echo "cd into new directory"
     [ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
+    echo "out"
     rm -f -- "$tmp"
 }
 

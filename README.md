@@ -2,15 +2,17 @@
 
 packages:
 
+zsh
 neovim
 lazygit
-powerline10k
+powerlevel10k
 bat
 zoxide
 fzf
 exa
 stow
 ripgrep
+fd
 tmux
 cargo
 go
@@ -19,6 +21,21 @@ zig
 jq
 glow
 unzip
+yazi
+
+## change to zsh
+
+list available shells:
+
+```bash
+chsh -l
+```
+
+change shell:
+
+```bash
+chsh -s /bin/zsh
+```
 
 ## Build Neovim:
 

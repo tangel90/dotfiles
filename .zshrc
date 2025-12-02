@@ -1,9 +1,25 @@
+# tmux init
+if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
+    sessions=$(tmux list-sessions 2>/dev/null)
+    if [ -z "$sessions" ]; then
+        echo "No sessions found!"
+        tmux new-session -A -s "workspace0"
+    else
+        if command -v tmux-list-session >/dev/null 2>&1; then
+            tmux-list-session
+        else
+            echo "Tmux sessions found. Trying to attach ..."
+            tmux attach
+        fi
+    fi
+fi
+
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
-# if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-#   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-# fi 
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
 
 # Set the directory we want to store zinit and plugins
 # Download Zinit, if it's not there yet
@@ -73,22 +89,9 @@ if [ -d "$LOCALCONFIG" ]; then
 fi
 # <<< initialize environment <<<
 
-# Shell integrations
+# >>> Shell integrations >>>
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 eval "$(fzf --zsh)"
 eval "$(zoxide init zsh --cmd cd)"
-
-if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
-    sessions=$(tmux list-sessions 2>/dev/null)
-    if [ -z "$sessions" ]; then
-        echo "No sessions found!"
-        tmux new-session -s "Default"
-    else
-        if command -v tmux-list-session >/dev/null 2>&1; then
-            tmux-list-session
-        else
-            echo "Tmux sessions found. Trying to attach ..."
-            tmux attach
-        fi
-    fi
-fi
+eval "$(direnv hook zsh)"
+# <<< Shell integrations <<<
