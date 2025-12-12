@@ -1,7 +1,8 @@
 return { -- Fuzzy Finder (files, lsp, etc)
   'nvim-telescope/telescope.nvim',
   event = 'VimEnter',
-  branch = '0.1.x',
+  tag = 'v0.2.0',
+  -- branch = '0.1.x',
   dependencies = {
     'nvim-lua/plenary.nvim',
     { -- If encountering errors, see telescope-fzf-native README for installation instructions
@@ -64,7 +65,8 @@ return { -- Fuzzy Finder (files, lsp, etc)
           '--line-number',
           '--column',
           '--smart-case',
-          '-u', -- thats the new thing
+          '--ignore-case',
+          '-u', -- thats the new thing, 'unrestricted' allows for e.g. .gitignore files
         },
         --   mappings = {
         --     i = { ['<c-enter>'] = 'to_fuzzy_refine' },
@@ -93,7 +95,7 @@ return { -- Fuzzy Finder (files, lsp, etc)
     vim.keymap.set('n', '<leader>df', builtin.diagnostics, { desc = 'List [D]iagnostics' })
     -- vim.keymap.set('n', '<leader>fr', builtin.resume, { desc = '[F]ind [R]esume' })
     vim.keymap.set('n', '<leader>f.', builtin.oldfiles, { desc = '[F]ind Recent Files ("." for repeat)' })
-    vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = '[ ] Find existing buffers' })
+    vim.keymap.set('n', '<leader>fb', function() require('telescope.builtin').buffers({ sort_lastused = true }) end, { desc = '[ ] Find existing buffers' })
 
     vim.keymap.set('n', '<leader>ff', function()
       builtin.find_files { find_command = { 'rg', '--no-ignore', '--hidden', '--files', '-g', '!node_modules', '-g', '!__pycache__', '-g', '!.venv' } }
@@ -113,7 +115,7 @@ return { -- Fuzzy Finder (files, lsp, etc)
     vim.keymap.set('n', '<leader>f/', function()
       builtin.live_grep {
         find_command = { 'rg', '--hidden', '--glob', '!.git/', '--glob', '!__pycache__/', '--glob', '!.venv/', '--glob', '!node_modules/' },
-        grep_open_files = false,
+        grep_open_files = true,
         prompt_title = 'Live Grep in Open Files',
       }
     end, { desc = '[F]ind [/] in Open Files' })

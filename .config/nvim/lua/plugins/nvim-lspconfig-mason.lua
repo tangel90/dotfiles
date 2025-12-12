@@ -207,13 +207,31 @@ return { -- LSP Configuration & Plugins
         -- capabilities = {},
         settings = {
           Lua = {
-            completion = {
-              callSnippet = 'Replace',
+            runtime = {
+              -- Tell the language server which version of Lua you're using
+              -- (most likely LuaJIT in the case of Neovim)
+              version = 'LuaJIT',
             },
-            -- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
-            -- diagnostics = { disable = { 'missing-fields' } },
+            completion = {
+              callSnippet = "Replace",
+            },
           },
-        },
+          diagnostics = {
+            -- Get the language server to recognize the `vim` global
+            globals = {
+              'vim',
+              'require'
+            },
+          },
+          workspace = {
+            -- Make the server aware of Neovim runtime files
+            library = vim.api.nvim_get_runtime_file("", true),
+          },
+          -- Do not send telemetry data containing a randomized but unique identifier
+          telemetry = {
+            enable = false,
+          },
+        }
       },
     }
 
@@ -224,14 +242,15 @@ return { -- LSP Configuration & Plugins
       'stylua', -- Used to format Lua code
       'black', -- Used to format python code
       'jqls',
+      'prettier', -- cli formatter
+      'prettierd', -- daemon version of prettier (means it runs in the background and thus has better performance)
       'ast-grep',
       'csharpier',
-      'black',
       'pyright',
-      'lua-language-server',
+      -- 'lua-language-server',
       'sql-formatter',
       'debugpy',
-      'netcoredbg',
+      -- 'netcoredbg',
     })
     require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 

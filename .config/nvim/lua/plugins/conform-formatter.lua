@@ -12,7 +12,7 @@ return { -- Autoformat
     },
   },
   opts = {
-    notify_on_error = false,
+    notify_on_error = true,
     format_on_save = function(bufnr)
       -- Disable "format_on_save lsp_fallback" for languages that don't
       -- have a well standardized coding style. You can add additional
@@ -26,29 +26,34 @@ return { -- Autoformat
     formatters_by_ft = {
       lua = { 'stylua' },
       cs = { 'csharpier' },
-      javascript = { 'prettier' },
-      typescript = { 'prettier' },
-      javascriptreact = { 'prettier' },
-      typescriptreact = { 'prettier' },
-      svelte = { 'prettier' },
-      css = { 'prettier' },
-      html = { 'prettier' },
-      json = { 'prettier' },
-      yaml = { 'prettier' },
-      markdown = { 'prettier' },
-      graphql = { 'prettier' },
-      liquid = { 'prettier' },
+
+      -- You can use a sub-list to tell conform to run *until* a formatter is found.
+      javascript = { 'prettierd' },
+      typescript = { 'prettierd'},
+      javascriptreact = { 'prettierd'},
+      typescriptreact = { 'prettierd'},
+      json = { 'prettierd' },
 
       -- Conform can also run multiple formatters sequentially
       python = { 'isort', 'black' },
 
-      -- You can use a sub-list to tell conform to run *until* a formatter
-      -- is found.
-      -- javascript = { { "prettierd", "prettier" } },
+      svelte = { 'prettier' },
+      css = { 'prettier' },
+      html = { 'prettier' },
+      yaml = { 'prettier' },
+      markdown = { 'prettier' },
+      graphql = { 'prettier' },
+      liquid = { 'prettier' },
     },
     formatters = {
       black = {
         prepend_args = { '--line-length', '100' },
+      },
+      prettier = {
+        extra_args = { "--tab-width", "4" },
+      },
+      prettierd = {
+        extra_args = { "--tab-width", "4" },
       },
     },
   },

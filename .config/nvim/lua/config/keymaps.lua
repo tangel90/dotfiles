@@ -16,14 +16,19 @@ map({ 'n', 'v' }, '<C-d>', '<C-d>zz')
 map({ 'n', 'v' }, '<C-u>', '<C-u>zz')
 map('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
--- yank / delete behavior
+map({ 'n' }, '<leader>xx', ':!python %<CR>', { desc = 'python main.py' })
+
+-- yank / delete / visual behavior
+map('n', '<leader>.', 'viw', { noremap = true, silent = true })
+map('n', '<leader>d.', 'diwsdb', { noremap = true, silent = true })
 map('n', '<leader>y', 'yiw', { noremap = true, silent = true })
+map('n', '<leader>w', 'yiw', { noremap = true, silent = true })
 map('v', '<leader>p', '"_dP')
 map({ 'n', 'v' }, '<leader>d', '"_d')
 -- map({ 'n', 'i', 'v' }, '<C-/>', '<Plug>(comment_toggle_linewise)')
 
 -- Buffer related
-map({ 'n', 'i', 'v' }, '<C-s>', '<cmd>w<cr>', { noremap = true, desc = 'Save current buffer' })
+map({ 'n', 'i', 'v' }, '<C-s>', '<cmd>noautocmd w<cr>', { noremap = true, desc = 'Save current buffer (without formatting)' })
 map('n', '<leader>q', ':bdelete<CR>', { noremap = true, desc = 'Close current buffer' })
 map({ 'n', 'v' }, '<Leader>n', ':enew<CR>', { noremap = true, silent = true, desc = 'New buffer' })
 map({ 'n', 'v' }, '<Leader>v', ':vsplit<CR>', { noremap = true, silent = true, desc = 'New vertical split' })
@@ -31,7 +36,14 @@ map({ 'n', 'v' }, '<Leader>tn', ':tabnew<CR>', { noremap = true, silent = true, 
 map({ 'n', 'v' }, '<Tab>', ':lua ToggleBuffers()<CR>', { noremap = true, silent = true, desc = 'Last buffer' })
 map('n', '<Leader>m', 'mz:%s/\\r//g<CR>`z', { desc = 'Remove Carriage Returns From Buffer' })
 
-map({ 'n' }, '<leader>xx', ':!python %<CR>', { desc = 'python main.py' })
+map({ 'n', 'v' }, '<Leader>rr', function()
+      vim.cmd('e!')
+      vim.cmd('LspRestart')
+      vim.cmd([[echo "file reloaded"]])
+    end, {
+      noremap = true,
+      desc = 'Force reload current buffer (discard any changes)',
+    })
 
 -- Plugin specific keymaps
 -- map('n', '<leader>i', ':lua require("iris").toggle_quick_menu()<CR>', { noremap = true, silent = true })

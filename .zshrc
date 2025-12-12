@@ -17,9 +17,18 @@ fi
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+# if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+#   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+# fi
+
+# >>> initialize environment >>>
+source $HOME/.zprofile
+if [ -d "$LOCALCONFIG" ]; then
+    for i in $(find -L "$LOCALCONFIG" -type f); do
+        source "$i"
+    done
 fi
+# <<< initialize environment <<<
 
 # Set the directory we want to store zinit and plugins
 # Download Zinit, if it's not there yet
@@ -39,12 +48,12 @@ zinit light Aloxaf/fzf-tab
 zinit light zsh-users/zsh-syntax-highlighting
 zinit light zsh-users/zsh-completions
 zinit light zsh-users/zsh-autosuggestions
-zinit wait lucid for MichaelAquilina/zsh-autoswitch-virtualenv
+# zinit wait lucid for MichaelAquilina/zsh-autoswitch-virtualenv
 
 # Add in snippets
 zinit snippet OMZP::git
 zinit snippet OMZP::sudo
-# zinit snippet OMZP::archlinux
+zinit snippet OMZP::archlinux
 zinit ice lucid wait
 zinit snippet OMZP::fzf
 # zinit snippet OMZP::aws
@@ -55,9 +64,6 @@ zinit snippet OMZP::command-not-found
 autoload -Uz compinit && compinit
 
 zinit cdreplay -q
-
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 HISTSIZE=5000
 HISTFILE=~/.zsh_history
@@ -77,21 +83,12 @@ zstyle ':completion:*' menu no
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls $realpath'
 zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls $realpath'
 
-# >>> initialize environment >>>
-source $HOME/.zprofile
-
-export LOCALCONFIG="$HOME/.local/config"
-if [ -d "$LOCALCONFIG" ]; then
-    export "LOCALPROFILE=$LOCALCONFIG/.zprofile"
-    for i in $(find -L "$LOCALCONFIG" -type f); do
-        source "$i"
-    done
-fi
-# <<< initialize environment <<<
-
 # >>> Shell integrations >>>
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 eval "$(fzf --zsh)"
 eval "$(zoxide init zsh --cmd cd)"
 eval "$(direnv hook zsh)"
 # <<< Shell integrations <<<
+
+# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh

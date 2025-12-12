@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [[ $# -eq 1 ]]; then
-    selected=$(find $1 -mindepth 0 -maxdepth 3 -type f | fzf)
+    selected=$(find $1 -mindepth 0 -maxdepth 4 -type f | fzf)
 else
     selected=$(find ~/ -mindepth 0 -maxdepth 6 -type f | fzf)
 fi
@@ -29,17 +29,14 @@ fi
 
 # OK - tmux is running and client is attached, window with selected_name does not exist
 if [[ ! -z $TMUX ]]; then
-    if ! tmux list-windows | grep "$window_name"; then
-        tmux new-window -n "$window_name" -c "$parent_dir"
-    else
+    program="nvim"
+    if [[ "$file_name" == *.csv || "$file_name" == *.tsv || "$file_name" == *.json ]]; then
+        program="vd"
+    fi
+    if tmux list-windows | grep -Fxq "$window_name"; then
         window_name="${alt_window_name}"
-        tmux new-window -n "$window_name" -c "$parent_dir"
     fi
-    if [[ "$file_name" == *.csv || "$file_name" == *.tsv ]]; then
-        tmux send-keys -t $window_name "vd $file_name" ENTER
-    else
-        tmux send-keys -t $window_name "nvim $file_name" ENTER
-    fi
+    tmux new-window -n "$window_name" -c "$parent_dir" zsh -c "$program $file_name"
     tmux select-window -t $window_name
     exit 0
 fi

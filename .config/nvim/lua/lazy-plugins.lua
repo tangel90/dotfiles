@@ -30,13 +30,13 @@ require('lazy').setup({
       handle_url_schemes = true,
     }, -- see Options
   },
-  {
-    'norcalli/nvim-colorizer.lua',
-    config = function()
-      require('colorizer').setup()
-    end,
-  },
-  'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
+  -- {
+  --   'norcalli/nvim-colorizer.lua',
+  --   config = function()
+  --     require('colorizer').setup()
+  --   end,
+  -- },
+  'tpope/vim-sleuth', -- Detect tabstop(!!) and shiftwidth automatically
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
   -- "gc" to comment visual regions/lines

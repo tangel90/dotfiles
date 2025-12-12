@@ -34,7 +34,7 @@ return {
         name = 'Launch file (/usr/bin/python3)',
         program = '${file}',
         pythonPath = function()
-          return '/usr/bin/python3'
+          return '/usr/sbin/python3'
         end,
       },
       {
@@ -48,18 +48,18 @@ return {
         end,
         console = 'integratedTerminal',
         pythonPath = function()
-          return '/usr/bin/python3'
+          return '/usr/sbin/python3'
         end,
       },
       {
-        type = 'python (conda base)',
-        request = 'launch',
-        name = 'Launch file (conda base)',
-        program = '${file}',
+        type = "python",
+        request = "launch",
+        name = "Launch file with conda (dev)",
+        program = "${file}",
         pythonPath = function()
-          return '/home/thomas/miniconda3/bin/python3'
+          return "/home/thomas/.conda/envs/dev/bin/python3"
         end,
-      },
+      }
     }
     -- Configure the CoreCLR adapter
     dap.adapters.coreclr = {
@@ -130,6 +130,8 @@ return {
     vim.keymap.set('n', '<leader>B', function()
       dap.set_breakpoint(vim.fn.input 'Breakpoint condition: ')
     end, { desc = 'Debug: Set Breakpoint' })
+    -- Toggle to see last session result. Without this, you can't see session output in case of unhandled exception.
+    vim.keymap.set('n', '<F7>', dapui.toggle, { desc = 'Debug: See last session result.' })
 
     -- Dap UI setup
     -- For more information, see |:help nvim-dap-ui|
@@ -152,9 +154,6 @@ return {
         },
       },
     }
-
-    -- Toggle to see last session result. Without this, you can't see session output in case of unhandled exception.
-    vim.keymap.set('n', '<F7>', dapui.toggle, { desc = 'Debug: See last session result.' })
 
     dap.listeners.after.event_initialized['dapui_config'] = dapui.open
     dap.listeners.before.event_terminated['dapui_config'] = dapui.close

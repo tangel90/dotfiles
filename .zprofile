@@ -3,10 +3,14 @@ export PATH=$PATH:$HOME/.local/bin:$HOME/bin:/usr/local/bin
 export PATH=$PATH:$HOME/.local/scripts
 export LD_LIBRARY_PATH=/usr/local/lib
 export ANDROID_HOME=$HOME/Android/Sdk
-export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
+export RIPGREP_CONFIG_PATH="$HOME/.config/ripgrep/.ripgreprc"
 export EDITOR="nvim"
 export TERM="xterm-256color"
 export TMPDIR="$HOME/.local/tmp"
+
+export LOCALCONFIG="$HOME/.local/config"
+export LOCALPROFILE="$LOCALCONFIG/.zprofile"
+export DEVLOG="$HOME/.local/tmp/dev.log"
 
 export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
@@ -37,16 +41,18 @@ bindkey -M viins '^F' forward-char
 bindkey '^p' history-search-backward
 bindkey '^n' history-search-forward
 
+alias da='direnv allow'
+alias dd='direnv deny'
+alias grep="rg"
 alias vimdev='NVIM_APPNAME=nvim-dev nvim'
 alias c="clear"
 alias tls="tmux-list-session"
 alias ls="ls --color=auto -X"
 alias vim='nvim'
 alias cat="bat"
-alias lg="gpg-unlock-lazygit"
+# alias lg="gpg-unlock-lazygit"
 alias v="fd . --type f --hidden --exclude .git | fzf-tmux --border --preview='bat --style=numbers --color=always {}' -p 80%,80% | xargs nvim"
 alias chat="chatgpt"
-alias g="tmux-open-chatgpt"
 
 if [ -x "$(command -v yazi)" ]; then
     bindkey -s "^e" "yazi-cwd\n"
@@ -95,12 +101,9 @@ function load_conda() {
 
 function yazi-cwd() {
     local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
-    echo "in"
     yazi "$@" --cwd-file="$tmp"
     IFS= read -r -d '' cwd < "$tmp"
-    echo "cd into new directory"
     [ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
-    echo "out"
     rm -f -- "$tmp"
 }
 
@@ -134,23 +137,38 @@ function tmux-open-codex() {
     tmux select-window -t LLM:Codex
 }
 
-function tmux-open-chatgpt() {
+function tmux-open-codex() {
     if ! tmux has-session -t LLM 2>/dev/null; then
-        tmux new-session -d -s LLM -n ChatGPT -c "$PROJECTS_HOME" "$(which chatgpt)"
-    elif ! tmux list-windows -t LLM | grep -q 'ChatGPT'; then
-        tmux new-window -t LLM -n ChatGPT -c "$PROJECTS_HOME" "$(which chatgpt)"
+        tmux new-session -d -s LLM -n codex-mini -c "$PROJECTS_HOME" "zsh -c '$(which codex)'"
+    # elif ! tmux list-windows -t LLM | grep -q 'codex-mini'; then
+    #     tmux new-window -t LLM -n codex-mini -c "$PROJECTS_HOME" "zsh -c '$(which codex)'"
     fi
     tmux switch-client -t LLM
-    tmux select-window -t LLM:ChatGPT
+    # tmux select-window -t LLM:codex-mini
 }
 
-function tmux-open-dotfiles() {
-    if ! tmux has-session -t dotfiles 2>/dev/null; then
-        tmux new-session -d -s dotfiles -n nvim "cd ~/dotfiles && nvim"
-        tmux new-window -c "$HOME/dotfiles"
-        tmux last-window
+function tmux-open-yazi() {
+    if ! tmux has-session -t files 2>/dev/null; then
+        tmux new-session -d -s files -n yazi "builtin cd ~/ && yazi"
     fi
-    tmux switch-client -t dotfiles
+    tmux switch-client -t files
+}
+
+function tmux-open-lazygit() {
+    if ! ls -a | grep -q '^\.git$'; then
+        return 0
+    fi
+
+    if [ -z "$TMUX" ]; then
+        echo "Not inside tmux session"
+        return 1
+    fi
+
+    if ! tmux list-windows 2>/dev/null | grep -q '^lazygit$'; then
+        tmux new-window -n lazygit "lazygit"
+    fi
+
+    tmux select-window -t lazygit
 }
 
 function tmux-open-tmp() {

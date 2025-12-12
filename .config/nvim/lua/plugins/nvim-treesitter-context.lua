@@ -14,11 +14,9 @@ return {
       separator = nil,
       zindex = 20, -- The Z-index of the context window
       on_attach = nil, -- (fun(buf: integer): boolean) return false to disable attaching
-      max_lines = 1,
+      max_lines = 2,
+
+      vim.keymap.set({ 'n', 'v' }, '[c', ':lua require("treesitter-context").go_to_context(vim.v.count1)<CR>', { silent = true }),
     }
   end,
-
-  vim.keymap.set('n', '[c', function()
-    require('treesitter-context').go_to_context(vim.v.count1)
-  end, { silent = true }),
 }

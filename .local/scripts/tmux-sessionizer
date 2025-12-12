@@ -7,7 +7,8 @@ fi
 if [[ $# -eq 1 ]]; then
     selected=$(find $1 -maxdepth 2 -type d | fzf)
 else
-    selected=$(find "$PROJECTS_HOME" "$PLAYGROUND_HOME" \
+    # selected=$(find "$PROJECTS_HOME" "$PLAYGROUND_HOME" "/home/thomas/.local/" "/home/thomas/data/"\
+    selected=$(find "$HOME" \
         -mindepth 1 -maxdepth 4 \
          \( -name node_modules -o -name .git -o -name venv -o -name __pycache__ \) -prune -o \
         -type d -print | fzf)
@@ -26,38 +27,19 @@ if [[ -z $tmux_running ]]; then
     exit 0
 fi
 
-# OK - tmux is running but client is not attached, session with selected_name does not exist
-if [[ -z $TMUX ]] && ! tmux has-session -t=$selected_name 2> /dev/null; then
-    tmux new-session -s $selected_name -c "$selected"
-    tmux a -t $selected_name
-    if ! [[ "$selected_name" == *data || "$selected_name" == "reports" ]]; then
-        tmux send-keys -t $selected_name "nvim" ENTER
+if ! tmux has-session -t="$selected_name" 2> /dev/null; then
+    echo "Creating session"
+    if ls -a $selected | grep -q '^.git$'; then
+        tmux new-session -ds "$selected_name" -c "$selected" nvim
+    elif [[ "$selected_name" == *data || "$selected_name" == "reports" ]]; then
+        tmux new-session -ds "$selected_name" -c "$selected" vd
     else
-        tmux send-keys -t $selected_name "vd" ENTER
+        tmux new-session -ds "$selected_name" -c "$selected"
     fi
-    exit 0
 fi
 
-# OK - tmux is running but client is not attached, session with selected_name exists
-if [[ -z $TMUX ]] && tmux has-session -t=$selected_name 2> /dev/null; then
-    tmux a -t $selected_name
-    exit 0
-fi
-
-# OK - tmux is running and client is attached, session with selected_name does not exist
-if [[ ! -z $TMUX ]] && ! tmux has-session -t=$selected_name 2> /dev/null; then
-    tmux new-session -ds $selected_name -c "$selected"
-    tmux switch-client -t $selected_name
-    if ! [[ "$selected_name" == *data || "$selected_name" == "reports" ]]; then
-        tmux send-keys -t $selected_name "nvim" ENTER
-    else
-        tmux send-keys -t $selected_name "vd" ENTER
-    fi
-    exit 0
-fi
-
-# OK - tmux is running and client is attached, session with selected_name exists
-if [[ ! -z $TMUX ]] && tmux has-session -t=$selected_name 2> /dev/null; then
-    tmux switch-client -t $selected_name
-    exit 0
+if [[ -z "$TMUX" ]]; then
+    tmux a -t "$selected_name"
+else
+    tmux switch-client -t "$selected_name"
 fi
