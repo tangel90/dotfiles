@@ -30,6 +30,31 @@ require('lazy').setup({
       handle_url_schemes = true,
     }, -- see Options
   },
+  {
+    "rmagatti/auto-session",
+    lazy = false,
+    ---enables autocomplete for opts
+    ---@module "auto-session"
+    ---@type AutoSession.Config
+    opts = {
+      suppressed_dirs = { "~/", "~/Projects", "~/Downloads", "/" },
+      -- log_level = 'debug',
+    },
+  },
+  -- {
+  --   'folke/persistence.nvim',
+  --   event = 'BufReadPre', -- this will only start session saving when an actual file was opened
+  --   opts = {
+  --     -- add any custom options here
+  --   },
+  --   keys = {
+  --     { "<leader>qs", function() require("persistence").load() end, desc = "Load session" },
+  --     { "<leader>qS", function() require("persistence").select() end, desc = "Select session" },
+  --     { "<leader>ql", function() require("persistence").load({ last = true }) end, desc = "Load last session" },
+  --     { "<leader>qd", function() require("persistence").stop() end, desc = "Stop persistence" },
+  --   },
+  --
+  -- },
   -- {
   --   'norcalli/nvim-colorizer.lua',
   --   config = function()
@@ -40,7 +65,7 @@ require('lazy').setup({
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
   -- "gc" to comment visual regions/lines
-  { 'numToStr/Comment.nvim', opts = {} },
+  -- { 'numToStr/Comment.nvim', opts = {} },
   -- Lua
   -- {
   -- 'git@github.com:tangel90/iris.nvim.git',
@@ -55,21 +80,21 @@ require('lazy').setup({
   },
   { 'Hoffs/omnisharp-extended-lsp.nvim', lazy = true, opts = nil }, -- necessary to get LSP to work with external files
 }, {
-  ui = {
-    -- If you are using a Nerd Font: set icons to an empty table which will use the
-    -- default lazy.nvim defined Nerd Font icons, otherwise define a unicode icons table
-    icons = vim.g.have_nerd_font and {} or {
-      event = '📅',
-      ft = '📂',
-      init = '⚙',
-      keys = '🗝',
-      plugin = '🔌',
-      runtime = '💻',
-      require = '🌙',
-      source = '📄',
-      start = '🚀',
-      task = '📌',
-      lazy = '💤 ',
+    ui = {
+      -- If you are using a Nerd Font: set icons to an empty table which will use the
+      -- default lazy.nvim defined Nerd Font icons, otherwise define a unicode icons table
+      icons = vim.g.have_nerd_font and {} or {
+        event = '📅',
+        ft = '📂',
+        init = '⚙',
+        keys = '🗝',
+        plugin = '🔌',
+        runtime = '💻',
+        require = '🌙',
+        source = '📄',
+        start = '🚀',
+        task = '📌',
+        lazy = '💤 ',
+      },
     },
-  },
-})
+  })

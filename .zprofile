@@ -11,6 +11,7 @@ export TMPDIR="$HOME/.local/tmp"
 export LOCALCONFIG="$HOME/.local/config"
 export LOCALPROFILE="$LOCALCONFIG/.zprofile"
 export DEVLOG="$HOME/.local/tmp/dev.log"
+export PYLOG="$HOME/.local/tmp/python.log"
 
 export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
@@ -48,11 +49,13 @@ alias vimdev='NVIM_APPNAME=nvim-dev nvim'
 alias c="clear"
 alias tls="tmux-list-session"
 alias ls="ls --color=auto -X"
-alias vim='nvim'
+alias vim="nvim"
 alias cat="bat"
 # alias lg="gpg-unlock-lazygit"
 alias v="fd . --type f --hidden --exclude .git | fzf-tmux --border --preview='bat --style=numbers --color=always {}' -p 80%,80% | xargs nvim"
 alias chat="chatgpt"
+
+alias nvr="nvim --listen $HOME/.local/tmp/nvimsocket"
 
 if [ -x "$(command -v yazi)" ]; then
     bindkey -s "^e" "yazi-cwd\n"
@@ -115,43 +118,57 @@ function tmux-list-session () {
     fi
 }
 
+function tmux-hide-pane() {
+    tmux select-pane -t :.+
+    tmux resize-pane -Z
+}
+
+function tmux-run-python() {
+    local file file_name dir pane target="run-python"
+    local NVIM_LISTEN_ADDRESS="$HOME/.local/tmp/nvimsocket"
+    file="$(nvim --server "$NVIM_LISTEN_ADDRESS" --remote-expr 'expand("%:p")')"
+    [[ -f "$file" && "$file" == *.py ]] || { tmux display-message "Not a python file"; return; }
+
+    dir="$(dirname "$file")"
+    # See if the pane already exists
+    pane=$(tmux list-panes -a -F '#{pane_id} #{pane_title}' | awk -v target="$target" '$2==target {print $1; exit}')
+    if [[ -z "$pane" ]]; then
+        pane=$(tmux split-window -v -p 40 -c "$dir" -P -F '#{pane_id}' "tmux select-pane -T '$target'; exec \$SHELL")
+    fi
+    tmux select-pane -T \"$target\"
+    # Send the python command to the pane
+    file_name=$(basename  "$file")
+    tmux send-keys -t "$pane" "cd '$dir' && python '$file_name'" C-m
+}
+
 function tmux-open-claude() {
-    if ! tmux has-session -t LLM 2>/dev/null; then
+    if ! tmux has-session -t llm 2>/dev/null; then
         echo "Creating new session."
-        tmux new-session -d -s LLM -n Claude -c "$PROJECTS_HOME" "/home/thomas/.config/claude/local/claude" 
-    elif ! tmux list-windows -t LLM | grep -q 'Claude'; then
+        tmux new-session -d -s llm -n Claude -c "$PROJECTS_HOME" "/home/thomas/.config/claude/local/claude" 
+    elif ! tmux list-windows -t llm | grep -q 'Claude'; then
         echo "Creating new window."
-        tmux new-window -t LLM -n Claude -c "$PROJECTS_HOME" "/home/thomas/.config/claude/local/claude"
+        tmux new-window -t llm -n Claude -c "$PROJECTS_HOME" "/home/thomas/.config/claude/local/claude"
     fi
-    tmux switch-client -t LLM
-    tmux select-window -t LLM:Claude
+    tmux switch-client -t llm
+    tmux select-window -t llm:Claude
 }
 
 function tmux-open-codex() {
-    if ! tmux has-session -t LLM 2>/dev/null; then
-        tmux new-session -d -s LLM -n Codex -c "$PROJECTS_HOME" "$(which codex)"
-    elif ! tmux list-windows -t LLM | grep -q 'Codex'; then
-        tmux new-window -t LLM -n Codex -c "$PROJECTS_HOME" "$(which codex)"
+    if ! tmux has-session -t llm 2>/dev/null; then
+        tmux new-session -d -s llm -n codex-mini -c "$PROJECTS_HOME" "zsh -c '$(which codex)'"
     fi
-    tmux switch-client -t LLM
-    tmux select-window -t LLM:Codex
-}
-
-function tmux-open-codex() {
-    if ! tmux has-session -t LLM 2>/dev/null; then
-        tmux new-session -d -s LLM -n codex-mini -c "$PROJECTS_HOME" "zsh -c '$(which codex)'"
-    # elif ! tmux list-windows -t LLM | grep -q 'codex-mini'; then
-    #     tmux new-window -t LLM -n codex-mini -c "$PROJECTS_HOME" "zsh -c '$(which codex)'"
-    fi
-    tmux switch-client -t LLM
-    # tmux select-window -t LLM:codex-mini
+    tmux switch-client -t llm
+    tmux select-window -t llm:codex-mini
 }
 
 function tmux-open-yazi() {
-    if ! tmux has-session -t files 2>/dev/null; then
-        tmux new-session -d -s files -n yazi "builtin cd ~/ && yazi"
-    fi
-    tmux switch-client -t files
+      # local selected_dir="${1:-$HOME}"
+      # tmux display-message $selected_dir
+
+      if ! tmux has-session -t files &>/dev/null; then
+        tmux new-session -d -s files -n yazi "yazi"
+      fi
+      tmux switch-client -t files
 }
 
 function tmux-open-lazygit() {

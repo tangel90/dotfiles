@@ -1,0 +1,35 @@
+[[mgr.prepend_keymap]]
+on = ["g", "p"]
+run = "cd ~/projects"
+desc = "cd into ~/projects"
+
+[[mgr.prepend_keymap]]
+on = ["g", "d"]
+run = "cd ~/data"
+desc = "cd into ~/data"
+
+[[mgr.prepend_keymap]]
+on = ["g", "q"]
+run = "quit"
+desc = "Quit yazi"
+
+[[mgr.prepend_keymap]]
+on = "q"
+run = "close"
+desc = "Close the current tab; if it's the last tab, exit the process instead."
+
+[[mgr.prepend_keymap]]
+on = "2"
+run = "plugin smart-switch 1"
+desc = "Switch or create tab 2"
+
+[[mgr.prepend_keymap]]
+on   = "t"
+run  = "plugin smart-tab"
+desc = "Create a tab and enter the hovered directory"
+
+[[mgr.prepend_keymap]]
+on   = "!"
+for  = "unix"
+run  = 'shell "$SHELL" --block'
+desc = "Open $SHELL here"

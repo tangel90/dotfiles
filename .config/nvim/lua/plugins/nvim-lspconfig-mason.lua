@@ -17,6 +17,15 @@ return { -- LSP Configuration & Plugins
   config = function()
     -- If you're wondering about lsp vs treesitter, you can check out the wonderfully
     -- and elegantly composed help section, `:help lsp-vs-treesitter`
+    vim.lsp.config('lua_ls', {
+      settings = {
+        Lua = {
+          diagnostics = {
+            globals = { 'vim' },
+          },
+        },
+      },
+    })
 
     vim.api.nvim_create_autocmd('LspAttach', {
       group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
@@ -94,11 +103,11 @@ return { -- LSP Configuration & Plugins
         -- code, if the language server you are using supports them
         --
         -- This may be unwanted, since they displace some of your code
-        if client and client.server_capabilities.inlayHintProvider and vim.lsp.inlay_hint then
-          map('<leader>th', function()
-            vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
-          end, '[T]oggle Inlay [H]ints')
-        end
+        -- if client and client.server_capabilities.inlayHintProvider and vim.lsp.inlay_hint then
+        --   map('<leader>th', function()
+        --     vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled())
+        --   end, '[T]oggle Inlay [H]ints')
+        -- end
       end,
     })
 
@@ -201,38 +210,6 @@ return { -- LSP Configuration & Plugins
         organize_imports_on_format = true,
         enable_import_completion = true,
       },
-      lua_ls = {
-        -- cmd = {...},
-        filetypes = { 'lua' },
-        -- capabilities = {},
-        settings = {
-          Lua = {
-            runtime = {
-              -- Tell the language server which version of Lua you're using
-              -- (most likely LuaJIT in the case of Neovim)
-              version = 'LuaJIT',
-            },
-            completion = {
-              callSnippet = "Replace",
-            },
-          },
-          diagnostics = {
-            -- Get the language server to recognize the `vim` global
-            globals = {
-              'vim',
-              'require'
-            },
-          },
-          workspace = {
-            -- Make the server aware of Neovim runtime files
-            library = vim.api.nvim_get_runtime_file("", true),
-          },
-          -- Do not send telemetry data containing a randomized but unique identifier
-          telemetry = {
-            enable = false,
-          },
-        }
-      },
     }
 
     require('mason').setup()
@@ -247,7 +224,7 @@ return { -- LSP Configuration & Plugins
       'ast-grep',
       'csharpier',
       'pyright',
-      -- 'lua-language-server',
+      'lua-language-server',
       'sql-formatter',
       'debugpy',
       -- 'netcoredbg',

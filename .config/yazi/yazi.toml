@@ -1,3 +1,15 @@
 [mgr]
 show_hidden=true
 ratio=[2,3,4]
+
+[plugin]
+prepend_previewers = [
+  { name = "*.csv", run = "rich-preview" },
+  { name = "*.tsv", run = "rich-preview" },
+  { name = "*.json", run = "rich-preview" }
+]
+# prepend_preloaders = [
+#   { name = "*.csv", run = "rich-preview" },
+#   { name = "*.tsv", run = "rich-preview" },
+#   { name = "*.json", run = "rich-preview" }
+# ]

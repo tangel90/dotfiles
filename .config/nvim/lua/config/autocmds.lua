@@ -17,6 +17,13 @@ vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
   command = 'set filetype=markdown',
 })
 
+-- vim.api.nvim_create_autocmd("VimEnter", {
+--   callback = function()
+--     if vim.fn.argc() == 0 then
+--       require("persistence").load({ last = true })
+--     end
+--   end,
+-- })
 -- if vim.fn.has 'wsl' == 1 then
 --   vim.api.nvim_create_autocmd('TextYankPost', {
 --     group = vim.api.nvim_create_augroup('Yank', { clear = true }),
@@ -25,7 +32,7 @@ vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
 --     end,
 --   })
 -- end
---
+
 local function augroup(name)
   return vim.api.nvim_create_augroup('lazyvim_' .. name, { clear = true })
 end

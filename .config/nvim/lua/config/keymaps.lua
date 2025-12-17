@@ -3,9 +3,11 @@ local map = vim.keymap.set
 
 -- Vim motion keymaps
 map('i', 'kj', '<ESC>', { noremap = true })
+map({ 'n', 'v' }, 'gl', 'L')
 map({ 'n', 'v' }, 'L', '%')
-map({ 'n', 'v' }, 'J', 'L')
-map({ 'n', 'v' }, 'K', 'H')
+map({ 'n', 'v' }, 'J', '<C-e>j')
+map({ 'n', 'v' }, 'K', '<C-y>k')
+map({ 'n', 'v' }, 'gh', 'H')
 map({ 'n', 'v' }, 'H', 'J')
 map('n', 'n', 'nzzzv')
 map('n', 'N', 'Nzzzv')
@@ -16,7 +18,7 @@ map({ 'n', 'v' }, '<C-d>', '<C-d>zz')
 map({ 'n', 'v' }, '<C-u>', '<C-u>zz')
 map('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
-map({ 'n' }, '<leader>xx', ':!python %<CR>', { desc = 'python main.py' })
+map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python %<CR>', { desc = 'python main.py' })
 
 -- yank / delete / visual behavior
 map('n', '<leader>.', 'viw', { noremap = true, silent = true })
@@ -25,7 +27,7 @@ map('n', '<leader>y', 'yiw', { noremap = true, silent = true })
 map('n', '<leader>w', 'yiw', { noremap = true, silent = true })
 map('v', '<leader>p', '"_dP')
 map({ 'n', 'v' }, '<leader>d', '"_d')
--- map({ 'n', 'i', 'v' }, '<C-/>', '<Plug>(comment_toggle_linewise)')
+-- map({ 'n', 'i', 'v' }, '<C-_>', '<Plug>(comment_toggle_linewise)')
 
 -- Buffer related
 map({ 'n', 'i', 'v' }, '<C-s>', '<cmd>noautocmd w<cr>', { noremap = true, desc = 'Save current buffer (without formatting)' })
