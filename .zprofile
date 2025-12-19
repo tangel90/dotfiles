@@ -10,8 +10,9 @@ export TMPDIR="$HOME/.local/tmp"
 
 export LOCALCONFIG="$HOME/.local/config"
 export LOCALPROFILE="$LOCALCONFIG/.zprofile"
-export DEVLOG="$HOME/.local/tmp/dev.log"
-export PYLOG="$HOME/.local/tmp/python.log"
+export LOGDIR="$HOME/dev/logs"
+export DEVLOG="$LOGDIR/dev.log"
+export PYLOG="$LOGDIR/python.log"
 
 export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
@@ -19,7 +20,7 @@ export LANG=en_US.UTF-8
 export LC_CTYPE=en_US.UTF-8
 
 export FZF_DEFAULT_OPTS='--height 40% --layout reverse --border top'
-export FZF_DEFAULT_COMMAND='find .'
+export FZF_DEFAULT_COMMAND='fd . --hidden --exclude .git'
 export FZF_TMUX_OPTS='-p80%,60%'
 
 # SSH_AUTH_SOCK set to GPG to enable using gpgagent as the ssh agent.
@@ -161,6 +162,12 @@ function tmux-open-codex() {
     tmux select-window -t llm:codex-mini
 }
 
+function tmux-open-data() {
+      if ! tmux has-session -t data &>/dev/null; then
+        tmux new-session -d -s data -n sql -c "~/data"
+      fi
+      tmux switch-client -t data
+}
 function tmux-open-yazi() {
       # local selected_dir="${1:-$HOME}"
       # tmux display-message $selected_dir
@@ -194,7 +201,7 @@ function tmux-open-tmp() {
     local tmpdir="${TMPDIR:-/tmp}"
     local tmpfile="$(mktemp $tmpdir/tmp.XXXXXX.$ext)"
     local w_name=$(basename "$tmpfile" | tr . _)
-    tmux new-window -n "$w_name" -c "$tmpdir" "nvim \"$tmpfile\""
+    tmux new-session -d -s tmp -n "$w_name" -c "$tmpdir" "nvim \"$tmpfile\""
 }
 
 function tmux-open-todo() {
