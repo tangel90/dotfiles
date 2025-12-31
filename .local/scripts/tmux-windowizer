@@ -3,7 +3,7 @@
 if [[ $# -eq 1 ]]; then
     selected=$(find $1 -mindepth 0 -maxdepth 4 -type f | fzf)
 else
-    selected=$(find ~/ -mindepth 0 -maxdepth 6 -type f | fzf)
+    selected=$(find ~/ -mindepth 0 -maxdepth 8 -type f | fzf)
 fi
 
 if [[ -z $selected ]]; then

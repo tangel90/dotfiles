@@ -8,17 +8,13 @@ prepend_previewers = [
   { name = "*.ipynb", run = "nbpreview" },
 ]
 
-[opener]
-# play = [
-#   { run = 'mpv "$@"', orphan = true, for = "unix" },
-#   { run = '"C:\Program Files\mpv.exe" %*', orphan = true, for = "windows" },
+# [opener]
+# edit = [
+#   { run = '$EDITOR "$@"', block = true, for = "unix", desc = "nvim" },
+#   { run = "%EDITOR% %*", block = true, for = "windows" },
 # ]
-edit = [
-  { run = '$EDITOR "$@"', block = true, for = "unix", desc = "nvim" },
-  { run = "%EDITOR% %*", block = true, for = "windows" },
-]
-view = [{ run = 'visidata $@', block = true, for = "unix", desc = "visidata" }]
+# view = [{ run = 'visidata $@', block = true, for = "unix", desc = "visidata" }]
 # open = [{ run = 'xdg-open "$@"', desc = "Open" }]
-#
-[open]
-rules = [{ name = "*.csv", use = "view" }, { name = "*.json", use = ["edit", "view"] }]
+# #
+# [open]
+# rules = [{ name = "*.csv", use = "view" }, { name = "*.json", use = ["edit", "view"] }]

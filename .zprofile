@@ -55,13 +55,7 @@ alias cat="bat"
 # alias lg="gpg-unlock-lazygit"
 alias v="fd . --type f --hidden --exclude .git | fzf-tmux --border --preview='bat --style=numbers --color=always {}' -p 80%,80% | xargs nvim"
 alias chat="chatgpt"
-
 alias nvr="nvim --listen $HOME/.local/tmp/nvimsocket"
-
-if [ -x "$(command -v yazi)" ]; then
-    bindkey -s "^e" "yazi-cwd\n"
-    alias e="yazi-cwd"
-fi
 
 if [ -x "$(command -v fdfind)" ]; then
     alias fd="fdfind"
@@ -154,24 +148,13 @@ function tmux-open-claude() {
     tmux select-window -t llm:Claude
 }
 
-function tmux-open-codex() {
-    if ! tmux has-session -t llm 2>/dev/null; then
-        tmux new-session -d -s llm -n codex-mini -c "$PROJECTS_HOME" "zsh -c '$(which codex)'"
-    fi
-    tmux switch-client -t llm
-    tmux select-window -t llm:codex-mini
-}
-
 function tmux-open-data() {
       if ! tmux has-session -t data &>/dev/null; then
-        tmux new-session -d -s data -n sql -c "~/data"
+        tmux new-session -d -s data -n sql -c "$HOME/data"
       fi
       tmux switch-client -t data
 }
 function tmux-open-yazi() {
-      # local selected_dir="${1:-$HOME}"
-      # tmux display-message $selected_dir
-
       if ! tmux has-session -t files &>/dev/null; then
         tmux new-session -d -s files -n yazi "yazi"
       fi

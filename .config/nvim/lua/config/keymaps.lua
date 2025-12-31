@@ -36,7 +36,7 @@ map({ 'n', 'v' }, '<Leader>n', ':enew<CR>', { noremap = true, silent = true, des
 map({ 'n', 'v' }, '<Leader>v', ':vsplit<CR>', { noremap = true, silent = true, desc = 'New vertical split' })
 map({ 'n', 'v' }, '<Leader>tn', ':tabnew<CR>', { noremap = true, silent = true, desc = 'New vertical split' })
 map({ 'n', 'v' }, '<Tab>', ':lua ToggleBuffers()<CR>', { noremap = true, silent = true, desc = 'Last buffer' })
-map('n', '<Leader>m', 'mz:%s/\\r//g<CR>`z', { desc = 'Remove Carriage Returns From Buffer' })
+map('n', '<Leader>rm', 'mz:%s/\\r//g<CR>`z', { desc = 'Remove Carriage Returns From Buffer' })
 
 map({ 'n', 'v' }, '<Leader>rr', function()
       vim.cmd('e!')

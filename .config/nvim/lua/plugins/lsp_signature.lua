@@ -15,7 +15,7 @@ return {
     -- mode, 10 by default
 
     max_height = 12, -- max height of signature floating_window
-    max_width = 80, -- max_width of signature floating_window, line will be wrapped if exceed max_width
+    max_width = 60, -- max_width of signature floating_window, line will be wrapped if exceed max_width
     -- the value need >= 40
     wrap = true, -- allow doc/signature text wrap inside floating_window, useful if your lsp return doc/sig is too long
     floating_window = true, -- show hint in a floating window, set to false for virtual text only mode
@@ -62,7 +62,7 @@ return {
     shadow_blend = 36, -- if you using shadow as border use this set the opacity
     shadow_guibg = 'Black', -- if you using shadow as border use this set the color e.g. 'Green' or '#121315'
     timer_interval = 200, -- default timer check interval set to lower value if you want to reduce latency
-    toggle_key = nil, -- toggle signature on and off in insert mode,  e.g. toggle_key = '<M-x>'
+    toggle_key = '<M-x>', -- toggle signature on and off in insert mode,  e.g. toggle_key = '<M-x>'
     toggle_key_flip_floatwin_setting = false, -- true: toggle floating_windows: true|false setting after toggle key pressed
     -- false: floating_windows setup will not change, toggle_key will pop up signature helper, but signature
     -- may not popup when typing depends on floating_window setting
