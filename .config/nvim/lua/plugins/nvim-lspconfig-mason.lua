@@ -17,11 +17,18 @@ return { -- LSP Configuration & Plugins
   config = function()
     -- If you're wondering about lsp vs treesitter, you can check out the wonderfully
     -- and elegantly composed help section, `:help lsp-vs-treesitter`
+
+    -- vim.lsp.config is the new way to config lsp since Neovim 0.11
     vim.lsp.config('lua_ls', {
       settings = {
         Lua = {
           diagnostics = {
             globals = { 'vim' },
+          },
+          format = {
+            enable = true,
+            indent_style = "space",
+            indent_size = "4",
           },
         },
       },
