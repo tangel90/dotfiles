@@ -1,17 +1,22 @@
 #!/usr/bin/env bash
 
-if [[ -z $PROJECTS_HOME ]]; then
-    echo "Please export PROJECTS_HOME first."
+PROJECTS_HOME=${PROJECTS_HOME:-$HOME/projects/}
+PLAYGROUND_HOME=${PLAYGROUND_HOME:-$HOME/playground/}
+
+if [[ ! -d $PROJECTS_HOME ]]; then
+    echo "Path not found: $PROJECTS_HOME"
 fi
 
 if [[ $# -eq 1 ]]; then
-    selected=$(find $1 -maxdepth 2 -type d | fzf)
+    selected=$(find $1 -maxdepth 3 -type d | fzf)
 else
-    # selected=$(find "$PROJECTS_HOME" "$PLAYGROUND_HOME" "/home/thomas/.local/" "/home/thomas/data/"\
-    selected=$(find "$HOME" \
-        -mindepth 1 -maxdepth 4 \
-         \( -name node_modules -o -name .git -o -name venv -o -name __pycache__ \) -prune -o \
-        -type d -print | fzf)
+    selected=$(
+        # find "$PROJECTS_HOME" "$PLAYGROUND_HOME" \
+        find "$HOME" \
+             -mindepth 1 -maxdepth 6 \
+             \( -name node_modules -o -name .git -o -name venv -o -name __pycache__ \) -prune \
+             -o -type d -print | fzf
+         )
 fi
 
 if [[ -z $selected ]]; then

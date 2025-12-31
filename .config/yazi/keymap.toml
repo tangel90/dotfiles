@@ -4,6 +4,11 @@ run = "cd ~/projects"
 desc = "cd into ~/projects"
 
 [[mgr.prepend_keymap]]
+on = ["g", "l"]
+run = "cd ~/dev/logs"
+desc = "cd into ~/dev/logs"
+
+[[mgr.prepend_keymap]]
 on = ["g", "d"]
 run = "cd ~/data"
 desc = "cd into ~/data"

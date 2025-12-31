@@ -30,17 +30,6 @@ require('lazy').setup({
       handle_url_schemes = true,
     }, -- see Options
   },
-  {
-    "rmagatti/auto-session",
-    lazy = false,
-    ---enables autocomplete for opts
-    ---@module "auto-session"
-    ---@type AutoSession.Config
-    opts = {
-      suppressed_dirs = { "~/", "~/Projects", "~/Downloads", "/" },
-      -- log_level = 'debug',
-    },
-  },
   -- {
   --   'folke/persistence.nvim',
   --   event = 'BufReadPre', -- this will only start session saving when an actual file was opened
@@ -54,12 +43,6 @@ require('lazy').setup({
   --     { "<leader>qd", function() require("persistence").stop() end, desc = "Stop persistence" },
   --   },
   --
-  -- },
-  -- {
-  --   'norcalli/nvim-colorizer.lua',
-  --   config = function()
-  --     require('colorizer').setup()
-  --   end,
   -- },
   'tpope/vim-sleuth', -- Detect tabstop(!!) and shiftwidth automatically
   -- Highlight todo, notes, etc in comments
