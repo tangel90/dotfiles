@@ -19,6 +19,7 @@ go
 nvm
 zig
 jq
+direnv
 glow
 unzip
 yazi
