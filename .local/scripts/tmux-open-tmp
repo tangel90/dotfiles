@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+ext=$(echo -e "md\npy\ngo" | fzf)
+[[ -z $ext ]] && { echo "No extension selected"; exit 1; }
+
+tmpdir="${TMPDIR:-/tmp}"
+tmpfile=$(mktemp "$tmpdir/tmp.XXXXXX.$ext")
+w_name=$(basename "$tmpfile" | tr '.' '_')
+
+tmux new-window -n "$w_name" -c "$tmpdir" nvim "$tmpfile"

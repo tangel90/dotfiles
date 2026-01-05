@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if ! tmux has-session -t llm 2>/dev/null; then
-  tmux new-session -d -s llm -n codex-mini -c "${PROJECTS_HOME:-/home/thomas/projects}" "zsh -i -c '$(which codex)'"
+  tmux new-session -d -s llm -n codex-mini -c "${PROJECTS_HOME:-/home/thomas/projects}" "zsh -i -c '$(which chatgpt)'"
   if [[ $? -eq 1 ]]; then
     echo "ERROR: Could not spawn tmux session."
     exit 1

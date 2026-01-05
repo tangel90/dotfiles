@@ -22,7 +22,8 @@ map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python %<CR>', { desc = 'python m
 
 -- yank / delete / visual behavior
 map('n', '<leader>.', 'viw', { noremap = true, silent = true })
-map('n', '<leader>d.', 'diwsdb', { noremap = true, silent = true })
+map('n', '<leader>d.', 'diwsdb', { noremap = false, silent = true })
+map('n', '<leader>y', 'yiw', { noremap = true, silent = true })
 map('n', '<leader>y', 'yiw', { noremap = true, silent = true })
 map('n', '<leader>w', 'yiw', { noremap = true, silent = true })
 map('v', '<leader>p', '"_dP')

@@ -5,6 +5,10 @@ vim.opt.clipboard:append 'unnamedplus'
 -- Enable break indent
 vim.opt.breakindent = true
 
+-- Disable the bottom statusbar
+-- vim.opt.laststatus = 0
+-- vim.go.laststatus = 0
+
 vim.opt.tabstop = 2
 vim.opt.softtabstop = 2
 vim.opt.shiftwidth = 2
@@ -16,7 +20,7 @@ vim.opt.cursorline = true
 
 vim.g.OmniSharp_server_use_net6 = 1
 
-vim.o.sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions"-- Hide deprecation warnings
+vim.o.sessionoptions = "blank,buffers,curdir,folds,help,localoptions"-- Hide deprecation warnings
 vim.g.deprecation_warnings = false
 -- Set filetype to `bigfile` for files larger than 1.5 MB
 -- Only vim syntax will be enabled (with the correct filetype)

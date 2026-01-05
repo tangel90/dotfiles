@@ -17,6 +17,13 @@ vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
   command = 'set filetype=markdown',
 })
 
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "go",  -- or your target language
+  callback = function()
+    -- Map <leader>r to replace '=' with ':=' in the current line
+    vim.api.nvim_buf_set_keymap(0, 'n', '<leader>rd', [[:s/=/:=/g<CR>]], { noremap = true, silent = true })
+  end,
+})
 -- vim.api.nvim_create_autocmd("VimEnter", {
 --   callback = function()
 --     if vim.fn.argc() == 0 then

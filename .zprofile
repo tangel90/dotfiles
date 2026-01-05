@@ -5,14 +5,11 @@ export LD_LIBRARY_PATH=/usr/local/lib
 export ANDROID_HOME=$HOME/Android/Sdk
 export RIPGREP_CONFIG_PATH="$HOME/.config/ripgrep/.ripgreprc"
 export EDITOR="nvim"
-export TERM="xterm-256color"
+export TERM="tmux-256color"
 export TMPDIR="$HOME/.local/tmp"
 
 export LOCALCONFIG="$HOME/.local/config"
 export LOCALPROFILE="$LOCALCONFIG/.zprofile"
-export LOGDIR="$HOME/dev/logs"
-export DEVLOG="$LOGDIR/dev.log"
-export PYLOG="$LOGDIR/python.log"
 
 export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
@@ -51,7 +48,6 @@ alias c="clear"
 alias tls="tmux-list-session"
 alias ls="ls --color=auto -X"
 alias vim="nvim"
-alias cat="bat"
 # alias lg="gpg-unlock-lazygit"
 alias v="fd . --type f --hidden --exclude .git | fzf-tmux --border --preview='bat --style=numbers --color=always {}' -p 80%,80% | xargs nvim"
 alias chat="chatgpt"
@@ -59,6 +55,10 @@ alias nvr="nvim --listen $HOME/.local/tmp/nvimsocket"
 
 if [ -x "$(command -v fdfind)" ]; then
     alias fd="fdfind"
+fi
+
+if [ -x "$(command -v bat)"]; then
+    alias cat="bat"
 fi
 
 if [ -x "$(command -v exa)" ]; then
@@ -159,32 +159,6 @@ function tmux-open-yazi() {
         tmux new-session -d -s files -n yazi "yazi"
       fi
       tmux switch-client -t files
-}
-
-function tmux-open-lazygit() {
-    if ! ls -a | grep -q '^\.git$'; then
-        return 0
-    fi
-
-    if [ -z "$TMUX" ]; then
-        echo "Not inside tmux session"
-        return 1
-    fi
-
-    if ! tmux list-windows 2>/dev/null | grep -q '^lazygit$'; then
-        tmux new-window -n lazygit "lazygit"
-    fi
-
-    tmux select-window -t lazygit
-}
-
-function tmux-open-tmp() {
-    ext=$(echo -e "md\npy\ngo" | fzf)
-    [[ -z $ext ]] && { echo "No extension selected"; return 1 }
-    local tmpdir="${TMPDIR:-/tmp}"
-    local tmpfile="$(mktemp $tmpdir/tmp.XXXXXX.$ext)"
-    local w_name=$(basename "$tmpfile" | tr . _)
-    tmux new-session -d -s tmp -n "$w_name" -c "$tmpdir" "nvim \"$tmpfile\""
 }
 
 function tmux-open-todo() {
