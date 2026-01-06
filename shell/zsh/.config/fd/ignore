@@ -1,0 +1,8 @@
+.swap
+Trash/
+go/
+.cache/
+__pycache__/
+.conda/
+.build/
+.miniconda
