@@ -1,11 +1,11 @@
 export XDG_CONFIG_HOME="$HOME/.config"
-export PATH=$PATH:$HOME/.local/bin:$HOME/bin:/usr/local/bin
+export PATH=$HOME/.local/bin:/usr/local/bin:$PATH
 export PATH=$PATH:$HOME/.local/scripts
 export LD_LIBRARY_PATH=/usr/local/lib
-export ANDROID_HOME=$HOME/Android/Sdk
-export RIPGREP_CONFIG_PATH="$HOME/.config/ripgrep/.ripgreprc"
+export RIPGREP_CONFIG_PATH="$XDG_CONFIG_HOME/ripgrep/.ripgreprc"
 export EDITOR="nvim"
 export TERM="xterm-256color"
+export COLORTERM="truecolor"
 export TMPDIR="$HOME/.local/tmp"
 
 export LOCALCONFIG="$HOME/.local/config"
