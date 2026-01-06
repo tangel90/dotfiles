@@ -1,9 +1,6 @@
-README.org
+README.md
 docs
 .gitignore
 .git
 installer.sh
-zshrc.org
-udevmon.yaml
-Microsoft.Powershell_profile.ps1
-.config/PowerShell
+install*
