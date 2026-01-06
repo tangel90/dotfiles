@@ -1,6 +1,8 @@
 --- custom keymaps --
 local map = vim.keymap.set
 
+map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python %<CR>', { desc = 'python main.py' })
+
 -- Vim motion keymaps
 map('i', 'kj', '<ESC>', { noremap = true })
 map({ 'n', 'v' }, 'gl', 'L')
@@ -9,16 +11,40 @@ map({ 'n', 'v' }, 'J', '<C-e>j')
 map({ 'n', 'v' }, 'K', '<C-y>k')
 map({ 'n', 'v' }, 'gh', 'H')
 map({ 'n', 'v' }, 'H', 'J')
-map('n', 'n', 'nzzzv')
-map('n', 'N', 'Nzzzv')
 map('n', 'zk', 'zt')
 map('n', 'zj', 'zb')
 -- map({ 'n', 'v' }, '<C-e>', 'J')
 map({ 'n', 'v' }, '<C-d>', '<C-d>zz')
 map({ 'n', 'v' }, '<C-u>', '<C-u>zz')
 map('n', '<Esc>', '<cmd>nohlsearch<CR>')
+-- https://github.com/mhinz/vim-galore#saner-behavior-of-n-and-n
+map("n", "n", "'Nn'[v:searchforward].'zv'", { expr = true, desc = "Next Search Result" })
+map("x", "n", "'Nn'[v:searchforward]", { expr = true, desc = "Next Search Result" })
+map("o", "n", "'Nn'[v:searchforward]", { expr = true, desc = "Next Search Result" })
+map("n", "N", "'nN'[v:searchforward].'zv'", { expr = true, desc = "Prev Search Result" })
+map("x", "N", "'nN'[v:searchforward]", { expr = true, desc = "Prev Search Result" })
+map("o", "N", "'nN'[v:searchforward]", { expr = true, desc = "Prev Search Result" })
+-- better up/down
+map({ "n", "x" }, "j", "v:count == 0 ? 'gj' : 'j'", { desc = "Down", expr = true, silent = true })
+map({ "n", "x" }, "k", "v:count == 0 ? 'gk' : 'k'", { desc = "Up", expr = true, silent = true })
+--
+--keywordprg
+map("n", "<leader>K", "<cmd>norm! K<cr>", { desc = "Keywordprg" })
 
-map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python %<CR>', { desc = 'python main.py' })
+-- better indenting
+map("x", "<", "<gv")
+map("x", ">", ">gv")
+
+-- commenting
+map("n", "gco", "o<esc>Vcx<esc><cmd>normal gcc<cr>fxa<bs>", { desc = "Add Comment Below" })
+map("n", "gcO", "O<esc>Vcx<esc><cmd>normal gcc<cr>fxa<bs>", { desc = "Add Comment Above" })
+
+map("n", "<A-j>", "<cmd>execute 'move .+' . v:count1<cr>==", { desc = "Move Down" })
+map("n", "<A-k>", "<cmd>execute 'move .-' . (v:count1 + 1)<cr>==", { desc = "Move Up" })
+map("i", "<A-j>", "<esc><cmd>m .+1<cr>==gi", { desc = "Move Down" })
+map("i", "<A-k>", "<esc><cmd>m .-2<cr>==gi", { desc = "Move Up" })
+map("v", "<A-j>", ":<C-u>execute \"'<,'>move '>+\" . v:count1<cr>gv=gv", { desc = "Move Down" })
+map("v", "<A-k>", ":<C-u>execute \"'<,'>move '<-\" . (v:count1 + 1)<cr>gv=gv", { desc = "Move Up" })
 
 -- yank / delete / visual behavior
 map('n', '<leader>.', 'viw', { noremap = true, silent = true })

@@ -34,7 +34,10 @@ fi
 
 if ! tmux has-session -t="$selected_name" 2> /dev/null; then
     echo "Creating session"
-    if ls -a $selected | grep -q '^.git$'; then
+    if git -C $selected rev-parse --show-toplevel > /dev/null 2>&1; then
+        repo_root=$(git -C "$selected" rev-parse --show-toplevel)
+        repo_name=$(basename "$repo_root")
+        selected_name=$repo_name
         tmux new-session -ds "$selected_name" -c "$selected"
         tmux send-keys -t "$selected_name" "nvim" C-m
     elif [[ "$selected_name" == *data || "$selected_name" == "reports" ]]; then

@@ -56,7 +56,7 @@ return {
                 main = {
                     base = '#1E1E1E',
                     surface = '#242424',
-                    overlay = '#2E313A',
+                    overlay = '#22282F',
                     muted = "#6a6e6f",
                     subtle = "#999cba",
                     text = "#e0def4",

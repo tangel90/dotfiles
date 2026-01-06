@@ -4,7 +4,7 @@ export PATH=$PATH:$HOME/.local/scripts
 export LD_LIBRARY_PATH=/usr/local/lib
 export RIPGREP_CONFIG_PATH="$XDG_CONFIG_HOME/ripgrep/.ripgreprc"
 export EDITOR="nvim"
-export TERM="tmux-256color"
+export COLORTERM="truecolor"
 export TMPDIR="$HOME/.local/tmp"
 
 export LOCALCONFIG="$HOME/.local/config"
@@ -167,10 +167,10 @@ function tmux-open-data() {
       tmux switch-client -t data
 }
 function tmux-open-yazi() {
-      if ! tmux has-session -t files &>/dev/null; then
-        tmux new-session -d -s files -n yazi "yazi"
+      if ! tmux has-session -t Files &>/dev/null; then
+        tmux new-session -d -s Files -n yazi "yazi"
       fi
-      tmux switch-client -t files
+      tmux switch-client -t Files
 }
 
 function tmux-open-lazygit() {
