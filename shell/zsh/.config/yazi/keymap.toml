@@ -14,6 +14,11 @@ run = "cd /"
 desc = "cd into root /"
 
 [[mgr.prepend_keymap]]
+on = "s"
+run = "search fd --args --hidden --follow --exclude .git"
+desc = "Search files by name using fd" 
+
+[[mgr.prepend_keymap]]
 on = ["g", "l"]
 run = "cd ~/dev/logs"
 desc = "cd into ~/dev/logs"
