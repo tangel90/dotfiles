@@ -3,4 +3,4 @@ docs
 .gitignore
 .git
 installer.sh
-install*
+install_exa_completions.sh

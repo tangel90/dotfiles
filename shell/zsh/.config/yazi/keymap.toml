@@ -4,6 +4,16 @@ run = "cd ~/projects"
 desc = "cd into ~/projects"
 
 [[mgr.prepend_keymap]]
+on = ["g", "H"]
+run = "cd /mnt/c/Users/T2192"
+desc = "cd into Windows Home directory"
+
+[[mgr.prepend_keymap]]
+on = ["g", "r"]
+run = "cd /"
+desc = "cd into root /"
+
+[[mgr.prepend_keymap]]
 on = ["g", "l"]
 run = "cd ~/dev/logs"
 desc = "cd into ~/dev/logs"
@@ -12,6 +22,11 @@ desc = "cd into ~/dev/logs"
 on = ["g", "d"]
 run = "cd ~/data"
 desc = "cd into ~/data"
+
+[[mgr.prepend_keymap]]
+on = ["<Enter>"]
+run = "enter"
+desc = "Enter directory"
 
 [[mgr.prepend_keymap]]
 on = ["g", "q"]

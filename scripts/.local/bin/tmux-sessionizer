@@ -7,8 +7,8 @@ if [[ ! -d $PROJECTS_HOME ]]; then
     echo "Path not found: $PROJECTS_HOME"
 fi
 
-if [[ $# -eq 1 ]]; then
-    selected=$(find $1 -maxdepth 3 -type d | fzf)
+if [[ $# -gt 1 ]]; then
+    selected=$(find $@ -maxdepth 3 -type d | fzf)
 else
     selected=$(
         # find "$PROJECTS_HOME" "$PLAYGROUND_HOME" \

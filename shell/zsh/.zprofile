@@ -53,9 +53,11 @@ alias ls="ls --color=auto -X"
 alias vim="nvim"
 alias cat="bat"
 alias lg="lazygit"
-alias v="fd . --type f --hidden --exclude .git | fzf-tmux --border --preview='bat --style=numbers --color=always {}' -p 80%,80% | xargs nvim"
+alias vc="fd . '$HOME/.config' --type f --follow --hidden --exclude .git | fzf-tmux --border --preview='bat --style=numbers --color=always {}' -p 80%,80% | xargs nvim"
+alias e="yazi-cwd"
 alias chat="chatgpt"
 alias nvr="nvim --listen $HOME/.local/tmp/nvimsocket"
+alias fd="$(which fd) --follow --hidden --exclude .git"
 
 if [ -x "$(command -v fdfind)" ]; then
     alias fd="fdfind"
@@ -72,7 +74,17 @@ function gpg-unlock-lazygit() {
     command lazygit
 }
 
-function vv() {
+v() {
+    local pattern=${1:-.}
+    local files=$(command fd "$pattern" "$HOME" --follow --type f --hidden --exclude .git)
+    # echo ${#files[@]}
+
+    echo $files \
+        | fzf-tmux --border --preview='bat --style=numbers --color=always {}' -p 80%,80% \
+        | xargs -r nvim
+}
+
+vv() {
     local CONFIG_DIRS=$(find -L $XDG_CONFIG_HOME -type d -name "nvim*")
     selected_config=$(echo "$CONFIG_DIRS" | fzf --prompt "Nvim Config > ")
 
@@ -179,12 +191,13 @@ function tmux-open-lazygit() {
 }
 
 function tmux-open-tmp() {
-    ext=$(echo -e "md\npy\ngo" | fzf)
+    ext=$(echo -e "md\npy\ngo\nlua\njson\nsh" | fzf)
     [[ -z $ext ]] && { echo "No extension selected"; return 1 }
     local tmpdir="${TMPDIR:-/tmp}"
     local tmpfile="$(mktemp $tmpdir/tmp.XXXXXX.$ext)"
     local w_name=$(basename "$tmpfile" | tr . _)
     tmux new-session -d -s tmp -n "$w_name" -c "$tmpdir" "nvim \"$tmpfile\""
+    tmux switch-client tmp
 }
 
 function tmux-open-todo() {

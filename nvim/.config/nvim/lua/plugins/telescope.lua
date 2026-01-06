@@ -143,7 +143,7 @@ return { -- Fuzzy Finder (files, lsp, etc)
     end, { desc = '[F]ind Files in Home Directory' })
 
     vim.keymap.set('n', '<leader>fo', function()
-      local projects_home = os.getenv 'PROJECTS_HOME'
+      local projects_home = os.getenv 'PROJECTS_HOME' or '~/projects'
       if not projects_home then
         print 'Please set $PROJECTS_HOME environment variable.'
       else

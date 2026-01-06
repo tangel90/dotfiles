@@ -58,6 +58,19 @@
                 "source": "Microsoft.WSL"
             },
             {
+                "guid": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
+                "hidden": false,
+                "name": "PowerShell",
+                "colorScheme": "rose-pine-moon",
+                "source": "Windows.Terminal.PowershellCore"
+                "font": 
+                {
+                    "face": "JetBrainsMono Nerd Font",
+                    "size": 16
+                },
+                "startingDirectory": "C:\\Users\\T2192"
+            },
+            {
                 "colorScheme": "rose-pine-moon",
                 "commandline": "C:\\Users\\T2192\\.dotnet\\tools\\pwsh.exe -ExecutionPolicy ByPass -NoExit -Command \"& 'C:\\Users\\T2192\\AppData\\Local\\miniconda3\\shell\\condabin\\conda-hook.ps1' ; conda activate 'C:\\Users\\T2192\\AppData\\Local\\miniconda3' \"",
                 "font": 
@@ -100,12 +113,6 @@
                 "hidden": false,
                 "name": "Git Bash",
                 "source": "Git"
-            },
-            {
-                "guid": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
-                "hidden": false,
-                "name": "PowerShell",
-                "source": "Windows.Terminal.PowershellCore"
             }
         ]
     },
