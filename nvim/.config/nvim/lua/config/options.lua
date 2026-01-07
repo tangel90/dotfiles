@@ -2,12 +2,25 @@
 --  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
 vim.opt.clipboard:append 'unnamedplus'
+
+vim.g.clipboard = {
+  name = "myclip",
+  copy = {
+    ["+"] = "win32yank.exe -i",
+    ["*"] = "win32yank.exe -i --primary",
+  },
+  paste = {
+    ["+"] = "win32yank.exe -o",
+    ["*"] = "win32yank.exe -o --primary",
+  },
+  cache_enabled = 0,
+}
 -- Enable break indent
 vim.opt.breakindent = true
 
 -- Disable the bottom statusbar
--- vim.opt.laststatus = 0
--- vim.go.laststatus = 0
+vim.opt.laststatus = 0
+vim.go.laststatus = 0
 
 vim.opt.tabstop = 2
 vim.opt.softtabstop = 2

@@ -16,7 +16,7 @@ export LANG=en_US.UTF-8
 export LC_CTYPE=en_US.UTF-8
 
 export FZF_DEFAULT_OPTS='--height 40% --layout reverse --border top'
-export FZF_DEFAULT_COMMAND='fd . --hidden --exclude .git'
+export FZF_DEFAULT_COMMAND='fd . --follow --hidden --exclude .git'
 export FZF_TMUX_OPTS='-p80%,60%'
 
 # SSH_AUTH_SOCK set to GPG to enable using gpgagent as the ssh agent.
@@ -59,7 +59,7 @@ if [ -x "$(command -v fdfind)" ]; then
     alias fd="fdfind"
 fi
 
-if [ -x "$(command -v bat)"]; then
+if [ -x "$(command -v bat)" ]; then
     alias cat="bat"
 fi
 
@@ -74,7 +74,7 @@ function gpg-unlock-lazygit() {
     command lazygit
 }
 
-v() {
+function v() {
     local pattern=${1:-.}
     local files=$(command fd "$pattern" "$HOME" --follow --type f --hidden --exclude .git)
     # echo ${#files[@]}
@@ -84,7 +84,7 @@ v() {
         | xargs -r nvim
 }
 
-vv() {
+function vv() {
     local CONFIG_DIRS=$(find -L $XDG_CONFIG_HOME -type d -name "nvim*")
     selected_config=$(echo "$CONFIG_DIRS" | fzf --prompt "Nvim Config > ")
 

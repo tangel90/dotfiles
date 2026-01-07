@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 if [[ $# -eq 1 ]]; then
-    selected=$(find $1 -mindepth 0 -maxdepth 4 -type f | fzf)
+    selected=$(command fd . "$1" -d 4 --type f --follow --hidden --exclude .git | fzf )
 else
-    selected=$(find ~/ -mindepth 0 -maxdepth 8 -type f | fzf)
+    selected=$(command fd . "$HOME" -d 8 --type f --follow --hidden --exclude .git | fzf )
 fi
 
 if [[ -z $selected ]]; then

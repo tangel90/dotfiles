@@ -8,15 +8,9 @@ if [[ ! -d $PROJECTS_HOME ]]; then
 fi
 
 if [[ $# -gt 1 ]]; then
-    selected=$(find $@ -maxdepth 3 -type d | fzf)
+    selected=$(command fd . $@ --type d -d 4 | fzf)
 else
-    selected=$(
-        # find "$PROJECTS_HOME" "$PLAYGROUND_HOME" \
-        find "$HOME" \
-             -mindepth 1 -maxdepth 6 \
-             \( -name node_modules -o -name .git -o -name venv -o -name __pycache__ \) -prune \
-             -o -type d -print | fzf
-         )
+    selected=$(command fd . "$HOME" --type d -d 6 | fzf )
 fi
 
 if [[ -z $selected ]]; then

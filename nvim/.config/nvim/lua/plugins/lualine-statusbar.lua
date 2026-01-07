@@ -49,7 +49,10 @@ return {
                 },
             },
             sections = {
-                lualine_a = {},
+                lualine_a = {
+                    { 'branch', color = { fg = '#999cba', bg = '#1E1E1E', gui = 'bold' }, padding = {left = 2}},
+                    { 'diagnostics', color = { fg = '#ffaa88', bg = '#1E1E1E', gui = 'bold' } },
+                },
                 lualine_b = {},
                 lualine_c = {
                     "%=",
@@ -73,7 +76,7 @@ return {
                             unnamed = '[No Name]', -- Text to show for unnamed buffers.
                             newfile = '[New]', -- Text to show for newly created file before first write
                         },
-                        color = { fg = '#ffaa88', bg = '#1E1E1E', gui = 'bold' },
+                        color = { fg = '#ffaa88', bg = '#1E1E1E' },
                     },
                     {
                         'filetype',
@@ -83,10 +86,7 @@ return {
                 },
                 lualine_x = {},
                 lualine_y = {},
-                lualine_z = {
-                    { 'branch', color = { fg = '#ffaa88', bg = '#1E1E1E', gui = 'bold' } },
-                    { 'diagnostics', color = { fg = '#ffaa88', bg = '#1E1E1E', gui = 'bold' } },
-                },
+                lualine_z = {},
             },
             inactive_sections = {
                 lualine_a = {},
@@ -108,7 +108,7 @@ return {
             inactive_winbar = {},
             extensions = {},
         }
-        -- vim.opt.laststatus = 0
-        -- vim.go.laststatus = 0
+        vim.opt.laststatus = 0
+        vim.go.laststatus = 0
     end,
 }
