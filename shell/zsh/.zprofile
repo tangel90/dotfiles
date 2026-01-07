@@ -53,11 +53,7 @@ alias vc="fd . '$HOME/.config' --type f --follow --hidden --exclude .git | fzf-t
 alias e="yazi-cwd"
 alias chat="chatgpt"
 alias nvr="nvim --listen $HOME/.local/tmp/nvimsocket"
-alias fd="$(which fd) --follow --hidden --exclude .git"
-
-if [ -x "$(command -v fdfind)" ]; then
-    alias fd="fdfind"
-fi
+alias fd="fd --follow --hidden --exclude .git"
 
 if [ -x "$(command -v bat)" ]; then
     alias cat="bat"

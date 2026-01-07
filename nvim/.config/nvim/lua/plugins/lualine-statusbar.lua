@@ -49,13 +49,10 @@ return {
                 },
             },
             sections = {
-                lualine_a = {
-                    { 'branch', color = { fg = '#999cba', bg = '#1E1E1E', gui = 'bold' }, padding = {left = 2}},
-                    { 'diagnostics', color = { fg = '#ffaa88', bg = '#1E1E1E', gui = 'bold' } },
-                },
+                lualine_a = {},
                 lualine_b = {},
-                lualine_c = {
-                    "%=",
+                lualine_c = {},
+                lualine_x = {
                     {
                         'filename',
                         file_status = true, -- Displays file status (readonly status, modified status)
@@ -84,8 +81,10 @@ return {
                         color = { bg = '#1E1E1E' },
                     },
                 },
-                lualine_x = {},
-                lualine_y = {},
+                lualine_y = {
+                    { 'branch', color = { fg = '#999cba', bg = '#1E1E1E', gui = 'bold' }, padding = {left = 2}},
+                    { 'diagnostics', color = { fg = '#ffaa88', bg = '#1E1E1E', gui = 'bold' } },
+                },
                 lualine_z = {},
             },
             inactive_sections = {

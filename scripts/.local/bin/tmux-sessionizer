@@ -8,9 +8,9 @@ if [[ ! -d $PROJECTS_HOME ]]; then
 fi
 
 if [[ $# -gt 1 ]]; then
-    selected=$(command fd . $@ --type d -d 4 | fzf)
+    selected=$(fd . $@ --type d -d 4 --hidden --follow | fzf)
 else
-    selected=$(command fd . "$HOME" --type d -d 6 | fzf )
+    selected=$(fd . "$HOME" --type d -d 6 --hidden --follow | fzf )
 fi
 
 if [[ -z $selected ]]; then
