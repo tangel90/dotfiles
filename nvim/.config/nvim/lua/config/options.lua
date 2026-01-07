@@ -19,8 +19,8 @@ vim.g.clipboard = {
 vim.opt.breakindent = true
 
 -- Disable the bottom statusbar
-vim.opt.laststatus = 0
-vim.go.laststatus = 0
+-- vim.opt.laststatus = 0
+-- vim.go.laststatus = 0
 
 vim.opt.tabstop = 2
 vim.opt.softtabstop = 2

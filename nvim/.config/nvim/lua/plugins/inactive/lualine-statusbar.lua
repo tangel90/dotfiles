@@ -103,7 +103,7 @@ return {
             inactive_winbar = {},
             extensions = {},
         }
-        vim.opt.laststatus = 0
-        vim.go.laststatus = 0
+        -- vim.opt.laststatus = 0
+        -- vim.go.laststatus = 0
     end,
 }
