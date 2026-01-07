@@ -74,7 +74,7 @@ return {
             -- Override colors
             colors = {
                 bg = '#1E1E1E',
-                inactiveBg = '#1c1c24',
+                inactiveBg = '#22282F',
                 fg = '#cdcdcd',
                 floatBorder = '#878787',
                 line = '#252530',
