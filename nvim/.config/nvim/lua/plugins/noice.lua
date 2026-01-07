@@ -49,10 +49,10 @@ return {
         },
         -- default options for require('noice').redirect
         -- see the section on Command Redirection
-        redirect = {
-            view = 'popup',
-            filter = { event = 'msg_show' },
-        },
+        -- redirect = {
+        --     view = 'popup',
+        --     filter = { event = 'msg_show' },
+        -- },
         -- You can add any custom commands below that will be available with `:Noice command`
         commands = {
             history = {
@@ -164,7 +164,6 @@ return {
         markdown = {
             hover = {
                 ['|(%S-)|'] = vim.cmd.help, -- vim help links
-                ['%[.-%]%((%S-)%)'] = require('noice.util').open, -- markdown links
             },
             highlights = {
                 ['|%S-|'] = '@text.reference',
@@ -189,7 +188,36 @@ return {
         },
         throttle = 1000 / 30, -- how frequently does Noice need to check for ui updates? This has no effect when in blocking mode.
         views = {}, ---@see section on views
-        routes = {}, --- @see section on routes
+        routes = {
+            {
+                filter = { event = 'msg_show', any = { { find = '%d+L, %d+B' } } },
+                view = 'mini',
+            },
+            {
+                filter = { event = 'msg_show', kind = { 'shell_out', 'shell_err' } },
+                view = 'split',
+                opts = {
+                    level = 'info',
+                    skip = false,
+                    replace = false,
+                },
+            },
+            {
+                filter = {
+                    event = 'msg_show',
+                    any = {
+                        { find = '; after #%d+' },
+                        { find = '; before #%d+' },
+                        { find = 'more lines' },
+                        { find = 'fewer lines' },
+                        { find = 'search hit BOTTOM' },
+                        { find = 'pick_window' },
+                        { find = 'fargs' },
+                    },
+                },
+                opts = { skip = true },
+            },
+        },
         status = {}, --- @see section on statusline components
         format = {}, --- @see section on formatting
     },

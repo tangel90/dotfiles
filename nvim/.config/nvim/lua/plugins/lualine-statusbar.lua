@@ -9,10 +9,10 @@ return {
         custom_scheme.normal.b.bg = '#1E1E1E'
         custom_scheme.insert.b.bg = '#1E1E1E'
         custom_scheme.visual.b.bg = '#1E1E1E'
-        custom_scheme.normal.c.bg = '#1E1E1E'
-        custom_scheme.insert.c.bg = '#1E1E1E'
-        custom_scheme.visual.c.bg = '#1E1E1E'
-        custom_scheme.command.c.bg = '#1E1E1E'
+        -- custom_scheme.normal.c.bg = '#1E1E1E'
+        -- custom_scheme.insert.c.bg = '#1E1E1E'
+        -- custom_scheme.visual.c.bg = '#1E1E1E'
+        -- custom_scheme.command.c.bg = '#1E1E1E'
         -- custom_everforest.normal.x.fg = '#ebbcba'
 
         require('lualine').setup {
@@ -53,6 +53,8 @@ return {
                 lualine_b = {},
                 lualine_c = {},
                 lualine_x = {
+                    { 'branch', color = { fg = '#999cba', bg = '#1E1E1E', gui = 'bold' }, padding = {left = 2}},
+                    { 'diagnostics', color = { fg = '#ffaa88', bg = '#1E1E1E', gui = 'bold' } },
                     {
                         'filename',
                         file_status = true, -- Displays file status (readonly status, modified status)
@@ -81,10 +83,7 @@ return {
                         color = { bg = '#1E1E1E' },
                     },
                 },
-                lualine_y = {
-                    { 'branch', color = { fg = '#999cba', bg = '#1E1E1E', gui = 'bold' }, padding = {left = 2}},
-                    { 'diagnostics', color = { fg = '#ffaa88', bg = '#1E1E1E', gui = 'bold' } },
-                },
+                lualine_y = {},
                 lualine_z = {},
             },
             inactive_sections = {

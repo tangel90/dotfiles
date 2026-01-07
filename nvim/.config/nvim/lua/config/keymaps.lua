@@ -1,7 +1,7 @@
 --- custom keymaps --
 local map = vim.keymap.set
 
-map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python %<CR>', { desc = 'python main.py' })
+map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python3 %<CR>', { desc = 'python main.py' })
 
 -- Vim motion keymaps
 map('i', 'kj', '<ESC>', { noremap = true })
