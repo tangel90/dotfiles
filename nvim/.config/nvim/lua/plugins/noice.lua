@@ -174,7 +174,6 @@ return {
             lsp_doc_border = false, -- add a border to hover docs and signature help
         },
         throttle = 1000 / 30, -- how frequently does Noice need to check for ui updates? This has no effect when in blocking mode.
-        views = {}, ---@see section on views
         routes = {
             {
                 filter = { event = 'msg_show', any = { { find = '%d+L, %d+B' } } },
@@ -205,7 +204,6 @@ return {
                 opts = { skip = true },
             },
         },
-        status = {}, --- @see section on statusline components
         format = {}, --- @see section on formatting
     },
 }

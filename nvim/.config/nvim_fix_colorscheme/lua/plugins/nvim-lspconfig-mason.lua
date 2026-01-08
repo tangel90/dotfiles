@@ -12,7 +12,7 @@ return { -- LSP Configuration & Plugins
 
     -- `neodev` configures Lua LSP for your Neovim config, runtime and plugins
     -- used for completion, annotations and signatures of Neovim apis
-    -- { 'folke/neodev.nvim', opts = {} }, -- not needed when lazydev.nvim is installed
+    { 'folke/neodev.nvim', opts = {} },
   },
   config = function()
     -- If you're wondering about lsp vs treesitter, you can check out the wonderfully
@@ -224,8 +224,7 @@ return { -- LSP Configuration & Plugins
     local ensure_installed = vim.tbl_keys(servers or {})
     vim.list_extend(ensure_installed, {
       'stylua', -- Used to format Lua code
-      -- 'black', -- Used to format python code
-      'ruff', -- Used to format python code
+      'black', -- Used to format python code
       'jqls',
       'prettier', -- cli formatter
       'prettierd', -- daemon version of prettier (means it runs in the background and thus has better performance)
