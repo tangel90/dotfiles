@@ -140,19 +140,19 @@ return { -- LSP Configuration & Plugins
       jqls = {
         filetypes = { 'json', 'jq' },
       },
-      -- pyright = {
-      --   settings = {
-      --     pyright = {
-      --       analysis = {
-      --         autoSearchPaths = true,
-      --         diagnosticMode = 'openFilesOnly',
-      --         useLibraryCodeForTypes = true,
-      --         reportMissingTypeStubs = false,
-      --         typeCheckingMode = 'basic',
-      --       },
-      --     },
-      --   },
-      -- },
+      pyright = {
+        settings = {
+          pyright = {
+            analysis = {
+              autoSearchPaths = true,
+              diagnosticMode = 'openFilesOnly',
+              useLibraryCodeForTypes = true,
+              reportMissingTypeStubs = false,
+              typeCheckingMode = 'basic',
+            },
+          },
+        },
+      },
       -- sqlls = {},
       rust_analyzer = {},
       -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
