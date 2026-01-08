@@ -6,6 +6,8 @@ export RIPGREP_CONFIG_PATH="$XDG_CONFIG_HOME/ripgrep/.ripgreprc"
 export EDITOR="nvim"
 export COLORTERM="truecolor"
 export TMPDIR="$HOME/.local/tmp"
+export PAGER="LESS"
+export LESS="-SRXF"
 
 export LOCALCONFIG="$HOME/.local/config"
 export LOCALPROFILE="$LOCALCONFIG/.zprofile"
@@ -14,6 +16,7 @@ export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
 export LC_CTYPE=en_US.UTF-8
+
 
 export FZF_DEFAULT_OPTS='--height 40% --layout reverse --border top'
 export FZF_DEFAULT_COMMAND='fd . --follow --hidden --exclude .git'
@@ -154,19 +157,6 @@ function tmux-open-claude() {
     fi
     tmux switch-client -t llm
     tmux select-window -t llm:Claude
-}
-
-function tmux-open-data() {
-      if ! tmux has-session -t data &>/dev/null; then
-        tmux new-session -d -s data -n sql -c "$HOME/data"
-      fi
-      tmux switch-client -t data
-}
-function tmux-open-yazi() {
-      if ! tmux has-session -t Files &>/dev/null; then
-        tmux new-session -d -s Files -n yazi "yazi"
-      fi
-      tmux switch-client -t Files
 }
 
 function tmux-open-lazygit() {

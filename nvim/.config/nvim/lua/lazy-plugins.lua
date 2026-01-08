@@ -17,11 +17,6 @@ require('lazy').setup({
     --  Uncomment the following line and add your plugins to `lua/plugins/*.lua` to get going.
     --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
     { import = 'plugins' },
-
-    {
-        'mawkler/hml.nvim',
-        opts = {},
-    },
     'tpope/vim-sleuth', -- Detect tabstop(!!) and shiftwidth automatically
     -- Highlight todo, notes, etc in comments
     {
@@ -34,8 +29,10 @@ require('lazy').setup({
         'OmniSharp/omnisharp-vim',
         config = function() end,
     },
-    { 'Hoffs/omnisharp-extended-lsp.nvim', lazy = true, opts = nil }, -- necessary to get LSP to work with external files
-}, {
+    {
+        'Hoffs/omnisharp-extended-lsp.nvim', lazy = true, opts = nil }, -- necessary to get LSP to work with external files
+    },
+    {
     ui = {
         -- If you are using a Nerd Font: set icons to an empty table which will use the
         -- default lazy.nvim defined Nerd Font icons, otherwise define a unicode icons table

@@ -24,9 +24,19 @@ run = "cd ~/dev/logs"
 desc = "cd into ~/dev/logs"
 
 [[mgr.prepend_keymap]]
-on = ["g", "d"]
+on = ["g", "s"]
 run = "cd ~/data"
 desc = "cd into ~/data"
+
+[[mgr.prepend_keymap]]
+on = ["g", "t"]
+run = "cd ~/.local/tmp/"
+desc = "cd into ~/.local/tmp"
+
+[[mgr.prepend_keymap]]
+on = ["g", "d"]
+run = "cd ~/dev"
+desc = "cd into ~/dev"
 
 [[mgr.prepend_keymap]]
 on = ["<Enter>"]
