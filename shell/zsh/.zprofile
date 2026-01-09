@@ -1,12 +1,11 @@
 export XDG_CONFIG_HOME="$HOME/.config"
 export PATH=$HOME/.local/bin:/usr/local/bin:$PATH
-export PATH=$PATH:$HOME/.local/scripts
 export LD_LIBRARY_PATH=/usr/local/lib
 export RIPGREP_CONFIG_PATH="$XDG_CONFIG_HOME/ripgrep/.ripgreprc"
 export EDITOR="nvim"
 export COLORTERM="truecolor"
 export TMPDIR="$HOME/.local/tmp"
-export PAGER="LESS"
+export PAGER="less"
 export LESS="-SRXF"
 
 export LOCALCONFIG="$HOME/.local/config"

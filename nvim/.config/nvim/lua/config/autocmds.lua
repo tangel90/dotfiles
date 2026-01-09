@@ -12,10 +12,9 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   end,
 })
 
-
 -- treesitter will not automatically start on branch 'main' anymore
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'python' },
+  pattern = { 'python', 'md' },
   callback = function() vim.treesitter.start() end,
 })
 

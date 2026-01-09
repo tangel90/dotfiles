@@ -62,6 +62,10 @@ export PATH="$PATH:/opt/nvim-linux64/bin"
 
 Download win32yank.exe and copy it to /usr/local/bin
 
+### gh credentials-manager on wsl:
+
+git config --global credential.helper "/mnt/c/Users/Thomas/AppData/Local/Programs/Git/mingw64/bin/git-credential-manager.exe"
+
 ### GnuPG setup for ssh-keys
 
 default ssh-agent can be used for adding the key:

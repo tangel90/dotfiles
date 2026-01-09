@@ -146,7 +146,7 @@ return {
     -- Configuration for the floating window in oil.open_float
     float = {
       -- Padding around the floating window
-      padding = 10,
+      padding = 5,
       max_width = 120,
       min_width = 40,
       max_height = 0,
