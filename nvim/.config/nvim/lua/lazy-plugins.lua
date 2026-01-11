@@ -17,14 +17,6 @@ require('lazy').setup({
     --  Uncomment the following line and add your plugins to `lua/plugins/*.lua` to get going.
     --    For additional information, see `:help lazy.nvim-lazy.nvim-structuring-your-plugins`
     { import = 'plugins' },
-    'tpope/vim-sleuth', -- Detect tabstop(!!) and shiftwidth automatically
-    -- Highlight todo, notes, etc in comments
-    {
-        'folke/todo-comments.nvim',
-        event = 'VimEnter',
-        dependencies = { 'nvim-lua/plenary.nvim' },
-        opts = { signs = false },
-    },
     {
         'OmniSharp/omnisharp-vim',
         config = function() end,

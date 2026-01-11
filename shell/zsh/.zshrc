@@ -22,7 +22,6 @@ fi
 # fi
 
 # >>> initialize environment >>>
-source $HOME/.zprofile
 if [ -d "$LOCALCONFIG" ]; then
     for i in $(find -L "$LOCALCONFIG" -type f); do
         source "$i"
@@ -40,7 +39,7 @@ fi
 source "${ZINIT_HOME}/zinit.zsh"
 
 # Add in Powerlevel10k
-zinit ice depth=1; zinit light romkatv/powerlevel10k
+zinit light romkatv/powerlevel10k
 
 # Add in zsh plugins
 zinit light jeffreytse/zsh-vi-mode
@@ -51,21 +50,21 @@ zinit light zsh-users/zsh-autosuggestions
 # zinit wait lucid for MichaelAquilina/zsh-autoswitch-virtualenv
 
 # Add in snippets
-zinit snippet OMZP::git
-zinit snippet OMZP::sudo
-zinit snippet OMZP::archlinux
-zinit ice lucid wait
-zinit snippet OMZP::fzf
+# zinit snippet OMZP::git
+# zinit snippet OMZP::sudo
+# zinit snippet OMZP::archlinux
+# zinit ice lucid wait
+# zinit snippet OMZP::fzf
 # zinit snippet OMZP::aws
 # zinit snippet OMZP::kubectl
 # zinit snippet OMZP::kubectx
-zinit snippet OMZP::command-not-found
+# zinit snippet OMZP::command-not-found
 
-autoload -Uz compinit && compinit
+# autoload -Uz compinit && compinit
 
-zinit cdreplay -q
+# zinit cdreplay -q
 
-HISTSIZE=5000
+HISTSIZE=10000
 HISTFILE=~/.zsh_history
 SAVEHIST=$HISTSIZE
 HISTDUP=erase
@@ -84,15 +83,12 @@ zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls $realpath'
 zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls $realpath'
 
 # >>> Shell integrations >>>
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-eval "$(fzf --zsh)"
+# [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+# eval "$(fzf --zsh)"
 eval "$(zoxide init zsh --cmd cd)"
-eval "$(direnv hook zsh)"
+# eval "$(direnv hook zsh)"
 # <<< Shell integrations <<<
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
-export NVM_DIR="$HOME/.config/nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
