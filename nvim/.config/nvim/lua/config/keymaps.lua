@@ -2,6 +2,7 @@
 local map = vim.keymap.set
 
 map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python3 %<CR>', { desc = 'python main.py' })
+map("n", "<leader>e", "<cmd>Ex<cr>", { desc = "Open NetRW" })
 
 -- Vim motion keymaps
 map('i', 'kj', '<ESC>', { noremap = true })

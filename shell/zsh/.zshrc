@@ -39,7 +39,7 @@ fi
 source "${ZINIT_HOME}/zinit.zsh"
 
 # Add in Powerlevel10k
-zinit light romkatv/powerlevel10k
+zinit ice depth=1; zinit light romkatv/powerlevel10k
 
 # Add in zsh plugins
 zinit light jeffreytse/zsh-vi-mode
@@ -53,8 +53,8 @@ zinit light zsh-users/zsh-autosuggestions
 # zinit snippet OMZP::git
 # zinit snippet OMZP::sudo
 # zinit snippet OMZP::archlinux
-# zinit ice lucid wait
-# zinit snippet OMZP::fzf
+zinit ice lucid wait
+zinit snippet OMZP::fzf
 # zinit snippet OMZP::aws
 # zinit snippet OMZP::kubectl
 # zinit snippet OMZP::kubectx
@@ -62,7 +62,7 @@ zinit light zsh-users/zsh-autosuggestions
 
 # autoload -Uz compinit && compinit
 
-# zinit cdreplay -q
+zinit cdreplay -q
 
 HISTSIZE=10000
 HISTFILE=~/.zsh_history
@@ -85,7 +85,7 @@ zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls $realpath'
 # >>> Shell integrations >>>
 # [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 # eval "$(fzf --zsh)"
-eval "$(zoxide init zsh --cmd cd)"
+# eval "$(zoxide init zsh --cmd cd)"
 # eval "$(direnv hook zsh)"
 # <<< Shell integrations <<<
 

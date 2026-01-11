@@ -1,5 +1,5 @@
 export XDG_CONFIG_HOME="$HOME/.config"
-export PATH=$HOME/.local/bin:/usr/local/bin:$PATH
+export PATH=$HOME/.local/bin:$PATH
 export LD_LIBRARY_PATH=/usr/local/lib
 export RIPGREP_CONFIG_PATH="$XDG_CONFIG_HOME/ripgrep/.ripgreprc"
 export EDITOR="nvim"
