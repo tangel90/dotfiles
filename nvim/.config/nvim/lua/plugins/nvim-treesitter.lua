@@ -44,6 +44,7 @@ return {
         'toml',
         'typescript',
         'python',
+        'go'
       }
 
       -- make sure nvim-treesitter can load
