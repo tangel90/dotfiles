@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-ext=$(echo -e "md\npy\ngo" | fzf)
+ext=$(echo -e "md\npy\ngo\njson\njs\nts\nsh\nlua" | fzf)
 [[ -z $ext ]] && { echo "No extension selected"; exit 1; }
 
 tmpdir="${TMPDIR:-/tmp}"

@@ -46,14 +46,11 @@ alias dd='direnv deny'
 alias grep="rg"
 alias vimdev='NVIM_APPNAME=nvim-dev nvim'
 alias c="clear"
-alias tls="tmux-list-session"
 alias ls="ls --color=auto -X"
 alias vim="nvim"
-alias cat="bat"
 alias lg="lazygit"
 alias vc="fd . '$HOME/.config' --type f --follow --hidden --exclude .git | fzf-tmux --border --preview='bat --style=numbers --color=always {}' -p 80%,80% | xargs nvim"
 alias e="yazi-cwd"
-alias chat="chatgpt"
 alias nvr="nvim --listen $HOME/.local/tmp/nvimsocket"
 alias fd="fd --follow --hidden --exclude .git"
 
@@ -72,16 +69,6 @@ function gpg-unlock-lazygit() {
     command lazygit
 }
 
-function v() {
-    local pattern=${1:-.}
-    local files=$(command fd "$pattern" "$HOME" --follow --type f --hidden --exclude .git)
-    # echo ${#files[@]}
-
-    echo $files \
-        | fzf-tmux --border --preview='bat --style=numbers --color=always {}' -p 80%,80% \
-        | xargs -r nvim
-}
-
 function vv() {
     local CONFIG_DIRS=$(find -L $XDG_CONFIG_HOME -type d -name "nvim*")
     selected_config=$(echo "$CONFIG_DIRS" | fzf --prompt "Nvim Config > ")
@@ -92,35 +79,12 @@ function vv() {
     NVIM_APPNAME=$(basename $selected_config) nvim $@
 }
 
-
-function load_conda() {
-    __conda_setup="$('/home/thomas/.local/opt/miniconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
-    if [ $? -eq 0 ]; then
-        eval "$__conda_setup"
-    else
-        if [ -f "/home/thomas/.local/opt/miniconda3/etc/profile.d/conda.sh" ]; then
-            . "/home/thomas/.local/opt/miniconda3/etc/profile.d/conda.sh"
-        else
-            export PATH="/home/thomas/.local/opt/miniconda3/bin:$PATH"
-        fi
-    fi
-    unset __conda_setup
-}
-
 function yazi-cwd() {
     local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
     yazi "$@" --cwd-file="$tmp"
     IFS= read -r -d '' cwd < "$tmp"
     [ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
     rm -f -- "$tmp"
-}
-
-function tmux-list-session () {
-    if tmux list-sessions >/dev/null 2>&1; then
-        selected=$(tmux list-sessions | fzf | cut -d: -f1) && [ -n "$selected" ] && tmux attach-session -t "$selected"
-    else
-        echo "No active tmux sessions."
-    fi
 }
 
 function tmux-hide-pane() {
@@ -146,18 +110,6 @@ function tmux-run-python() {
     tmux send-keys -t "$pane" "cd '$dir' && python '$file_name'" C-m
 }
 
-function tmux-open-claude() {
-    if ! tmux has-session -t llm 2>/dev/null; then
-        echo "Creating new session."
-        tmux new-session -d -s llm -n Claude -c "$PROJECTS_HOME" "/home/thomas/.config/claude/local/claude" 
-    elif ! tmux list-windows -t llm | grep -q 'Claude'; then
-        echo "Creating new window."
-        tmux new-window -t llm -n Claude -c "$PROJECTS_HOME" "/home/thomas/.config/claude/local/claude"
-    fi
-    tmux switch-client -t llm
-    tmux select-window -t llm:Claude
-}
-
 function tmux-open-lazygit() {
     if ! ls -a | grep -q '^\.git$'; then
         return 0
@@ -175,19 +127,10 @@ function tmux-open-lazygit() {
     tmux select-window -t lazygit
 }
 
-function tmux-open-tmp() {
-    ext=$(echo -e "md\npy\ngo\nlua\njson\nsh" | fzf)
-    [[ -z $ext ]] && { echo "No extension selected"; return 1 }
-    local tmpdir="${TMPDIR:-/tmp}"
-    local tmpfile="$(mktemp $tmpdir/tmp.XXXXXX.$ext)"
-    local w_name=$(basename "$tmpfile" | tr . _)
-    tmux new-session -d -s tmp -n "$w_name" -c "$tmpdir" "nvim \"$tmpfile\""
-    tmux switch-client tmp
-}
-
-function tmux-open-todo() {
-    if ! tmux has-session -t Notes 2>/dev/null; then
-        tmux new-session -d -s Notes -n TODO "cd $NOTES_HOME && nvim TODO.md"
-    fi
-    tmux switch-client -t Notes
-}
+# >>> initialize environment >>>
+if [ -d "$LOCALCONFIG" ]; then
+    for i in $(find -L "$LOCALCONFIG" -type f); do
+        source "$i"
+    done
+fi
+# <<< initialize environment <<<

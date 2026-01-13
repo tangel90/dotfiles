@@ -2,32 +2,18 @@
 if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
     sessions=$(tmux list-sessions 2>/dev/null)
     if [ -z "$sessions" ]; then
-        echo "No sessions found!"
         tmux new-session -A -s "workspace0"
     else
-        if command -v tmux-list-session >/dev/null 2>&1; then
-            tmux-list-session
-        else
-            echo "Tmux sessions found. Trying to attach ..."
-            tmux attach
-        fi
+        tmux attach
     fi
 fi
 
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
-# if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-#   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-# fi
-
-# >>> initialize environment >>>
-if [ -d "$LOCALCONFIG" ]; then
-    for i in $(find -L "$LOCALCONFIG" -type f); do
-        source "$i"
-    done
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
-# <<< initialize environment <<<
 
 # Set the directory we want to store zinit and plugins
 # Download Zinit, if it's not there yet
@@ -60,7 +46,7 @@ zinit snippet OMZP::fzf
 # zinit snippet OMZP::kubectx
 # zinit snippet OMZP::command-not-found
 
-# autoload -Uz compinit && compinit
+autoload -Uz compinit && compinit
 
 zinit cdreplay -q
 
@@ -83,10 +69,10 @@ zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls $realpath'
 zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls $realpath'
 
 # >>> Shell integrations >>>
-# [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-# eval "$(fzf --zsh)"
-# eval "$(zoxide init zsh --cmd cd)"
-# eval "$(direnv hook zsh)"
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+eval "$(fzf --zsh)"
+eval "$(zoxide init zsh --cmd cd)"
+eval "$(direnv hook zsh)"
 # <<< Shell integrations <<<
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.

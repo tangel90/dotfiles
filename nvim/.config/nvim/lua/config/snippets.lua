@@ -6,6 +6,11 @@ ls.add_snippets('python', {
 })
 
 ls.add_snippets('python', {
+  ls.parser.parse_snippet('li', 'logger.info("${1:}")'),
+  ls.parser.parse_snippet('lif', 'logger.info(f"${1:}")'),
+})
+
+ls.add_snippets('python', {
   ls.parser.parse_snippet('if_main', 'if __name__ == "__main__":\n\tmain()'),
 })
 

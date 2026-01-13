@@ -1,4 +1,6 @@
 .swap
+.venv/
+.git/
 Trash/
 go/
 .cache/

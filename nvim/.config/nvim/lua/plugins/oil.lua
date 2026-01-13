@@ -12,8 +12,7 @@ return {
   'stevearc/oil.nvim',
 
   opts = {
-    vim.keymap.set('n', '-', '<CMD>Oil<CR>', { desc = 'Oil: Open parent directory of current file' }),
-    vim.keymap.set('n', '<leader>o~', ':cd /home/thomas/obsidian/personal/notes<CR>', { desc = 'Change into Obsidian Directory' }),
+    vim.keymap.set('n', '<leader>e', '<CMD>Oil<CR>', { desc = 'Oil: Open parent directory of current file' }),
     -- Oil will take over directory buffers (e.g. `vim .` or `:e src/`)
     -- Set to false if you want some other plugin (e.g. netrw) to open when you edit directories.
     default_file_explorer = true,
@@ -40,7 +39,7 @@ return {
       list = false,
       conceallevel = 3,
       concealcursor = 'nvic',
-      -- winbar = '%!v:lua.get_oil_winbar()',
+      winbar = '%!v:lua.get_oil_winbar()',
     },
     -- Send deleted files to the trash instead of permanently deleting them (:help oil-trash)
     delete_to_trash = true,
@@ -79,11 +78,11 @@ return {
       ['<C-h>'] = { 'actions.select', opts = { horizontal = true }, desc = 'Open the entry in a horizontal split' },
       ['<C-t>'] = { 'actions.select', opts = { tab = true }, desc = 'Open the entry in new tab' },
       ['<C-p>'] = 'actions.preview',
-      ['-'] = 'actions.close',
+      ['<leader>e'] = 'actions.close',
       ['<ESC><Esc>'] = 'actions.close',
       ['<C-l>'] = 'actions.refresh',
       ['H'] = 'actions.parent',
-      ['`'] = 'actions.parent',
+      ['-'] = 'actions.parent',
       ['~'] = 'actions.open_cwd',
       ['_'] = 'actions.cd',
       ['<C-c>'] = { 'actions.cd', opts = { scope = 'tab' }, desc = ':tcd to the current oil directory' },
