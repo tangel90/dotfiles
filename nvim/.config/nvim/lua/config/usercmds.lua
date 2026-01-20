@@ -5,7 +5,6 @@ function ToggleDiagnosticsVirtualText()
   enabled = not enabled
   vim.diagnostic.config({ virtual_text = enabled })
 end
-vim.keymap.set('n', '<leader>dt', ToggleDiagnosticsVirtualText)
 
 function FetchChtSh(input)
   if input:find '/' then

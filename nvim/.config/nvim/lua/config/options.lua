@@ -48,18 +48,6 @@ vim.env.DOTNET_ROOT = os.getenv 'HOME' .. '/.dotnet'
 vim.env.PATH = os.getenv 'PATH' .. ':' .. os.getenv 'HOME' .. '/.dotnet:' .. os.getenv 'HOME' .. '/.dotnet/tools'
 vim.g.OmniSharp_server_use_net6 = 1
 
-vim.diagnostic.config {
-  virtual_text = {
-    severity = { min = vim.diagnostic.severity.WARN },
-    format = function(diagnostic)
-      local first_line = diagnostic.message:gmatch '[^\n]*'()
-      local first_sentence = string.match(first_line, '(.-%. )') or first_line
-      local first_lhs = string.match(first_sentence, '(.-): ') or first_sentence
-      return first_lhs
-    end,
-  },
-}
-
 -- Set <space> as the leader key
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are loaded (otherwise wrong leader will be used)
