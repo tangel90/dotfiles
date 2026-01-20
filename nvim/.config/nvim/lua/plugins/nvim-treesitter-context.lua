@@ -15,14 +15,8 @@ return {
         on_attach = nil, -- (fun(buf: integer): boolean) return false to disable attaching
         max_lines = 2,
     },
-    keys = {
-        {
-            '[c',
-            function()
-                require('treesitter-context').go_to_context(vim.v.count1)
-            end,
-            mode = { 'n', 'v' },
-            silent = true,
-        },
-    },
+    config = function(_, opts)
+      require('treesitter-context').setup(opts)
+      vim.keymap.set('n', '[c',function() require('treesitter-context').go_to_context(vim.v.count1) end)
+    end,
 }
