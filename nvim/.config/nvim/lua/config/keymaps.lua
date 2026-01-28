@@ -6,6 +6,7 @@ map('n', '<leader>e', '<cmd>Ex<cr>', { desc = 'Open NetRW' })
 map('n', '<leader>"', '<cmd>registers<cr>', { desc = 'List registers' })
 
 -- Vim motion keymaps
+map({'n', 'i'}, '<C-k>', '<C-a>', { noremap = true })
 map('i', 'kj', '<ESC>', { noremap = true })
 map({ 'n', 'v' }, 'gl', 'L')
 map({ 'n', 'v' }, 'L', '%')

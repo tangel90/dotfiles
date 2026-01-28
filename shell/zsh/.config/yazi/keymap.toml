@@ -9,6 +9,11 @@ run = "cd /mnt/c/Users/T2192"
 desc = "cd into Windows Home directory"
 
 [[mgr.prepend_keymap]]
+on = ["F"]
+run = "plugin zoxide"
+desc = "jump to a directory using zoxide"
+
+[[mgr.prepend_keymap]]
 on = ["g", "r"]
 run = "cd /"
 desc = "cd into root /"
@@ -20,8 +25,8 @@ desc = "Search files by name using fd"
 
 [[mgr.prepend_keymap]]
 on = ["g", "l"]
-run = "cd ~/dev/logs"
-desc = "cd into ~/dev/logs"
+run = "cd ~/.local"
+desc = "cd into ~/.local"
 
 [[mgr.prepend_keymap]]
 on = ["g", "s"]
