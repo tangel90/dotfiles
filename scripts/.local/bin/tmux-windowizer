@@ -17,17 +17,10 @@ second_parent=$(basename "$grandparent_dir" | tr -d .)
 
 file_name=$(basename  "$selected")
 file_stem="${file_name%.*}"
-window_name="${second_parent}_${file_stem}"
+window_name="${file_stem}"
 alt_window_name="${window_name}_$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c2)" #Generate 2 random characters for duplicate names
 tmux_running=$(pgrep tmux)
 
-# OK - tmux is not running
-if [[ -z $tmux_running ]]; then
-    tmux new-session -s $selected_name -c "$dir_name"
-    exit 0
-fi
-
-# OK - tmux is running and client is attached, window with selected_name does not exist
 if [[ ! -z $TMUX ]]; then
     program="nvim"
     if [[ "$file_name" == *.csv || "$file_name" == *.tsv || "$file_name" == *.json ]]; then
@@ -36,9 +29,9 @@ if [[ ! -z $TMUX ]]; then
     if tmux list-windows | grep -Fxq "$window_name"; then
         window_name="${alt_window_name}"
     fi
-    tmux new-window -n "$window_name" -c "$parent_dir" zsh -c "$program $file_name"
-    tmux select-window -t $window_name
+    tmux new-window -n "$window_name" -c $parent_dir zsh -c "$program $file_name"
+    # tmux select-window -t $window_name
     exit 0
 fi
 
-echo "Instructions Unclear!"
+echo "Tmux not running! Instructions Unclear!"

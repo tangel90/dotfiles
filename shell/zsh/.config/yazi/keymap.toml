@@ -44,6 +44,11 @@ run = "cd ~/dev"
 desc = "cd into ~/dev"
 
 [[mgr.prepend_keymap]]
+on = ["c", "<Space>"]
+run = "cd --interactive"
+desc = "cd interactively"
+
+[[mgr.prepend_keymap]]
 on = ["<Enter>"]
 run = "enter"
 desc = "Enter directory"
