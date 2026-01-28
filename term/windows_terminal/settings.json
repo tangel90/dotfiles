@@ -1,30 +1,27 @@
 {
     "$help": "https://aka.ms/terminal-documentation",
-    "$schema": "https://raw.githubusercontent.com/microsoft/terminal/main/doc/cascadia/profiles.schema.json",
+    "$schema": "https://aka.ms/terminal-profiles-schema",
     "actions": [],
-    "aiConfig": 
-    {
-        "activeProvider": "openAI"
-    },
-    "alwaysOnTop": false,
     "alwaysShowTabs": true,
-    "autoHideWindow": false,
     "copyFormatting": "none",
     "copyOnSelect": false,
-    "defaultProfile": "{7b92aece-e932-529c-93d3-81391ce66251}",
+    "defaultProfile": "{4ff56d04-d9cf-57ea-bae2-ad396374e7e3}",
+    "firstWindowPreference": "defaultProfile",
+    "initialCols": 180,
+    "initialRows": 45,
     "keybindings": 
     [
         {
-            "id": "Terminal.CopyToClipboard",
-            "keys": "ctrl+c"
+            "id": "Terminal.FindText",
+            "keys": "ctrl+shift+f"
         },
         {
             "id": "Terminal.PasteFromClipboard",
             "keys": "ctrl+v"
         },
         {
-            "id": "Terminal.FindText",
-            "keys": "ctrl+shift+f"
+            "id": "Terminal.CopyToClipboard",
+            "keys": "ctrl+c"
         },
         {
             "id": "Terminal.DuplicatePaneAuto",
@@ -41,90 +38,167 @@
     {
         "defaults": 
         {
-            "colorScheme": "rose-pine",
             "font": 
             {
-                "face": "JetBrainsMono Nerd Font Mono",
-                "size": 16
-            }
+                "face": "JetBrains Mono",
+                "size": 14
+            },
+            "opacity": 100
         },
         "list": 
         [
             {
                 "colorScheme": "rose-pine",
-                "guid": "{7b92aece-e932-529c-93d3-81391ce66251}",
-                "hidden": false,
-                "name": "archlinux_default",
-                "source": "Microsoft.WSL"
-            },
-            {
+                "cursorShape": "bar",
+                "experimental.retroTerminalEffect": false,
+                "font": 
+                {
+                    "face": "FiraCode Nerd Font",
+                    "size": 12
+                },
                 "guid": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
                 "hidden": false,
                 "name": "PowerShell",
-                "colorScheme": "rose-pine-moon",
+                "opacity": 100,
                 "source": "Windows.Terminal.PowershellCore"
-                "font": 
-                {
-                    "face": "JetBrainsMono Nerd Font",
-                    "size": 16
-                },
-                "startingDirectory": "C:\\Users\\T2192"
             },
             {
-                "colorScheme": "rose-pine-moon",
-                "commandline": "C:\\Users\\T2192\\.dotnet\\tools\\pwsh.exe -ExecutionPolicy ByPass -NoExit -Command \"& 'C:\\Users\\T2192\\AppData\\Local\\miniconda3\\shell\\condabin\\conda-hook.ps1' ; conda activate 'C:\\Users\\T2192\\AppData\\Local\\miniconda3' \"",
+                "colorScheme": "Catppuccin Frappe",
+                "commandline": "\"C:\\Users\\Thoma\\AppData\\Local\\Microsoft\\WindowsApps\\Microsoft.PowerShell_8wekyb3d8bbwe\\pwsh.exe\"",
+                "cursorShape": "bar",
+                "elevate": true,
+                "experimental.retroTerminalEffect": false,
                 "font": 
                 {
-                    "face": "JetBrainsMono Nerd Font",
-                    "size": 16
+                    "face": "FiraCode Nerd Font",
+                    "size": 12
                 },
-                "guid": "{baef6041-a2f3-5472-b295-a7d7fb0ed62f}",
-                "icon": "C:\\Users\\T2192\\AppData\\Local\\miniconda3\\Menu\\anaconda_powershell_prompt.ico",
-                "name": "Anaconda PowerShell Prompt (miniconda3)",
-                "startingDirectory": "C:\\Users\\T2192"
-            },
-            {
-                "commandline": "%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
-                "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
+                "guid": "{c45f8ad0-9e37-4ebd-9187-d631c63cbdf6}",
                 "hidden": false,
-                "name": "Windows PowerShell"
+                "icon": "ms-appx:///ProfileIcons/pwsh.png",
+                "name": "PowerShell Admin",
+                "opacity": 99,
+                "startingDirectory": "%USERPROFILE%"
             },
             {
-                "commandline": "%SystemRoot%\\System32\\cmd.exe",
+                "elevate": false,
                 "guid": "{0caa0dad-35be-5f56-a8ff-afceeeaa6101}",
                 "hidden": false,
-                "name": "Eingabeaufforderung"
+                "name": "Command Prompt"
             },
             {
-                "guid": "{b453ae62-4e3d-5e58-b989-0a998ec441b8}",
-                "hidden": false,
-                "name": "Azure Cloud Shell",
-                "source": "Windows.Terminal.Azure"
-            },
-            {
-                "commandline": "%WINDIR%\\System32\\cmd.exe \"/K\" C:\\Users\\T2192\\AppData\\Local\\miniconda3\\Scripts\\activate.bat C:\\Users\\T2192\\AppData\\Local\\miniconda3",
-                "guid": "{35427e1d-45ad-517a-8692-8d5e4093f90f}",
-                "icon": "C:\\Users\\T2192\\AppData\\Local\\miniconda3\\Menu\\anaconda_prompt.ico",
-                "name": "Anaconda Prompt (miniconda3)",
-                "startingDirectory": "C:\\Users\\T2192"
-            },
-            {
+                "font": 
+                {
+                    "face": "JetBrains Mono"
+                },
                 "guid": "{2ece5bfe-50ed-5f3a-ab87-5cd4baafed2b}",
                 "hidden": false,
                 "name": "Git Bash",
                 "source": "Git"
+            },
+            {
+                "guid": "{0eaf9aed-e24c-5f85-bdf3-1c473edf4472}",
+                "hidden": false,
+                "name": "Developer Command Prompt for VS 2022",
+                "source": "Windows.Terminal.VisualStudio"
+            },
+            {
+                "guid": "{effc2036-e9b6-56b0-a00d-12edf9867ef2}",
+                "hidden": false,
+                "name": "Developer PowerShell for VS 2022",
+                "source": "Windows.Terminal.VisualStudio"
+            },
+            {
+                "colorScheme": "rose-pine",
+                "commandline": "ubuntu2204.exe",
+                "font": 
+                {
+                    "face": "JetBrainsMono Nerd Font"
+                },
+                "guid": "{4ff56d04-d9cf-57ea-bae2-ad396374e7e3}",
+                "hidden": false,
+                "name": "Ubuntu 24.04.5 LTS",
+                "source": "CanonicalGroupLimited.Ubuntu22.04LTS_79rhkp1fndgsc"
             }
         ]
     },
     "schemes": 
     [
         {
-            "name": "rose-pine",
             "background": "#1E1E1E",
-            "black": "#232633",
-            "blue": "#99C9D1",
+            "black": "#575E75",
+            "blue": "#8CAAEE",
+            "brightBlack": "#626880",
+            "brightBlue": "#8CAAEE",
+            "brightCyan": "#81C8BE",
+            "brightGreen": "#A6D189",
+            "brightPurple": "#F4B8E4",
+            "brightRed": "#E78284",
+            "brightWhite": "#85ADCE",
+            "brightYellow": "#E5C890",
+            "cursorColor": "#E0DEF4",
+            "cyan": "#81C8BE",
+            "foreground": "#ACB9D9",
+            "green": "#A6D189",
+            "name": "Catppuccin Frappe",
+            "purple": "#F4B8E4",
+            "red": "#E78284",
+            "selectionBackground": "#4F4C63",
+            "white": "#C8D3FA",
+            "yellow": "#E5C890"
+        },
+        {
+            "background": "#000000",
+            "black": "#0C0C0C",
+            "blue": "#0037DA",
+            "brightBlack": "#767676",
+            "brightBlue": "#3B78FF",
+            "brightCyan": "#61D6D6",
+            "brightGreen": "#16C60C",
+            "brightPurple": "#B4009E",
+            "brightRed": "#E74856",
+            "brightWhite": "#F2F2F2",
+            "brightYellow": "#F9F1A5",
+            "cursorColor": "#FFFFFF",
+            "cyan": "#3A96DD",
+            "foreground": "#FFFFFF",
+            "green": "#13A10E",
+            "name": "Color Scheme 10",
+            "purple": "#881798",
+            "red": "#C50F1F",
+            "selectionBackground": "#FFFFFF",
+            "white": "#CCCCCC",
+            "yellow": "#C19C00"
+        },
+        {
+            "background": "#1E1E1E",
+            "black": "#000000",
+            "blue": "#2472C8",
+            "brightBlack": "#666666",
+            "brightBlue": "#3B8EEA",
+            "brightCyan": "#29B8DB",
+            "brightGreen": "#23D18B",
+            "brightPurple": "#D670D6",
+            "brightRed": "#F14C4C",
+            "brightWhite": "#E5E5E5",
+            "brightYellow": "#F5F543",
+            "cursorColor": "#808080",
+            "cyan": "#11A8CD",
+            "foreground": "#CCCCCC",
+            "green": "#0DBC79",
+            "name": "Dark+ (Copy)",
+            "purple": "#BC3FBC",
+            "red": "#CD3131",
+            "selectionBackground": "#FFFFFF",
+            "white": "#E5E5E5",
+            "yellow": "#E5E510"
+        },
+        {
+            "background": "#1E1E1E",
+            "black": "#26233A",
+            "blue": "#9CCFD8",
             "brightBlack": "#6E6A86",
-            "brightBlue": "#97C8D1",
+            "brightBlue": "#9CCFD8",
             "brightCyan": "#EBBCBA",
             "brightGreen": "#31748F",
             "brightPurple": "#C4A7E7",
@@ -135,48 +209,26 @@
             "cyan": "#EBBCBA",
             "foreground": "#E0DEF4",
             "green": "#31748F",
+            "name": "rose-pine",
             "purple": "#C4A7E7",
             "red": "#EB6F92",
             "selectionBackground": "#2A2837",
             "white": "#E0DEF4",
             "yellow": "#F6C177"
-        },
-        {
-            "name": "rose-pine-moon",
-            "background": "#232136",
-            "black": "#393552",
-            "blue": "#9CCFD8",
-            "brightBlack": "#817C9C",
-            "brightBlue": "#9CCFD8",
-            "brightCyan": "#EA9A97",
-            "brightGreen": "#3E8FB0",
-            "brightPurple": "#C4A7E7",
-            "brightRed": "#EB6F92",
-            "brightWhite": "#E0DEF4",
-            "brightYellow": "#F6C177",
-            "cursorColor": "#59546D",
-            "cyan": "#EA9A97",
-            "foreground": "#E0DEF4",
-            "green": "#3E8FB0",
-            "purple": "#C4A7E7",
-            "red": "#EB6F92",
-            "selectionBackground": "#312F44",
-            "white": "#E0DEF4",
-            "yellow": "#F6C177"
         }
     ],
     "showTabsInTitlebar": true,
-    "theme": "rose-pine",
+    "theme": "Catppuccin Frappe",
     "themes": 
     [
         {
-            "name": "rose-pine",
+            "name": "Catppuccin Frappe",
             "tab": 
             {
                 "background": "#1E1E1EFF",
                 "iconStyle": "default",
                 "showCloseButton": "always",
-                "unfocusedBackground": "#1E1E1EFF"
+                "unfocusedBackground": null
             },
             "tabRow": 
             {
@@ -193,5 +245,5 @@
             }
         }
     ],
-    "useAcrylicInTabRow": false
+    "windowingBehavior": "useAnyExisting"
 }
