@@ -62,22 +62,26 @@ git config --global credential.helper "/mnt/c/Users/Thomas/AppData/Local/Program
 
 ### GnuPG setup for ssh-keys
 
-
 create gpg-agent.conf and enable ssh support:
 ```bash
     echo "enable-ssh-support" >> ~/.gnupg/gpg-agent.conf
 ```
-
-default ssh-agent can be used for adding the key:
-```bash
-    eval "$(ssh-agent -s)"
-    ssh-add ~/.ssh/rsa
-```
-
 fix gpg pinentry issue within tmux, add to first line of ~/.ssh/config:
 ```bash
     Match host * exec "gpg-connect-agent UPDATESTARTUPTTY /bye"
 ```
+let gpg-agent act as ssh-agent (make sure ssh-agent is not running)
+```bash
+    killall ssh-agent gpg-agent
+    gpg-connect-agent --verbose /bye
+    gpg-connect-agent updatestartuptty /bye
+    ssh-add ~/.ssh/rsa
+```
+
+
+The following error means that ssh-add is picket up by the standard ssh-agent (which is not running)
+"Could not add identity "/home/ubuntu/.ssh/knilch": agent refused operation"
+-> gpg agent is not properly configured
 
 ## manual install zinit:
 

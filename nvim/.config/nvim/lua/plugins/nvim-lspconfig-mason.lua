@@ -136,6 +136,7 @@ return { -- LSP Configuration & Plugins
     --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
     local servers = {
       -- clangd = {},
+      marksman = {},
       gopls = {
         cmd = { 'gopls' },
         filetypes = { 'go', 'gomod', 'gowork', 'gotmpl' },
@@ -152,19 +153,19 @@ return { -- LSP Configuration & Plugins
       jqls = {
         filetypes = { 'json', 'jq' },
       },
-      pyright = {
-        settings = {
-          pyright = {
-            analysis = {
-              autoSearchPaths = true,
-              diagnosticMode = 'openFilesOnly',
-              useLibraryCodeForTypes = true,
-              reportMissingTypeStubs = false,
-              typeCheckingMode = 'basic',
-            },
-          },
-        },
-      },
+      -- pyright = {
+      --   settings = {
+      --     pyright = {
+      --       analysis = {
+      --         autoSearchPaths = true,
+      --         diagnosticMode = 'openFilesOnly',
+      --         useLibraryCodeForTypes = true,
+      --         reportMissingTypeStubs = false,
+      --         typeCheckingMode = 'basic',
+      --       },
+      --     },
+      --   },
+      -- },
       -- sqlls = {},
       rust_analyzer = {},
       -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
@@ -243,10 +244,13 @@ return { -- LSP Configuration & Plugins
       'prettierd', -- daemon version of prettier (means it runs in the background and thus has better performance)
       'ast-grep',
       'csharpier',
-      'pyright',
+      -- 'pyright',
       'lua-language-server',
       'sql-formatter',
       'debugpy',
+      'marksman',
+      'markdownlint-cli2',
+      'markdown-toc',
       -- 'netcoredbg',
     })
     require('mason-tool-installer').setup { ensure_installed = ensure_installed }

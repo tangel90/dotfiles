@@ -52,7 +52,10 @@ map('v', '<leader>p', '"_dP')
 map({ 'n', 'v' }, '<leader>d', '"_d')
 -- map({ 'n', 'i', 'v' }, '<C-_>', '<Plug>(comment_toggle_linewise)')
 
--- Buffer related
+-- Buffer/window management
+map(
+    { 'n', 'i' }, '<C-W><C-Q>', '<cmd>qa<cr>', { noremap = true, desc = 'Quit all windows' }
+)
 map(
     { 'n', 'i', 'v' },
     '<C-s>',
