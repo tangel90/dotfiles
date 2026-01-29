@@ -27,35 +27,29 @@ yazi
 ## change to zsh
 
 list available shells:
-
 ```bash
-chsh -l
+    chsh -l
 ```
 
 change shell:
-
 ```bash
-chsh -s /bin/zsh
+    chsh -s /bin/zsh
 ```
 
 ## Build Neovim:
-
 ### Linux
-
 #### Pre-built archives
 
 The [Releases](https://github.com/neovim/neovim/releases) page provides pre-built binaries for Linux systems.
-
 ```sh
-curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
-sudo rm -rf /opt/nvim
-sudo tar -C /opt -xzf nvim-linux64.tar.gz
+    curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
+    sudo rm -rf /opt/nvim
+    sudo tar -C /opt -xzf nvim-linux64.tar.gz
 ```
 
 Then add this to your shell config (`~/.bashrc`, `~/. zshrc`, ...):
-
 ```sh
-export PATH="$PATH:/opt/nvim-linux64/bin"
+    export PATH="$PATH:/opt/nvim-linux64/bin"
 ```
 
 #### Get Clipboard working in WSL:
@@ -68,17 +62,21 @@ git config --global credential.helper "/mnt/c/Users/Thomas/AppData/Local/Program
 
 ### GnuPG setup for ssh-keys
 
-default ssh-agent can be used for adding the key:
 
+create gpg-agent.conf and enable ssh support:
 ```bash
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/rsa
+    echo "enable-ssh-support" >> ~/.gnupg/gpg-agent.conf
+```
+
+default ssh-agent can be used for adding the key:
+```bash
+    eval "$(ssh-agent -s)"
+    ssh-add ~/.ssh/rsa
 ```
 
 fix gpg pinentry issue within tmux, add to first line of ~/.ssh/config:
-
 ```bash
-Match host * exec "gpg-connect-agent UPDATESTARTUPTTY /bye"
+    Match host * exec "gpg-connect-agent UPDATESTARTUPTTY /bye"
 ```
 
 ## manual install zinit:
@@ -86,17 +84,17 @@ Match host * exec "gpg-connect-agent UPDATESTARTUPTTY /bye"
 add to .zshrc:
 
 ```bash
-ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
-[ ! -d $ZINIT_HOME ] && mkdir -p "$(dirname $ZINIT_HOME)"
-[ ! -d $ZINIT_HOME/.git ] && git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
-source "${ZINIT_HOME}/zinit.zsh"
+    ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
+    [ ! -d $ZINIT_HOME ] && mkdir -p "$(dirname $ZINIT_HOME)"
+    [ ! -d $ZINIT_HOME/.git ] && git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+    source "${ZINIT_HOME}/zinit.zsh"
 ```
 
 ### if sourcing zinit.zsh after compinit, add following after sourcing zinit.zsh:
 
 ```bash
-autoload -Uz _zinit
-(( ${+_comps} )) && _comps[zinit]=_zinit
+    autoload -Uz _zinit
+    (( ${+_comps} )) && _comps[zinit]=_zinit
 ```
 
 reload shell and run `exec zsh`
