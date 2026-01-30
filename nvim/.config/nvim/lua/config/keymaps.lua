@@ -53,15 +53,8 @@ map({ 'n', 'v' }, '<leader>d', '"_d')
 -- map({ 'n', 'i', 'v' }, '<C-_>', '<Plug>(comment_toggle_linewise)')
 
 -- Buffer/window management
-map(
-    { 'n', 'i' }, '<C-W><C-Q>', '<cmd>qa<cr>', { noremap = true, desc = 'Quit all windows' }
-)
-map(
-    { 'n', 'i', 'v' },
-    '<C-s>',
-    '<cmd>noautocmd w<cr>',
-    { noremap = true, desc = 'Save current buffer (without formatting)' }
-)
+map( { 'n', 'i', 'v' }, '<C-s>', '<cmd>noautocmd w<cr>', { noremap = true, desc = 'Save current buffer (without formatting)' })
+map({ 'n', 'i' }, '<C-W><C-Q>', '<cmd>qa<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
 map('n', '<leader>q', ':bdelete<CR>', { noremap = true, desc = 'Close current buffer' })
 map({ 'n', 'v' }, '<Leader>n', ':enew<CR>', { noremap = true, silent = true, desc = 'New buffer' })
 map({ 'n', 'v' }, '<Leader>v', ':vsplit<CR>', { noremap = true, silent = true, desc = 'New vertical split' })

@@ -9,13 +9,13 @@ return {
 
         opts.preview = {
             modes = { 'n', 'i', 'c' },
-            -- hybrid_modes = { 'n', 'i' }, # this will disable preview only for blocks under cursor
+            -- hybrid_modes = { 'n', 'i' }, -- this will disable preview only for blocks under cursor
             ignore_previews = {
                 markdown = { '!code_blocks', '!block_quote', '!headings' },
                 markdown_inline = { 'inline_codes' },
             },
             icon_provider = 'mini',
-            --     debounce = 0,
+            -- debounce = 0,
         }
 
         -- opts.preview.callbacks = {
@@ -39,7 +39,7 @@ return {
             label_direction = 'right',
             label_hl = nil,
 
-            min_width = 60,
+            min_width = 50,
             pad_amount = 2,
             pad_char = ' ',
 
@@ -48,7 +48,7 @@ return {
                 pad_hl = 'MarkviewCode',
             },
 
-            ['diff'] = {
+            ['diff'] = { -- this will take care of git diff blocks
                 block_hl = function(_, line)
                     if line:match '^%+' then
                         return 'MarkviewPalette4'

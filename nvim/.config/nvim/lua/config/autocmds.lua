@@ -24,6 +24,13 @@ vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
 })
 
 vim.api.nvim_create_autocmd("FileType", {
+  pattern = 'markdown',
+  callback = function()
+    vim.cmd("setlocal nowrap")
+  end
+})
+
+vim.api.nvim_create_autocmd("FileType", {
   pattern = "go",  -- or your target language
   callback = function()
     -- Map <leader>r to replace '=' with ':=' in the current line

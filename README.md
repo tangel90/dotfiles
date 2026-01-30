@@ -55,6 +55,9 @@ Then add this to your shell config (`~/.bashrc`, `~/. zshrc`, ...):
 #### Get Clipboard working in WSL:
 
 Download win32yank.exe and copy it to /usr/local/bin
+```lua
+lua vim.cmd('new') vim.bo.filetype = 'lua' vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.split(vim.inspect(require('nvim-web-devicons').get_icons()), '\n'))
+```
 
 ### gh credentials-manager on wsl:
 
