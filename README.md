@@ -23,17 +23,18 @@ direnv
 glow
 unzip
 yazi
+tldr
 
 ## change to zsh
 
 list available shells:
 ```bash
-    chsh -l
+chsh -l
 ```
 
 change shell:
 ```bash
-    chsh -s /bin/zsh
+chsh -s /bin/zsh
 ```
 
 ## Build Neovim:
@@ -42,14 +43,14 @@ change shell:
 
 The [Releases](https://github.com/neovim/neovim/releases) page provides pre-built binaries for Linux systems.
 ```sh
-    curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
-    sudo rm -rf /opt/nvim
-    sudo tar -C /opt -xzf nvim-linux64.tar.gz
+curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
+sudo rm -rf /opt/nvim
+sudo tar -C /opt -xzf nvim-linux64.tar.gz
 ```
 
 Then add this to your shell config (`~/.bashrc`, `~/. zshrc`, ...):
 ```sh
-    export PATH="$PATH:/opt/nvim-linux64/bin"
+export PATH="$PATH:/opt/nvim-linux64/bin"
 ```
 
 #### Get Clipboard working in WSL:
@@ -67,18 +68,18 @@ git config --global credential.helper "/mnt/c/Users/Thomas/AppData/Local/Program
 
 create gpg-agent.conf and enable ssh support:
 ```bash
-    echo "enable-ssh-support" >> ~/.gnupg/gpg-agent.conf
+echo "enable-ssh-support" >> ~/.gnupg/gpg-agent.conf
 ```
 fix gpg pinentry issue within tmux, add to first line of ~/.ssh/config:
 ```bash
-    Match host * exec "gpg-connect-agent UPDATESTARTUPTTY /bye"
+Match host * exec "gpg-connect-agent UPDATESTARTUPTTY /bye"
 ```
 let gpg-agent act as ssh-agent (make sure ssh-agent is not running)
 ```bash
-    killall ssh-agent gpg-agent
-    gpg-connect-agent --verbose /bye
-    gpg-connect-agent updatestartuptty /bye
-    ssh-add ~/.ssh/rsa
+killall ssh-agent gpg-agent
+gpg-connect-agent --verbose /bye
+gpg-connect-agent updatestartuptty /bye
+ssh-add ~/.ssh/rsa
 ```
 
 
@@ -91,17 +92,17 @@ The following error means that ssh-add is picket up by the standard ssh-agent (w
 add to .zshrc:
 
 ```bash
-    ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
-    [ ! -d $ZINIT_HOME ] && mkdir -p "$(dirname $ZINIT_HOME)"
-    [ ! -d $ZINIT_HOME/.git ] && git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
-    source "${ZINIT_HOME}/zinit.zsh"
+ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
+[ ! -d $ZINIT_HOME ] && mkdir -p "$(dirname $ZINIT_HOME)"
+[ ! -d $ZINIT_HOME/.git ] && git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+source "${ZINIT_HOME}/zinit.zsh"
 ```
 
 ### if sourcing zinit.zsh after compinit, add following after sourcing zinit.zsh:
 
 ```bash
-    autoload -Uz _zinit
-    (( ${+_comps} )) && _comps[zinit]=_zinit
+autoload -Uz _zinit
+(( ${+_comps} )) && _comps[zinit]=_zinit
 ```
 
 reload shell and run `exec zsh`
@@ -119,14 +120,14 @@ and save it to /usr/local/share/zsh/site-functions/\_exa
 
 install fzf via git, since apt repository is not up-to-date:
 
-```
+```bash
 git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 ```
 
 ## zoxide:
 
-```
+```bash
 #!/bin/bash
 curl -sS https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash
 ```
@@ -142,19 +143,19 @@ sudo install lazygit /usr/local/bin
 
 ## tmux
 
-```
+```bash
 sudo apt install tmux
 ```
 
 install tmux package manager
 
-```
+```bash
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 ```
 
 add to $XDG_CONFIG_HOME/tmux/tmux.conf
 
-```
+```bash
 # List of plugins
 set -g @plugin 'tmux-plugins/tpm'
 set -g @plugin 'tmux-plugins/tmux-sensible'
@@ -170,7 +171,7 @@ tmux source ~/.tmux.conf
 
 Run rustup installer:
 
-```
+```bash
 curl https://sh.rustup.rs -sSf | sh
 ```
 
@@ -180,8 +181,14 @@ make sure to add $HOME/.cargo/bin/ folder to PATH
 
 Download latest archive and unpack to /usr/local
 
-```
- rm -rf /usr/local/go && tar -C /usr/local -xzf go1.23.1.linux-amd64.tar.gz
+```bash
+rm -rf /usr/local/go && tar -C /usr/local -xzf go1.23.1.linux-amd64.tar.gz
 ```
 
 make sure do add /usr/local/go/bin to PATH
+
+install tldr
+
+```bash
+npm install -g tldr
+```

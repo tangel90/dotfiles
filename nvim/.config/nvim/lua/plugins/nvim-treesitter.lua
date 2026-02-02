@@ -13,6 +13,7 @@ return {
       -- update parsers, if TSUpdate exists
       if vim.fn.exists(':TSUpdate') == 2 then vim.cmd('TSUpdate') end
     end,
+    main = "nvim-treesitter.configs",
 
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     ---@module 'nvim-treesitter'
@@ -36,6 +37,7 @@ return {
         'luadoc',
         'markdown',
         'markdown_inline',
+        'typst',
         'latex',
         'query',
         'vim',
