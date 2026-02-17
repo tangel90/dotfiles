@@ -10,6 +10,8 @@ return {
         custom_scheme.insert.b.bg = '#1E1E1E'
         custom_scheme.visual.b.bg = '#1E1E1E'
         custom_scheme.normal.c.bg = '#1E1E1E'
+        custom_scheme.visual.c.bg = '#1E1E1E'
+        custom_scheme.command.c.bg = '#1E1E1E'
         -- custom_everforest.normal.x.fg = '#ebbcba'
 
         require('lualine').setup {
@@ -48,10 +50,12 @@ return {
             sections = {
                 lualine_a = {},
                 lualine_b = {},
-                lualine_c = {},
-                lualine_x = {
-                    { 'diagnostics', color = { fg = '#ffaa88', bg = '#1E1E1E', gui = 'bold' } },
-                    { 'branch', color = { fg = '#999cba', bg = '#1E1E1E', gui = 'bold' }, padding = {left = 2}},
+                lualine_c = {
+                    -- {
+                    --     'filetype',
+                    --     icon_only = true,
+                    --     color = { bg = '#1E1E1E' },
+                    -- },
                     {
                         'filename',
                         file_status = true, -- Displays file status (readonly status, modified status)
@@ -72,13 +76,13 @@ return {
                             unnamed = '[No Name]', -- Text to show for unnamed buffers.
                             newfile = '[New]', -- Text to show for newly created file before first write
                         },
-                        color = { fg = '#ffaa88', bg = '#1E1E1E' },
+                        color = { fg = '#999cba', bg = '#1E1E1E' },
                     },
-                    {
-                        'filetype',
-                        icon_only = true,
-                        color = { bg = '#1E1E1E' },
-                    },
+                
+                },
+                lualine_x = {
+                    { 'diagnostics', color = { fg = '#999cba', bg = '#1E1E1E', gui = 'bold' } },
+                    { 'branch', color = { fg = '#999cba', bg = '#1E1E1E', gui = 'bold' }, padding = { left = 2 } },
                 },
                 lualine_y = {},
                 lualine_z = {},
