@@ -24,6 +24,9 @@ if [ ! -d "$ZINIT_HOME" ]; then
 fi
 source "${ZINIT_HOME}/zinit.zsh"
 
+# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
 # Add in Powerlevel10k
 zinit ice depth=1; zinit light romkatv/powerlevel10k
 
@@ -75,5 +78,74 @@ eval "$(zoxide init zsh --cmd cd)"
 eval "$(direnv hook zsh)"
 # <<< Shell integrations <<<
 
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+bindkey -r '^L' #removes C-l for clear-console
+bindkey -v
+bindkey -M viins '^F' forward-char
+bindkey '^p' history-search-backward
+bindkey '^n' history-search-forward
+
+# zle -N yazi-cwd # Widget breaks yazi on some machines ...
+
+alias c="clear"
+alias ls="ls --color=auto -X"
+
+if [ -x "$(command -v nvim)" ]; then
+  alias vim="nvim"
+  alias vimdev='NVIM_APPNAME=nvim-dev nvim'
+  alias nvr="nvim --listen $HOME/.local/tmp/nvimsocket"
+fi
+
+if [ -x "$(command -v direnv)" ]; then
+  alias da='direnv allow'
+  alias dd='direnv deny'
+fi
+
+if [ -x "$(command -v yazi)" ]; then
+  alias e="yazi-cwd"
+fi
+
+if [ -x "$(command -v fd)" ]; then
+  alias vc="fd . '$HOME/.config' --type f --follow --hidden --exclude .git | fzf-tmux --border --preview='bat --style=numbers --color=always {}' -p 80%,80% | xargs nvim"
+  alias fd="fd --follow --hidden --exclude .git"
+fi
+
+if [ -x "$(command -v rg)" ]; then
+  alias grep="rg"
+fi
+
+if [ -x "$(command -v lazygit)" ]; then
+  alias lg="lazygit"
+fi
+
+if [ -x "$(command -v bat)" ]; then
+    alias cat="bat"
+fi
+
+if [ -x "$(command -v exa)" ]; then
+    alias lt="exa --tree --level=2"
+    alias ll="exa --long --header --sort=type --icons --no-permissions --no-user"
+    alias la="exa --long --header --all --sort=type --icons --no-permissions --no-user" 
+fi
+
+function gpg-unlock-lazygit() {
+    command git fetch
+    command lazygit
+}
+
+function vv() {
+    local CONFIG_DIRS=$(find -L $XDG_CONFIG_HOME -type d -name "nvim*")
+    selected_config=$(echo "$CONFIG_DIRS" | fzf --prompt "Nvim Config > ")
+
+    [[ -z $selected_config ]] && echo "No config selected" && return
+
+    echo "Config selected: $selected_config"
+    NVIM_APPNAME=$(basename $selected_config) nvim $@
+}
+
+function yazi-cwd() {
+    local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
+    yazi "$@" --cwd-file="$tmp"
+    IFS= read -r -d '' cwd < "$tmp"
+    [ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
+    rm -f -- "$tmp"
+}
