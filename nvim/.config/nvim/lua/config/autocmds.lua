@@ -11,7 +11,6 @@ vim.api.nvim_create_autocmd('TextYankPost', {
     vim.highlight.on_yank()
   end,
 })
-
 -- treesitter will not automatically start on branch 'main' anymore
 vim.api.nvim_create_autocmd('FileType', {
   pattern = { 'python', 'markdown', 'go', 'yaml' },
@@ -20,13 +19,21 @@ vim.api.nvim_create_autocmd('FileType', {
 
 vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
   pattern = '.chatgpt_history',
-  command = 'set filetype=markdown',
+  command = "set filetype=markdown"
 })
 
 vim.api.nvim_create_autocmd("FileType", {
   pattern = 'markdown',
   callback = function()
-    vim.cmd("setlocal nowrap")
+    vim.opt_local.wrap = false
+    vim.opt_local.number = false
+    vim.opt_local.relativenumber = false
+    vim.opt_local.numberwidth = 4
+    vim.opt_local.signcolumn = "yes:2"
+    vim.opt_local.foldcolumn = "0"
+    vim.opt.wrapmargin=0
+    vim.opt.sidescrolloff=5
+    vim.opt.scrolloff=5
   end
 })
 

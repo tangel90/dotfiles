@@ -4,6 +4,7 @@ local map = vim.keymap.set
 map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python3 %<CR>', { desc = 'python main.py' })
 map('n', '<leader>e', '<cmd>Ex<cr>', { desc = 'Open NetRW' })
 map('n', '<leader>"', '<cmd>registers<cr>', { desc = 'List registers' })
+map('n', '<leader>tw', '<cmd>set wrap!<cr>', { desc = 'Toggle word wrap'})
 
 -- Vim motion keymaps
 map({'n', 'i'}, '<C-k>', '<C-a>', { noremap = true })

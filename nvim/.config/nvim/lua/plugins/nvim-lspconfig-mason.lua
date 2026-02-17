@@ -153,19 +153,22 @@ return { -- LSP Configuration & Plugins
       jqls = {
         filetypes = { 'json', 'jq' },
       },
-      -- pyright = {
-      --   settings = {
-      --     pyright = {
-      --       analysis = {
-      --         autoSearchPaths = true,
-      --         diagnosticMode = 'openFilesOnly',
-      --         useLibraryCodeForTypes = true,
-      --         reportMissingTypeStubs = false,
-      --         typeCheckingMode = 'basic',
-      --       },
-      --     },
-      --   },
+      -- ruff = {
+      --   filetypes = { 'python' },
       -- },
+      pyright = {
+        settings = {
+          pyright = {
+            analysis = {
+              autoSearchPaths = true,
+              diagnosticMode = 'openFilesOnly',
+              useLibraryCodeForTypes = true,
+              reportMissingTypeStubs = false,
+              typeCheckingMode = 'basic',
+            },
+          },
+        },
+      },
       -- sqlls = {},
       rust_analyzer = {},
       -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
@@ -244,7 +247,7 @@ return { -- LSP Configuration & Plugins
       'prettierd', -- daemon version of prettier (means it runs in the background and thus has better performance)
       'ast-grep',
       'csharpier',
-      -- 'pyright',
+      'pyright',
       'lua-language-server',
       'sql-formatter',
       'debugpy',
