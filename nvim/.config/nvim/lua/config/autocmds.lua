@@ -32,8 +32,12 @@ vim.api.nvim_create_autocmd("FileType", {
     vim.opt_local.signcolumn = "yes:2"
     vim.opt_local.foldcolumn = "0"
     vim.opt.wrapmargin=0
-    vim.opt.sidescrolloff=5
+    vim.opt.sidescrolloff=15
     vim.opt.scrolloff=5
+    vim.opt_local.list = true
+    vim.opt_local.linebreak = true
+    -- vim.opt_local.showbreak = "↪ "
+    vim.opt_local.listchars = { tab = "→ ", trail = "·" }
   end
 })
 

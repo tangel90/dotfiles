@@ -52,8 +52,8 @@ main() {
     if [[ $theme == main ]]; then
 
         thm_base="#1e1e1e";
-        thm_surface="#Ff1d2e";
-        thm_overlay="#F6233a";
+        thm_surface="#2a273f";
+        thm_overlay="#393552";
         thm_muted="#6a6e6f";
         thm_subtle="#999cba";
         thm_text="#e0def4";
@@ -64,9 +64,9 @@ main() {
         thm_pine="#31748f";
         thm_foam="#9ccfd8";
         thm_iris="#c4a7e7";
-        thm_hl_low="#F1202e";
-        thm_hl_med="#F03d52";
-        thm_hl_high="#F24f67";
+        thm_hl_low="#21202e";
+        thm_hl_med="#403d52";
+        thm_hl_high="#524f67";
 
     elif [[ $theme == dawn ]]; then
 
@@ -277,9 +277,10 @@ main() {
     local field_separator
     # NOTE: Don't remove
     field_separator="$(get_tmux_option "@rose_pine_field_separator" " | " )"
+
     # Make it white
     # TODO: Make it user-definable
-    field_separator="#[fg=$thm_text]"$field_separator
+    field_separator="#[fg=$thm_subtle]"$field_separator
 
     # END
 
@@ -320,7 +321,7 @@ main() {
     readonly show_date_time="#[fg=$thm_subtle]$date_time" #$right_separator#[fg=$thm_subtle]$date_time_icon #[fg=$thm_text]
 
     local show_directory
-    readonly show_directory="#[fg=$thm_text]$current_folder_icon #[fg=$thm_text]#{b:pane_current_path}"
+    readonly show_directory="#[fg=$thm_subtle]$current_folder_icon #[fg=$thm_subtle]#{b:pane_current_path}"
 
     local show_directory_in_window_status
     show_directory_in_window_status="#I$left_separator#[fg=$thm_gold,bg=""]#{b:pane_current_path}"
