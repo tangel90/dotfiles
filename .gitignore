@@ -1,2 +1,4 @@
 lazy-lock.json
-**/tmux/plugins/
+shell/zsh/.config/tmux/plugins/*
+!shell/zsh/.config/tmux/plugins/tmux/
+!shell/zsh/.config/tmux/plugins/tmux/rose-pine.tmux

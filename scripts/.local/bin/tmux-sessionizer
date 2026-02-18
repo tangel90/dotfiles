@@ -1,12 +1,5 @@
 #!/usr/bin/env bash
 
-PROJECTS_HOME=${PROJECTS_HOME:-$HOME/projects/}
-PLAYGROUND_HOME=${PLAYGROUND_HOME:-$HOME/playground/}
-
-if [[ ! -d $PROJECTS_HOME ]]; then
-    echo "Path not found: $PROJECTS_HOME"
-fi
-
 if [[ $# -ge 1 ]]; then
     selected=$(fd . $@ --type d -d 4 --hidden --follow | fzf)
 else

@@ -14,6 +14,11 @@ run = "plugin zoxide"
 desc = "jump to a directory using zoxide"
 
 [[mgr.prepend_keymap]]
+on = ["g", "/"]
+run = "cd /"
+desc = "cd into root /"
+
+[[mgr.prepend_keymap]]
 on = ["g", "r"]
 run = "cd /"
 desc = "cd into root /"
@@ -44,7 +49,7 @@ run = "cd ~/dev"
 desc = "cd into ~/dev"
 
 [[mgr.prepend_keymap]]
-on = ["c", "<Space>"]
+on = ["c", "/"]
 run = "cd --interactive"
 desc = "cd interactively"
 

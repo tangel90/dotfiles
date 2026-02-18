@@ -54,8 +54,8 @@ main() {
         thm_base="#1e1e1e";
         thm_surface="#Ff1d2e";
         thm_overlay="#F6233a";
-        thm_muted="#Fe6a86";
-        thm_subtle="#F08caa";
+        thm_muted="#6a6e6f";
+        thm_subtle="#999cba";
         thm_text="#e0def4";
         thm_love="#eb6f92";
         thm_gold="#f6c177";
@@ -132,9 +132,9 @@ main() {
     set display-panes-colour "${thm_gold}"
 
     # Windows
-    setw window-status-style "fg=${thm_iris},bg=${thm_base}"
+    setw window-status-style "fg=${thm_text},bg=${thm_base}"
     setw window-status-activity-style "fg=${thm_base},bg=${thm_rose}"
-    setw window-status-current-style "fg=${thm_gold},bg=${thm_base}"
+    setw window-status-current-style "fg=${thm_peach},bg=${thm_base}"
 
     # Statusline base command configuration: No need to touch anything here
     # Placement is handled below
@@ -276,7 +276,7 @@ main() {
 
     local field_separator
     # NOTE: Don't remove
-    field_separator="$(get_tmux_option "@rose_pine_field_separator" "  " )"
+    field_separator="$(get_tmux_option "@rose_pine_field_separator" " | " )"
     # Make it white
     # TODO: Make it user-definable
     field_separator="#[fg=$thm_text]"$field_separator
@@ -301,7 +301,7 @@ main() {
     show_window_in_window_status_current="#I#[fg=$thm_gold,bg=""]$left_separator#[fg=$thm_gold,bg=""]#W"
 
     local show_session
-    readonly show_session="#[fg=#{?client_prefix,$thm_love,$thm_text}]$current_session_icon #[fg=$thm_text]#S"
+    readonly show_session="#[fg=#{?client_prefix,$thm_love,$thm_text}]$current_session_icon #[fg=$thm_peach]#S"
 
     local show_user
     readonly show_user="#[fg=$thm_iris]#(whoami)#[fg=$thm_subtle]$right_separator#[fg=$thm_subtle]$username_icon"
@@ -317,10 +317,10 @@ main() {
     readonly show_host="#[fg=$thm_text]$hostname#[fg=$thm_subtle]$right_separator#[fg=$thm_subtle]$hostname_icon"
 
     local show_date_time
-    readonly show_date_time="#[fg=$thm_foam]$date_time#[fg=$thm_subtle]$right_separator#[fg=$thm_subtle]$date_time_icon #[fg=$thm_text]"
+    readonly show_date_time="#[fg=$thm_subtle]$date_time" #$right_separator#[fg=$thm_subtle]$date_time_icon #[fg=$thm_text]
 
     local show_directory
-    readonly show_directory="#[fg=$thm_subtle]$current_folder_icon #[fg=$thm_peach]#{b:pane_current_path}"
+    readonly show_directory="#[fg=$thm_text]$current_folder_icon #[fg=$thm_text]#{b:pane_current_path}"
 
     local show_directory_in_window_status
     show_directory_in_window_status="#I$left_separator#[fg=$thm_gold,bg=""]#{b:pane_current_path}"
@@ -413,9 +413,9 @@ main() {
     # The append and prepend sections are for inter-plugin compatibility
     # and extension
     if [[ "$disable_active_window_menu" == "on" ]]; then
-        left_column=$field_separator
+        left_column=" "
     else
-        left_column=$field_separator$show_window
+        left_column=$show_window
     fi
     #
     # Appending / Prepending custom user sections to
