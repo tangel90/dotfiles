@@ -9,6 +9,7 @@ return {
         custom_scheme.normal.b.bg = '#1E1E1E'
         custom_scheme.insert.b.bg = '#1E1E1E'
         custom_scheme.visual.b.bg = '#1E1E1E'
+        custom_scheme.insert.c.bg = '#1E1E1E'
         custom_scheme.normal.c.bg = '#1E1E1E'
         custom_scheme.visual.c.bg = '#1E1E1E'
         custom_scheme.command.c.bg = '#1E1E1E'
@@ -18,7 +19,7 @@ return {
             options = {
                 icons_enabled = true,
                 theme = custom_scheme,
-                component_separators = { left = '', right = '' },
+                component_separators = { left = ' ', right = ' ' , color = { fg = '#999cba' }},
                 section_separators = { left = '', right = '' },
                 disabled_filetypes = {
                     statusline = {},
@@ -48,9 +49,14 @@ return {
                 },
             },
             sections = {
-                lualine_a = {},
+                lualine_a = {
+                    { 'branch', color = { fg = '#999cba', bg = '#1E1E1E', gui = 'bold' }, padding = { left = 2 } },
+                    { 'diff', colored = false, color = { fg = '#999cba', bg = '#1E1E1E' } },
+                    { 'diagnostics', colored = false, color = { fg = '#999cba', bg = '#1E1E1E' } },
+                },
                 lualine_b = {},
                 lualine_c = {
+                    '%=',
                     -- {
                     --     'filetype',
                     --     icon_only = true,
@@ -76,14 +82,10 @@ return {
                             unnamed = '[No Name]', -- Text to show for unnamed buffers.
                             newfile = '[New]', -- Text to show for newly created file before first write
                         },
-                        color = { fg = '#999cba', bg = '#1E1E1E' },
+                        color = { fg = '#e0def4', bg = '#1E1E1E' },
                     },
-                
                 },
-                lualine_x = {
-                    { 'diagnostics', color = { fg = '#999cba', bg = '#1E1E1E', gui = 'bold' } },
-                    { 'branch', color = { fg = '#999cba', bg = '#1E1E1E', gui = 'bold' }, padding = { left = 2 } },
-                },
+                lualine_x = {},
                 lualine_y = {},
                 lualine_z = {},
             },

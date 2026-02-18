@@ -5,6 +5,9 @@ map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python3 %<CR>', { desc = 'python 
 map('n', '<leader>e', '<cmd>Ex<cr>', { desc = 'Open NetRW' })
 map('n', '<leader>"', '<cmd>registers<cr>', { desc = 'List registers' })
 map('n', '<leader>tw', '<cmd>set wrap!<cr>', { desc = 'Toggle word wrap'})
+map('n', '0', '^')
+map('n', '^', '0')
+
 
 -- Vim motion keymaps
 map({'n', 'i'}, '<C-k>', '<C-a>', { noremap = true })
@@ -60,7 +63,7 @@ map('n', '<leader>q', ':bdelete<CR>', { noremap = true, desc = 'Close current bu
 map({ 'n', 'v' }, '<Leader>n', ':enew<CR>', { noremap = true, silent = true, desc = 'New buffer' })
 map({ 'n', 'v' }, '<Leader>v', ':vsplit<CR>', { noremap = true, silent = true, desc = 'New vertical split' })
 map({ 'n', 'v' }, '<Leader>tn', ':tabnew<CR>', { noremap = true, silent = true, desc = 'New vertical split' })
-map({ 'n', 'v' }, '<Tab>', ':lua ToggleBuffers()<CR>', { noremap = true, silent = true, desc = 'Last buffer' })
+map({ 'n', 'v' }, '<Tab>', ':lua ToggleBuffers()<CR>', { noremap = true, silent = true, desc = 'Last buffer' }) -- this is defined in functions.lua
 map('n', '<Leader>rm', 'mz:%s/\\r//g<CR>`z', { desc = 'Remove Carriage Returns From Buffer' })
 
 map({ 'n', 'v' }, '<Leader>rr', function()
@@ -93,12 +96,3 @@ map('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
 map('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 map('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 map('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
-
--- <Tab> will only switch between two files
-function ToggleBuffers()
-    local current = vim.fn.bufnr '%'
-    local last = vim.fn.bufnr '#'
-    if last ~= -1 and last ~= current then
-        vim.cmd('buffer ' .. last)
-    end
-end
