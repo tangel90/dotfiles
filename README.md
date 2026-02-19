@@ -23,25 +23,31 @@ direnv
 glow
 unzip
 yazi
+pass
 tldr
 
 ## change to zsh
 
 list available shells:
+
 ```bash
 chsh -l
 ```
 
 change shell:
+
 ```bash
 chsh -s /bin/zsh
 ```
 
 ## Build Neovim:
+
 ### Linux
+
 #### Pre-built archives
 
 The [Releases](https://github.com/neovim/neovim/releases) page provides pre-built binaries for Linux systems.
+
 ```sh
 curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
 sudo rm -rf /opt/nvim
@@ -49,6 +55,7 @@ sudo tar -C /opt -xzf nvim-linux64.tar.gz
 ```
 
 Then add this to your shell config (`~/.bashrc`, `~/. zshrc`, ...):
+
 ```sh
 export PATH="$PATH:/opt/nvim-linux64/bin"
 ```
@@ -56,8 +63,20 @@ export PATH="$PATH:/opt/nvim-linux64/bin"
 #### Get Clipboard working in WSL:
 
 Download win32yank.exe and copy it to /usr/local/bin
+
 ```lua
 lua vim.cmd('new') vim.bo.filetype = 'lua' vim.api.nvim_buf_set_lines(0, 0, -1, false, vim.split(vim.inspect(require('nvim-web-devicons').get_icons()), '\n'))
+```
+
+### install NVM
+
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
+
+put this into ~/.zshrc
+
+```bash
+export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
 ```
 
 ### gh credentials-manager on wsl:
@@ -67,21 +86,25 @@ git config --global credential.helper "/mnt/c/Users/Thomas/AppData/Local/Program
 ### GnuPG setup for ssh-keys
 
 create gpg-agent.conf and enable ssh support:
+
 ```bash
 echo "enable-ssh-support" >> ~/.gnupg/gpg-agent.conf
 ```
+
 fix gpg pinentry issue within tmux, add to first line of ~/.ssh/config:
+
 ```bash
 Match host * exec "gpg-connect-agent UPDATESTARTUPTTY /bye"
 ```
+
 let gpg-agent act as ssh-agent (make sure ssh-agent is not running)
+
 ```bash
 killall ssh-agent gpg-agent
 gpg-connect-agent --verbose /bye
 gpg-connect-agent updatestartuptty /bye
 ssh-add ~/.ssh/rsa
 ```
-
 
 The following error means that ssh-add is picket up by the standard ssh-agent (which is not running)
 "Could not add identity "/home/ubuntu/.ssh/knilch": agent refused operation"
@@ -191,4 +214,11 @@ install tldr
 
 ```bash
 npm install -g tldr
+```
+
+
+how to insert unicode characters: (terminal function)
+
+```terminal
+ctrl+shift+u
 ```
