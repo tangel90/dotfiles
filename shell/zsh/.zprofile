@@ -7,8 +7,8 @@ export COLORTERM="truecolor"
 export TMPDIR="$HOME/.local/tmp"
 export PAGER="less"
 export LESS="-SRXF"
-export LOCALCONFIG="$HOME/.local/config"
-export LOCALPROFILE="$LOCALCONFIG/.zprofile"
+export PERSONALCONFIG="$HOME/personal"
+export PERSONALPROFILE="$PERSONALCONFIG/.profile"
 export LANGUAGE=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 export LANG=en_US.UTF-8
@@ -30,8 +30,8 @@ else
 fi
 
 
-if [ -d "$LOCALCONFIG" ]; then
-    for i in $(find -L "$LOCALCONFIG" -type f); do
+if [ -d "$PERSONALCONFIG" ]; then
+    for i in $(find -L "$PERSONALCONFIG" -type f); do
         source "$i"
     done
 fi
