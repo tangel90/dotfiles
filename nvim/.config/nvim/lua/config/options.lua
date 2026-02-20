@@ -9,18 +9,21 @@ vim.filetype.add({
   },
 })
 
-vim.g.clipboard = {
-  name = "myclip",
-  copy = {
-    ["+"] = "win32yank.exe -i",
-    ["*"] = "win32yank.exe -i --primary",
-  },
-  paste = {
-    ["+"] = "win32yank.exe -o",
-    ["*"] = "win32yank.exe -o --primary",
-  },
-  cache_enabled = 0,
-}
+if vim.fn.has("wsl") == 1 then
+  vim.g.clipboard = {
+    name = "myclip",
+    copy = {
+      ["+"] = "win32yank.exe -i",
+      ["*"] = "win32yank.exe -i",
+    },
+    paste = {
+      ["+"] = "win32yank.exe -o",
+      ["*"] = "win32yank.exe -o",
+    },
+    cache_enabled = 0,
+  }
+end
+
 -- Enable break indent
 vim.opt.breakindent = true
 
