@@ -8,7 +8,7 @@ return {
         local opts = {}
 
         opts.preview = {
-            modes = { 'n', 'i', 'c' },
+            modes = { 'n', 'i', 'c', 'niI', 'niR', 'no' },
             -- hybrid_modes = { 'n', 'i' }, -- this will disable preview only for blocks under cursor
             ignore_previews = {
                 markdown = { '!code_blocks', '!block_quote', '!headings' },

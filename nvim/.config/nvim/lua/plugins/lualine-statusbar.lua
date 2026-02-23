@@ -19,8 +19,8 @@ return {
             options = {
                 icons_enabled = true,
                 theme = custom_scheme,
-                component_separators = { left = ' ', right = ' ' , color = { fg = '#999cba' }},
-                section_separators = { left = '', right = '' },
+                component_separators = { left = '', right = '', color = { fg = '#999cba' } },
+                section_separators = { left = ' > ', right = ' < ', color = { fg = '#999cba' } },
                 disabled_filetypes = {
                     statusline = {},
                     winbar = {},
@@ -49,19 +49,15 @@ return {
                 },
             },
             sections = {
-                lualine_a = {
-                    { 'branch', color = { fg = '#999cba', bg = '#1E1E1E', gui = 'bold' }, padding = { left = 2 } },
-                    { 'diff', colored = false, color = { fg = '#999cba', bg = '#1E1E1E' } },
-                    { 'diagnostics', colored = false, color = { fg = '#999cba', bg = '#1E1E1E' } },
-                },
+                lualine_a = {},
                 lualine_b = {},
                 lualine_c = {
                     '%=',
-                    -- {
-                    --     'filetype',
-                    --     icon_only = true,
-                    --     color = { bg = '#1E1E1E' },
-                    -- },
+                    {
+                        'filetype',
+                        icon_only = true,
+                        -- color = { fg = '#e0def4', bg = '#1E1E1E' },
+                    },
                     {
                         'filename',
                         file_status = true, -- Displays file status (readonly status, modified status)
@@ -86,8 +82,13 @@ return {
                     },
                 },
                 lualine_x = {},
-                lualine_y = {},
-                lualine_z = {},
+                lualine_y = {
+                    { 'diagnostics', colored = false, color = { fg = '#999cba', bg = '#1E1E1E' } },
+                },
+                lualine_z = {
+                    { 'diff', colored = false, color = { fg = '#999cba', bg = '#1E1E1E' } },
+                    { 'branch', color = { fg = '#999cba', bg = '#1E1E1E', gui = 'bold' }, padding = { left = 2 } },
+                },
             },
             inactive_sections = {
                 lualine_a = {},

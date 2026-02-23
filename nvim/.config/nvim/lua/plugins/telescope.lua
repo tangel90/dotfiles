@@ -150,9 +150,5 @@ return { -- Fuzzy Finder (files, lsp, etc)
         builtin.find_files { cwd = projects_home, find_command = { 'rg', '--ignore', '--hidden', '--files' }, prompt_prefix = '🔍 ' }
       end
     end, { desc = '[F]ind in Projects' })
-
-    vim.keymap.set('n', '<leader>fm', function()
-      builtin.find_files { cwd = '/mnt/d/clinical_data_repository/modules/' }
-    end, { desc = '[F]ind in CDR [M]odules' })
   end,
 }

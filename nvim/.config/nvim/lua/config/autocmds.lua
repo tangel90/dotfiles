@@ -34,10 +34,10 @@ vim.api.nvim_create_autocmd("FileType", {
     vim.opt.wrapmargin=0
     vim.opt.sidescrolloff=15
     vim.opt.scrolloff=5
-    vim.opt_local.list = true
+    -- vim.opt_local.list = true
     vim.opt_local.linebreak = true
     -- vim.opt_local.showbreak = "↪ "
-    vim.opt_local.listchars = { tab = "→ ", trail = "·" }
+    -- vim.opt_local.listchars = { tab = "→ ", trail = "·" }
   end
 })
 

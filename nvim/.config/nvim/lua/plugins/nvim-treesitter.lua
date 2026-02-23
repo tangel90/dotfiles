@@ -76,7 +76,7 @@ return {
         mode = { 'n', 'x', 'o' },
       },
       {
-        ']F',
+        ']f',
         function() require('nvim-treesitter-textobjects.move').goto_next_start('@function.outer', 'textobjects') end,
         desc = 'next function',
         mode = { 'n', 'x', 'o' },
@@ -88,7 +88,7 @@ return {
         mode = { 'n', 'x', 'o' },
       },
       {
-        ']f',
+        ']F',
         function() require('nvim-treesitter-textobjects.move').goto_next_end('@function.outer', 'textobjects') end,
         desc = 'next function end',
         mode = { 'n', 'x', 'o' },
