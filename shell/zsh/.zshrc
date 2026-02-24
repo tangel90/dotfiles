@@ -50,7 +50,6 @@ zinit snippet OMZP::fzf
 # zinit snippet OMZP::command-not-found
 
 autoload -Uz compinit && compinit
-
 zinit cdreplay -q
 
 HISTSIZE=10000
@@ -88,48 +87,23 @@ bindkey '^n' history-search-forward
 
 alias c="clear"
 alias ls="ls --color=auto -X"
-
-if [ -x "$(command -v nvim)" ]; then
-  alias vim="nvim"
-  alias vimdev='NVIM_APPNAME=nvim-dev nvim'
-  alias nvr="nvim --listen $HOME/.local/tmp/nvimsocket"
-fi
-
-if [ -x "$(command -v direnv)" ]; then
-  alias da='direnv allow'
-  alias dd='direnv deny'
-fi
-
-if [ -x "$(command -v yazi)" ]; then
-  alias e="yazi-cwd"
-fi
-
-if [ -x "$(command -v fd)" ]; then
-  alias vc="fd . '$HOME/.config' --type f --follow --hidden --exclude .git | fzf-tmux --border --preview='bat --style=numbers --color=always {}' -p 80%,80% | xargs nvim"
-  alias fd="fd --follow --hidden --exclude .git"
-fi
-
-if [ -x "$(command -v rg)" ]; then
-  alias grep="rg"
-fi
-
-if [ -x "$(command -v lazygit)" ]; then
-  alias lg="lazygit"
-fi
-
-if [ -x "$(command -v bat)" ]; then
-    alias cat="bat"
-fi
-
-if [ -x "$(command -v exa)" ]; then
-    alias lt="exa --tree --level=2"
-    alias ll="exa --long --header --sort=type --icons --no-permissions --no-user"
-    alias la="exa --long --header --all --sort=type --icons --no-permissions --no-user" 
-fi
+alias da='direnv allow'
+alias dd='direnv deny'
+alias e="yazi-cwd"
+alias fd="fd --follow --hidden --exclude .git"
+alias lg="lazygit"
+alias lt="exa --tree --level=2"
+alias ll="exa --long --header --sort=type --icons --no-permissions --no-user"
+alias la="exa --long --header --all --sort=type --icons --no-permissions --no-user" 
+alias grep="rg"
+alias cat="bat"
+alias vim="nvim"
+alias vimdev='NVIM_APPNAME=nvim-dev nvim'
+alias nvr="nvim --listen $HOME/.local/tmp/nvimsocket"
 
 function gpg-unlock-lazygit() {
-    command git fetch
-    command lazygit
+    git fetch
+    lazygit
 }
 
 function vv() {
@@ -148,4 +122,8 @@ function yazi-cwd() {
     IFS= read -r -d '' cwd < "$tmp"
     [ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
     rm -f -- "$tmp"
+}
+
+function load-nvm() {
+  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 }

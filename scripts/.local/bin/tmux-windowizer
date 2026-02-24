@@ -29,7 +29,7 @@ if [[ ! -z $TMUX ]]; then
     if tmux list-windows | grep -Fxq "$window_name"; then
         window_name="${alt_window_name}"
     fi
-    tmux new-window -n "$window_name" -c $parent_dir zsh -c "$program $file_name"
+    tmux new-window -n "$window_name" -c $parent_dir $program $file_name
     # tmux select-window -t $window_name
     exit 0
 fi
