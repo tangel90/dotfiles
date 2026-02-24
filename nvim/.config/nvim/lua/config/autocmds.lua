@@ -31,7 +31,8 @@ vim.api.nvim_create_autocmd("FileType", {
     vim.opt_local.numberwidth = 4
     vim.opt_local.signcolumn = "yes:2"
     vim.opt_local.foldcolumn = "0"
-    vim.opt.wrapmargin=0
+    vim.opt_local.textwidth = 120
+    vim.opt.wrapmargin=5
     vim.opt.sidescrolloff=15
     vim.opt.scrolloff=5
     -- vim.opt_local.list = true
