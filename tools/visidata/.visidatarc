@@ -1,5 +1,10 @@
 from visidata import vd
 
+### Keybindings
+
+Sheet.bindkey(':', 'split-col')
+
+### Themes
 vd.themes["rosepine_ascii"] = dict(
     disp_note_none="",
     disp_truncator=">",
@@ -44,7 +49,7 @@ vd.themes["rosepine_ascii"] = dict(
     color_key_col="cyan",  # cyan/pine accent on surface
     color_hidden_col="238",
     color_selected_row="bold yellow on 234",  # light text on medium highlight
-    color_edit_cell="253 on 234",  # text on overlay
+    color_edit_cell="253 on 238",  # text on overlay
     color_graph_hidden="238",
     color_graph_selected="bold",
     color_status_replay="green",

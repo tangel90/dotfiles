@@ -61,6 +61,7 @@ return {
                     subtle = "#999cba",
                     text = "#e0def4",
                     love = "#eb6f92",
+                    peach = "#ffaa88", -- copied from tmux as template, not used in the scheme
                     gold = "#f6c177",
                     rose = "#fbbcba",
                     pine = "#31748f",
