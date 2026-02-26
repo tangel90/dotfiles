@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-
-if [[ $# -eq 1 ]]; then
-    selected=$(command fd . "$1" -d 4 --type f --follow --hidden --exclude .git --no-ignore-vcs | fzf )
+if [[ -n "$1" ]]; then
+    selected=$(command fd . "$PWD" -d 4 --type f --follow --hidden --exclude .git --no-ignore-vcs | fzf )
 else
     selected=$(command fd . "$HOME" -d 8 --type f --follow --hidden --exclude .git --no-ignore-vcs | fzf )
 fi
@@ -23,7 +22,7 @@ tmux_running=$(pgrep tmux)
 
 if [[ ! -z $TMUX ]]; then
     program="nvim"
-    if [[ "$file_name" == *.csv || "$file_name" == *.tsv || "$file_name" == *.json ]]; then
+    if [[ "$file_name" == *.csv || "$file_name" == *.tsv ]]; then
         program="vd"
     fi
     if tmux list-windows | grep -Fxq "$window_name"; then
