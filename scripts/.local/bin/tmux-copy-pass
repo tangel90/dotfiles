@@ -1,0 +1,9 @@
+#!/usr/bin/env zsh
+
+PREFIX="$HOME/.password-store/"
+EXT=".gpg"
+
+vault_item=$(fd . $PREFIX --extension=$EXT | sed -e "s:$PREFIX::gi" -e "s:$EXT::gi" | fzf --select-1)
+[[ -z $vault_item ]] && { echo "No vault item selected"; exit 1; }
+
+tmux new-window -n "pass" -c "$HOME" "pass -c $vault_item"
