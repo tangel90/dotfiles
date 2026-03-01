@@ -95,7 +95,7 @@ return { -- Fuzzy Finder (files, lsp, etc)
     vim.keymap.set('n', '<leader>df', builtin.diagnostics, { desc = 'List [D]iagnostics' })
     -- vim.keymap.set('n', '<leader>fr', builtin.resume, { desc = '[F]ind [R]esume' })
     vim.keymap.set('n', '<leader>f.', builtin.oldfiles, { desc = '[F]ind Recent Files ("." for repeat)' })
-    vim.keymap.set('n', '<leader>fb', function() require('telescope.builtin').buffers({ sort_lastused = true }) end, { desc = '[ ] Find existing buffers' })
+    vim.keymap.set('n', '<leader>fb', function() require('telescope.builtin').buffers({ sort_lastused = true, initial_mode = 'normal' }) end, { desc = '[ ] Find existing buffers' })
 
     vim.keymap.set('n', '<leader>ff', function()
       builtin.find_files { find_command = { 'rg', '--no-ignore', '--hidden', '--files', '-g', '!node_modules', '-g', '!__pycache__', '-g', '!.venv' } }

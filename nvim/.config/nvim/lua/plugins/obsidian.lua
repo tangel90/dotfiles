@@ -1,5 +1,5 @@
 return {
-    'epwalsh/obsidian.nvim',
+    'obsidian-nvim/obsidian.nvim',
     version = '*', -- recommended, use latest release instead of latest commit
     lazy = true,
     ft = 'markdown',
@@ -11,12 +11,8 @@ return {
     --   "BufReadPre path/to/my-vault/*.md",
     --   "BufNewFile path/to/my-vault/*.md",
     -- },
-    dependencies = {
-        -- Required.
-        'nvim-lua/plenary.nvim',
-        -- see below for full list of optional dependencies 👇
-    },
     opts = {
+        legacy_commands = false,
         workspaces = {
             {
                 name = 'personal',
@@ -70,114 +66,116 @@ return {
 
         -- Optional, configure key mappings. These are the defaults. If you don't want to set any keymappings this
         -- way then set 'mappings = {}'.
-        mappings = {
-            -- Overrides the 'gf' mapping to work on markdown/wiki links within your vault.
-            ['gf'] = {
-                action = function()
-                    return require('obsidian').util.gf_passthrough()
-                end,
-                opts = { noremap = false, expr = true, buffer = true, desc = 'Obsidian: gf_passthrough' },
-            },
-            ['<leader>og'] = {
-                action = '<cmd>ObsidianSearch<CR>',
-                opts = { buffer = true, desc = 'Obsidian: [G]rep in Notes' },
-            },
-            ['<leader>oo'] = {
-                action = '<cmd>ObsidianQuickSwitch<CR>',
-                opts = { buffer = true, desc = 'Obsidian: [O]pen QuickSwitch' },
-            },
-            ['<leader>ot'] = {
-                action = '<cmd>ObsidianTOC<CR>',
-                opts = { buffer = true, desc = 'Obsidian: Show [T]oc' },
-            },
-            ['<leader>od'] = {
-                action = '<cmd>ObsidianDailies<CR>',
-                opts = { buffer = true, desc = 'Obsidian: Open [D]ailies' },
-            },
-            ['<leader>or'] = {
-                action = '<cmd>ObsidianRename<CR>',
-                opts = { buffer = true, desc = 'Obsidian: [R]ename Note' },
-            },
-            ['<leader>of'] = {
-                action = '<cmd>ObsidianTag<CR>',
-                opts = { buffer = true, desc = 'Obsidian: [F]ind by Tag' },
-            },
-            ['<leader>ow'] = {
-                action = '<cmd>ObsidianWorkspace<CR>',
-                opts = { buffer = true, desc = 'Obsidian: Select [W]orkspace' },
-            },
-            ['<leader>on'] = {
-                action = '<cmd>ObsidianNew<CR>',
-                opts = { buffer = true, desc = 'Obsidian: [N]ew Note' },
-            },
-            -- Toggle check-boxes.
-            ['<leader><leader>'] = {
-                action = function()
-                    return require('obsidian').util.toggle_checkbox()
-                end,
-                opts = { buffer = true },
-            },
-            ['gl'] = {
-                action = '<cmd>ObsidianFollowLink<CR>',
-                opts = { buffer = true, desc = 'Obsidian: Follow Link' },
-            },
-            -- Smart action depending on context, either follow link or toggle checkbox.
-            ['gd'] = {
-                action = function()
-                    return require('obsidian').util.smart_action()
-                end,
-                opts = { buffer = true, expr = true, desc = 'Obsidian: Smart Action' },
-            },
-
-            ['<cr>'] = {
-                action = function()
-                    return require('obsidian').util.smart_action()
-                end,
-                opts = { buffer = true, expr = true, desc = 'Obsidian: Smart Action' },
-            },
-        },
-        ui = {
-            enable = false, -- set to false to disable all additional syntax features
-            update_debounce = 200, -- update delay after a text change (in milliseconds)
-            max_file_length = 5000, -- disable UI features for files with more than this many lines
-            -- Define how various check-boxes are displayed
-            checkboxes = {
-                -- NOTE: the 'char' value has to be a single character, and the highlight groups are defined below.
-                [' '] = { char = '󰄱', hl_group = 'ObsidianTodo' },
-                ['x'] = { char = '', hl_group = 'ObsidianDone' },
-                ['>'] = { char = '', hl_group = 'ObsidianRightArrow' },
-                ['~'] = { char = '󰰱', hl_group = 'ObsidianTilde' },
-                ['!'] = { char = '', hl_group = 'ObsidianImportant' },
-                -- Replace the above with this if you don't have a patched font:
-                -- [" "] = { char = "☐", hl_group = "ObsidianTodo" },
-                -- ["x"] = { char = "✔", hl_group = "ObsidianDone" },
-
-                -- You can also add more custom ones...
-            },
-            -- Use bullet marks for non-checkbox lists.
-            bullets = { char = '•', hl_group = 'ObsidianBullet' },
-            external_link_icon = { char = '', hl_group = 'ObsidianExtLinkIcon' },
-            -- Replace the above with this if you don't have a patched font:
-            -- external_link_icon = { char = "", hl_group = "ObsidianExtLinkIcon" },
-            reference_text = { hl_group = 'ObsidianRefText' },
-            highlight_text = { hl_group = 'ObsidianHighlightText' },
-            tags = { hl_group = 'ObsidianTag' },
-            block_ids = { hl_group = 'ObsidianBlockID' },
-            hl_groups = {
-                -- The options are passed directly to `vim.api.nvim_set_hl()`. See `:help nvim_set_hl`.
-                ObsidianTodo = { bold = true, fg = '#f78c6c' },
-                ObsidianDone = { bold = true, fg = '#89ddff' },
-                ObsidianRightArrow = { bold = true, fg = '#f78c6c' },
-                ObsidianTilde = { bold = true, fg = '#ff5370' },
-                ObsidianImportant = { bold = true, fg = '#d73128' },
-                ObsidianBullet = { bold = true, fg = '#89ddff' },
-                ObsidianRefText = { underline = true, fg = '#c792ea' },
-                ObsidianExtLinkIcon = { fg = '#c792ea' },
-                ObsidianTag = { italic = true, fg = '#89ddff' },
-                ObsidianBlockID = { italic = true, fg = '#89ddff' },
-                ObsidianHighlightText = { bg = '#75662e' },
-            },
-        },
+        -- mappings = {
+        --     -- Overrides the 'gf' mapping to work on markdown/wiki links within your vault.
+        --     ['gf'] = {
+        --         action = function()
+        --             return require('obsidian').util.gf_passthrough()
+        --         end,
+        --         opts = { noremap = false, expr = true, buffer = true, desc = 'Obsidian: gf_passthrough' },
+        --     },
+        --     ['<leader>og'] = {
+        --         action = '<cmd>Obsidian search<CR>',
+        --         opts = { buffer = true, desc = 'Obsidian: [G]rep in Notes' },
+        --     },
+        --     ['<leader>oo'] = {
+        --         action = '<cmd>Obsidian quick_switch<CR>',
+        --         opts = { buffer = true, desc = 'Obsidian: [O]pen QuickSwitch' },
+        --     },
+        --     ['<leader>ot'] = {
+        --         action = '<cmd>Obsidian toc<CR>',
+        --         opts = { buffer = true, desc = 'Obsidian: Show [T]oc' },
+        --     },
+        --     ['<leader>od'] = {
+        --         action = '<cmd>Obsidian dailies<CR>',
+        --         opts = { buffer = true, desc = 'Obsidian: Open [D]ailies' },
+        --     },
+        --     ['<leader>or'] = {
+        --         action = '<cmd>Obsidian rename<CR>',
+        --         opts = { buffer = true, desc = 'Obsidian: [R]ename Note' },
+        --     },
+        --     ['<leader>of'] = {
+        --         action = '<cmd>Obsidian tag<CR>',
+        --         opts = { buffer = true, desc = 'Obsidian: [F]ind by Tag' },
+        --     },
+        --     ['<leader>ow'] = {
+        --         action = '<cmd>Obsidian workspace<CR>',
+        --         opts = { buffer = true, desc = 'Obsidian: Select [W]orkspace' },
+        --     },
+        --     ['<leader>on'] = {
+        --         action = '<cmd>Obsidian new<CR>',
+        --         opts = { buffer = true, desc = 'Obsidian: [N]ew Note' },
+        --     },
+        --     ['<leader>oh'] = {
+        --         action = '<cmd>Obsidian help<CR>',
+        --         opts = { buffer = true, desc = 'Obsidian: [N]ew Note' },
+        --     },
+        --     -- Toggle check-boxes.
+        --     ['<leader><leader>'] = {
+        --         action = '<cmd>Obsidian toggle_checkbox<CR>',
+        --         opts = { buffer = true },
+        --     },
+        --     ['gl'] = {
+        --         action = '<cmd>Obsidian follow_link<CR>',
+        --         opts = { buffer = true, desc = 'Obsidian: Follow Link' },
+        --     },
+        --     -- Smart action depending on context, either follow link or toggle checkbox.
+        --     ['gd'] = {
+        --         action = function()
+        --             return require('obsidian').util.smart_action()
+        --         end,
+        --         opts = { buffer = true, expr = true, desc = 'Obsidian: Smart Action' },
+        --     },
+        --
+        --     ['<cr>'] = {
+        --         action = function()
+        --             return require('obsidian').util.smart_action()
+        --         end,
+        --         opts = { buffer = true, expr = true, desc = 'Obsidian: Smart Action' },
+        --     },
+        -- },
+        -- ui = {
+        --     enable = false, -- set to false to disable all additional syntax features
+        --     update_debounce = 200, -- update delay after a text change (in milliseconds)
+        --     max_file_length = 5000, -- disable UI features for files with more than this many lines
+        --     -- Define how various check-boxes are displayed
+        --     checkboxes = {
+        --         -- NOTE: the 'char' value has to be a single character, and the highlight groups are defined below.
+        --         [' '] = { char = '󰄱', hl_group = 'ObsidianTodo' },
+        --         ['x'] = { char = '', hl_group = 'ObsidianDone' },
+        --         ['>'] = { char = '', hl_group = 'ObsidianRightArrow' },
+        --         ['~'] = { char = '󰰱', hl_group = 'ObsidianTilde' },
+        --         ['!'] = { char = '', hl_group = 'ObsidianImportant' },
+        --         -- Replace the above with this if you don't have a patched font:
+        --         -- [" "] = { char = "☐", hl_group = "ObsidianTodo" },
+        --         -- ["x"] = { char = "✔", hl_group = "ObsidianDone" },
+        --
+        --         -- You can also add more custom ones...
+        --     },
+        --     -- Use bullet marks for non-checkbox lists.
+        --     bullets = { char = '•', hl_group = 'ObsidianBullet' },
+        --     external_link_icon = { char = '', hl_group = 'ObsidianExtLinkIcon' },
+        --     -- Replace the above with this if you don't have a patched font:
+        --     -- external_link_icon = { char = "", hl_group = "ObsidianExtLinkIcon" },
+        --     reference_text = { hl_group = 'ObsidianRefText' },
+        --     highlight_text = { hl_group = 'ObsidianHighlightText' },
+        --     tags = { hl_group = 'ObsidianTag' },
+        --     block_ids = { hl_group = 'ObsidianBlockID' },
+        --     hl_groups = {
+        --         -- The options are passed directly to `vim.api.nvim_set_hl()`. See `:help nvim_set_hl`.
+        --         ObsidianTodo = { bold = true, fg = '#f78c6c' },
+        --         ObsidianDone = { bold = true, fg = '#89ddff' },
+        --         ObsidianRightArrow = { bold = true, fg = '#f78c6c' },
+        --         ObsidianTilde = { bold = true, fg = '#ff5370' },
+        --         ObsidianImportant = { bold = true, fg = '#d73128' },
+        --         ObsidianBullet = { bold = true, fg = '#89ddff' },
+        --         ObsidianRefText = { underline = true, fg = '#c792ea' },
+        --         ObsidianExtLinkIcon = { fg = '#c792ea' },
+        --         ObsidianTag = { italic = true, fg = '#89ddff' },
+        --         ObsidianBlockID = { italic = true, fg = '#89ddff' },
+        --         ObsidianHighlightText = { bg = '#75662e' },
+        --     },
+        -- },
         -- Optional, by default when you use `:ObsidianFollowLink` on a link to an external
         -- URL it will be ignored but you can customize this behavior here.
         ---@param url string
@@ -187,8 +185,6 @@ return {
     },
     config = function(_, opts)
         local obsidian = require 'obsidian'
-
         obsidian.setup(opts)
-        vim.keymap.set('i', '<C-m>', obsidian.util.toggle_checkbox, { desc = 'Toggle Checkbox' })
     end,
 }
