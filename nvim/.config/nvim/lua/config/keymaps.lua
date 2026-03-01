@@ -8,6 +8,18 @@ map('n', '<leader>tw', '<cmd>set wrap!<cr>', { desc = 'Toggle word wrap'})
 map('n', '0', '^')
 map('n', '^', '0')
 
+map("i", "u:", function()
+  return "ü"
+end, { expr = true })
+map("i", "o:", function()
+  return "ö"
+end, { expr = true })
+map("i", "a:", function()
+  return "ä"
+end, { expr = true })
+map("i", "sz", function()
+  return "ß"
+end, { expr = true })
 
 -- Vim motion keymaps
 map({'n', 'i'}, '<C-k>', '<C-a>', { noremap = true })
