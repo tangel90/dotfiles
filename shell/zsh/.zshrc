@@ -86,7 +86,6 @@ bindkey '^n' history-search-forward
 # zle -N yazi-cwd # Widget breaks yazi on some machines ...
 
 alias c="clear"
-alias ls="ls --color=auto -X"
 alias da='direnv allow'
 alias dd='direnv deny'
 alias e="yazi-cwd"

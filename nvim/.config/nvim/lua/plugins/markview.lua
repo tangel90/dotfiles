@@ -90,7 +90,7 @@ return {
             marker_minus = { text = '-' },
             marker_star = { text = '*' },
         }
-
         require('markview').setup(opts)
+        vim.keymap.set('n', '<leader>tm', '<cmd>Markview toggle<cr>', { desc = 'Toggle Markdown Rendering'})
     end,
 }
