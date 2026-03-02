@@ -91,7 +91,7 @@ alias da='direnv allow'
 alias dd='direnv deny'
 alias e="yazi-cwd"
 alias fd="fd --follow --hidden --exclude .git"
-alias lg="lazygit"
+alias lg=gpg-unlock-lazygit
 alias lt="exa --tree --level=2"
 alias ll="exa --long --header --sort=type --icons --no-permissions --no-user"
 alias la="exa --long --header --all --sort=type --icons --no-permissions --no-user" 
