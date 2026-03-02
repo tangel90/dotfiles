@@ -179,9 +179,9 @@ return {
         -- Optional, by default when you use `:ObsidianFollowLink` on a link to an external
         -- URL it will be ignored but you can customize this behavior here.
         ---@param url string
-        follow_url_func = function(url)
-            vim.ui.open(url) -- need Neovim 0.10.0+
-        end,
+        -- follow_url_func = function(url)
+        --     vim.ui.open(url) -- need Neovim 0.10.0+
+        -- end,
     },
     config = function(_, opts)
         local obsidian = require 'obsidian'

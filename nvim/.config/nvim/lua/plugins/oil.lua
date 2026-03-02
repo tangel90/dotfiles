@@ -37,7 +37,6 @@ return {
       foldcolumn = '0',
       spell = false,
       list = false,
-      conceallevel = 3,
       concealcursor = 'nvic',
       winbar = '%!v:lua.get_oil_winbar()',
     },

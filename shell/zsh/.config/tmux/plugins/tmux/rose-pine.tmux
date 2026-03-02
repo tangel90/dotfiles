@@ -274,6 +274,9 @@ main() {
     local left_separator
     left_separator="$(get_tmux_option "@rose_pine_left_separator" "  ")"
 
+    local spacer
+    spacer=" "
+
     local field_separator
     # NOTE: Don't remove
     field_separator="$(get_tmux_option "@rose_pine_field_separator" " | " )"
@@ -408,7 +411,7 @@ main() {
     fi
 
     if [[ "$directory" == "on" ]]; then
-        right_column=$right_column$show_directory$field_separator$show_session
+        right_column=$right_column$show_directory$field_separator$show_session$spacer
     fi
 
     # The append and prepend sections are for inter-plugin compatibility

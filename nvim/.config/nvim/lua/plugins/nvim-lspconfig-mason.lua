@@ -248,7 +248,7 @@ return { -- LSP Configuration & Plugins
             'prettier', -- cli formatter
             'prettierd', -- daemon version of prettier (means it runs in the background and thus has better performance)
             'ast-grep',
-            'csharpier',
+            -- 'csharpier',
             'pyright',
             'lua-language-server',
             'sql-formatter',

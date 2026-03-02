@@ -18,15 +18,15 @@ return {
             -- debounce = 0,
         }
 
-        -- opts.preview.callbacks = {
-        -- 	on_enable = function(_, wins)
-        -- 		for _, win in ipairs(wins) do
-        -- 			vim.wo[win].conceallevel = 3
-        -- 			-- vim.wo[win].concealcursor = "n,v"
-        -- 			-- vim.wo[win].linebreak = true
-        -- 		end
-        -- 	end
-        -- }
+        opts.preview.callbacks = {
+        	on_enable = function(_, wins)
+        		for _, win in ipairs(wins) do
+        			vim.wo[win].conceallevel = 2
+        			-- vim.wo[win].concealcursor = "n,v"
+        			-- vim.wo[win].linebreak = true
+        		end
+        	end
+        }
 
         opts.markdown = {}
 
