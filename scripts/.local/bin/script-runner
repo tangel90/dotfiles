@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+script_dir="$HOME/.local/bin"
+selected=$(rg -l '#!/usr/bin/env [bash|zsh]' "$script_dir" --glob '!*runner*' | awk -F/ '{print $NF}' | fzf )
+
+if [[ -z $selected ]]; then
+  exit 0
+fi
+
+"${script_dir}/${selected}"
+

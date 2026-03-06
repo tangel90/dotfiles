@@ -2,7 +2,7 @@
 
 GLOBIGNORE="*"
 
-CHAT_INIT_PROMPT="You are ChatGPT, a Large Language Model trained by OpenAI. You will be answering questions from users. You answer as concisely as possible for each response (e.g. don’t be verbose). If you are generating a list, do not have too many items. Keep the number of items short. Before each user prompt you will be given the chat history in Q&A form. Output your answer directly, with no labels in front. Do not start your answers with A or Anwser."
+CHAT_INIT_PROMPT="You are ChatGPT, a Large Language Model trained by OpenAI. You will be answering questions from users. You answer as concisely as possible for each response (e.g. don’t be verbose). If you are generating a list, do not have too many items. Keep the number of items short. Before each user prompt you will be given the chat history in Q&A form. Context about the user: I am a data engineer and work with a toolset in linux using zsh, tmux, neovim with lua configuration as my IDE, python as my main programming language, pgcli for most database connections, visidata for browsing table like data. Please keep this in mind when being asked for solutions to data or text manipulation issues"
 
 SYSTEM_PROMPT="You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible."
 
@@ -17,33 +17,6 @@ if [[ -z "$OPENAI_API_KEY" ]]; then
 	echo "You can set it temporarily by running this on your terminal: export OPENAI_API_KEY=YOUR_KEY_HERE"
 	exit 1
 fi
-
-usage() {
-	cat <<EOF
-
-Options:
-  --init-prompt-from-file    Provide initial prompt from file
-
-  -p, --prompt               Provide prompt instead of starting chat
-
-  --prompt-from-file         Provide prompt from file
-
-  -b, --big-prompt           Allow multi-line prompts during chat mode
-
-  -l, --list                 List available openAI models
-
-  -m, --model                Model to use
-
-  -c, --chat-context         For models that do not support chat context by
-                             default (all models except gpt-3.5-turbo and
-                             gpt-4), you can enable chat context, for the
-                             model to remember your previous questions and
-                             its previous answers. It also makes models
-                             aware of todays date and what data it was trained
-                             on.
-
-EOF
-}
 
 # error handling function
 # $1 should be the response body
@@ -83,20 +56,6 @@ request_to_completions() {
 			}'
 }
 
-# request to OpenAI API image generations endpoint function
-# $1 should be the prompt
-request_to_image() {
-	local prompt="$1"
-	image_response=$(curl https://api.openai.com/v1/images/generations \
-		-sS \
-		-H 'Content-Type: application/json' \
-		-H "Authorization: Bearer $OPENAI_API_KEY" \
-		-d '{
-    		"prompt": "'"${prompt#*image:}"'",
-    		"n": 1,
-    		"size": "'"$SIZE"'"
-			}')
-}
 
 # request to OpenAPI API chat completion endpoint function
 # $1 should be the message(s) formatted with role and content
@@ -279,7 +238,6 @@ if [ -n "$prompt" ]; then
 	pipe_mode_prompt=${prompt}
 # if input file_descriptor is a terminal, run on chat mode
 elif [ -t 0 ]; then
-	echo -e "Welcome to chatgpt. You can quit with '\033[36mexit\033[0m' or '\033[36mq\033[0m'."
 	echo "Model: $MODEL"
 # prompt from pipe or redirected stdin, run on pipe mode
 else
@@ -289,12 +247,12 @@ fi
 while $running; do
 	if [ -z "$pipe_mode_prompt" ]; then
 		if [ $MULTI_LINE_PROMPT = true ]; then
-			echo -e "\nEnter a prompt: (Press Enter then Ctrl-D to send)"
+			echo -e "\nChat: (Press Enter then Ctrl-D to send)"
 			cat >"${USER_INPUT_TEMP_FILE}"
 			input_from_temp_file=$(cat "${USER_INPUT_TEMP_FILE}")
 			prompt=$(escape "$input_from_temp_file")
 		else
-			echo -e "\nEnter a prompt:"
+			echo -e "\nHuman:"
 			read -e prompt
 		fi
 		if [[ ! $prompt =~ ^(exit|q)$ ]]; then

@@ -15,15 +15,22 @@ grandparent_dir=$(dirname "$parent_dir")
 second_parent=$(basename "$grandparent_dir" | tr -d .)
 
 file_name=$(basename  "$selected")
-file_stem="${file_name%.*}"
-window_name="${file_stem}"
+
+if [[ "$file_name" == .* && "$file_name" != *.*.* ]]; then
+    # dotfile with no other dots ÔåÆ keep it as-is
+    window_name="${file_name//./}"
+else
+    window_name="${file_name%.*}"
+fi
+
 alt_window_name="${window_name}_$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c2)" #Generate 2 random characters for duplicate names
 tmux_running=$(pgrep tmux)
 
 if [[ ! -z $TMUX ]]; then
-    program="nvim"
     if [[ "$file_name" == *.csv || "$file_name" == *.tsv ]]; then
         program="vd"
+    else
+        program="nvim"
     fi
     if tmux list-windows | grep -Fxq "$window_name"; then
         window_name="${alt_window_name}"

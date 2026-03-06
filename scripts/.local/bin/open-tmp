@@ -6,4 +6,6 @@ tmpdir="${TMPDIR:-/tmp}"
 tmpfile=$(mktemp "$tmpdir/tmp.XXXXXX.$ext")
 w_name=$(basename "$tmpfile" | tr '.' '_')
 
-tmux new-window -n "$w_name" -c "$tmpdir" nvim "$tmpfile"
+nvim "$tmpfile" && rm -- "$tmpfile"
+
+
