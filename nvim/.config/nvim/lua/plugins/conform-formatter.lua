@@ -26,17 +26,20 @@ return { -- Autoformat
         formatters_by_ft = {
             lua = { 'stylua' },
             cs = { 'csharpier' },
-            ['markdown'] = { 'prettier', 'markdownlint-cli2', 'markdown-toc' },
-            ['markdown.mdx'] = { 'prettier', 'markdownlint-cli2', 'markdown-toc' },
+            ['markdown'] = { 'markdownlint-cli2', 'markdown-toc' },
+            ['markdown.mdx'] = { 'markdownlint-cli2', 'markdown-toc' },
             -- You can use a sub-list to tell conform to run *until* a formatter is found. DEPRECATED
             javascript = { 'prettierd' },
             typescript = { 'prettierd' },
             javascriptreact = { 'prettierd' },
             typescriptreact = { 'prettierd' },
             json = { 'prettierd' },
+            bash = { 'shellharden' },
+            sh = { 'shellharden' },
+            zsh = { 'shellharden' },
 
             -- Conform can also run multiple formatters sequentially
-            python = { 'black' },
+            python = { 'ruff' },
 
             svelte = { 'prettier' },
             css = { 'prettier' },
@@ -63,9 +66,7 @@ return { -- Autoformat
                     return #diag > 0
                 end,
             },
-            black = {
-                prepend_args = { '--line-length', '100' },
-            },
+            ruff = {},
             stylua = {
                 prepend_args = {
                     '--column-width',

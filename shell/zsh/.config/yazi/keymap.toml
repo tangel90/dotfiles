@@ -4,6 +4,11 @@ run = "cd ~/projects"
 desc = "cd into ~/projects"
 
 [[mgr.prepend_keymap]]
+on = ["g", "n"]
+run = "cd ~/notes"
+desc = "cd into ~/notes"
+
+[[mgr.prepend_keymap]]
 on = ["g", "H"]
 run = "cd /mnt/c/Users/T2192"
 desc = "cd into Windows Home directory"

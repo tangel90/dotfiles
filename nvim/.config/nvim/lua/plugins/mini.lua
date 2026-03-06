@@ -1,15 +1,15 @@
 return { -- Collection of various small independent plugins/modules
     'echasnovski/mini.nvim',
     config = function()
-        -- Better Around/Inside textobjects
-        --
-        -- Examples:
+        -- Better [A]round/[I]nside textobjects
+        -- Examples for extended text object motions that mini.ai offers:
         --  - va)  - [V]isually select [A]round [)]paren
         --  - yinq - [Y]ank [I]nside [N]ext [']quote
         --  - ci'  - [C]hange [I]nside [']quote
         require('mini.ai').setup { n_lines = 500 }
-        require('mini.icons').setup()
 
+        -- require('mini.icons').setup()
+        -- require('mini.completion').setup {}
         -- Add/delete/replace surroundings (brackets, quotes, etc.)
         --
         -- - saiw) - [S]urround [A]dd [I]nner [W]ord [)]Paren
@@ -20,9 +20,10 @@ return { -- Collection of various small independent plugins/modules
         vim.keymap.set('n', '<leader>ss', ':normal saiw"<CR>', { noremap = true, silent = true })
         vim.keymap.set('n', '<leader>s.', ':normal saiw"<CR>', { noremap = true, silent = true })
         vim.keymap.set('n', '<leader>s"', ':normal saiw"<CR>', { noremap = true, silent = true })
+        vim.keymap.set('n', "<leader>s'", ":normal saiw'<CR>", { noremap = true, silent = true })
         vim.keymap.set('n', '<leader>sq', ':normal saiw"<CR>', { noremap = true, silent = true })
         vim.keymap.set('n', '<leader>sb', ':normal saiw)<CR>', { noremap = true, silent = true })
-        vim.keymap.set('n', '<leader>sB', ':normal saiW}<CR>', { noremap = true, silent = true })
+        vim.keymap.set('n', '<leader>sB', ':normal saiw}<CR>', { noremap = true, silent = true })
         vim.keymap.set('n', '<leader>s]', ':normal saiw]<CR>', { noremap = true, silent = true })
         vim.keymap.set('n', '<leader>s}', ':normal saiw}<CR>', { noremap = true, silent = true })
         vim.keymap.set('n', '<leader>S"', ':normal saiW"<CR>', { noremap = true, silent = true })

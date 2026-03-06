@@ -1,7 +1,9 @@
 from visidata import vd
 
-### Keybindings
+### options
+vd.options.csv_doublequote=True
 
+### Keybindings
 Sheet.bindkey(':', 'split-col')
 
 ### Themes
