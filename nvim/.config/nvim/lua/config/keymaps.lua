@@ -72,12 +72,22 @@ map({ 'n', 'v' }, '<leader>d', '"_d')
 map( { 'n', 'i', 'v' }, '<C-s>', '<cmd>noautocmd w<cr>', { noremap = true, desc = 'Save current buffer (without formatting)' })
 map({ 'n', 'i' }, '<C-W><C-Q>', '<cmd>qa<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
 map('n', '<leader>q', ':bdelete<CR>', { noremap = true, desc = 'Close current buffer' })
-map({ 'n', 'v' }, '<Leader>n', ':enew<CR>', { noremap = true, silent = true, desc = 'New buffer' })
 map({ 'n', 'v' }, '<Leader>v', ':vsplit<CR>', { noremap = true, silent = true, desc = 'New vertical split' })
 map({ 'n', 'v' }, '<Leader>tn', ':tabnew<CR>', { noremap = true, silent = true, desc = 'New vertical split' })
 map({ 'n', 'v' }, '<Tab>', ':lua ToggleBuffers()<CR>', { noremap = true, silent = true, desc = 'Last buffer' }) -- this is defined in functions.lua
 map('n', '<Leader>rm', 'mz:%s/\\r//g<CR>`z', { desc = 'Remove Carriage Returns From Buffer' })
 
+map({ 'n', 'v' }, '<Leader>n', function()
+  vim.cmd('enew')
+  vim.opt_local.buftype = 'nofile'
+  vim.opt_local.bufhidden = 'wipe'
+  vim.opt_local.swapfile = false
+  vim.opt_local.modifiable = true
+end, {
+  noremap = true,
+  silent = true,
+  desc = 'Open scratch buffer',
+})
 map({ 'n', 'v' }, '<Leader>rr', function()
     vim.cmd 'e!'
     vim.cmd 'LspRestart'
