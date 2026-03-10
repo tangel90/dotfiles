@@ -4,9 +4,24 @@ run = "cd ~/projects"
 desc = "cd into ~/projects"
 
 [[mgr.prepend_keymap]]
+on = ["i"]
+run = "link"
+desc = "symlink yanked files"
+
+[[mgr.prepend_keymap]]
+on = ["-"]
+run = "leave"
+desc = "Go to parent directory"
+
+[[mgr.prepend_keymap]]
 on = ["g", "n"]
 run = "cd ~/notes"
 desc = "cd into ~/notes"
+
+[[mgr.prepend_keymap]]
+on = ["g", "b"]
+run = "cd ~/build"
+desc = "cd into ~/build"
 
 [[mgr.prepend_keymap]]
 on = ["g", "H"]

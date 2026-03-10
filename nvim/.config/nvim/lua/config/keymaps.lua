@@ -5,8 +5,8 @@ map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python3 %<CR>', { desc = 'python 
 map('n', '<leader>e', '<cmd>Ex<cr>', { desc = 'Open NetRW' })
 map('n', '<leader>"', '<cmd>registers<cr>', { desc = 'List registers' })
 map('n', '<leader>tw', '<cmd>set wrap!<cr>', { desc = 'Toggle word wrap'})
-map('n', '0', '^')
-map('n', '^', '0')
+map({ 'n', 'v' }, '0', '^')
+map({ 'n', 'v' }, '^', '0')
 
 map("i", "u:", function()
   return "ü"
@@ -71,10 +71,11 @@ map({ 'n', 'v' }, '<leader>d', '"_d')
 -- Buffer/window management
 map( { 'n', 'i', 'v' }, '<C-s>', '<cmd>noautocmd w<cr>', { noremap = true, desc = 'Save current buffer (without formatting)' })
 map({ 'n', 'i' }, '<C-W><C-Q>', '<cmd>qa<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
+map({ 'n', 'i' }, '<C-S><C-S>', '<cmd>wq<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
 map('n', '<leader>q', ':bdelete<CR>', { noremap = true, desc = 'Close current buffer' })
 map({ 'n', 'v' }, '<Leader>v', ':vsplit<CR>', { noremap = true, silent = true, desc = 'New vertical split' })
 map({ 'n', 'v' }, '<Leader>tn', ':tabnew<CR>', { noremap = true, silent = true, desc = 'New vertical split' })
-map({ 'n', 'v' }, '<Tab>', ':lua ToggleBuffers()<CR>', { noremap = true, silent = true, desc = 'Last buffer' }) -- this is defined in functions.lua
+map({ 'n', 'v' }, '<Tab>', '<C-^>', { noremap = true, silent = true, desc = 'Last buffer' }) -- this is defined in functions.lua
 map('n', '<Leader>rm', 'mz:%s/\\r//g<CR>`z', { desc = 'Remove Carriage Returns From Buffer' })
 
 map({ 'n', 'v' }, '<Leader>n', function()

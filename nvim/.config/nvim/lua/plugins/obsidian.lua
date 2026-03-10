@@ -265,7 +265,7 @@ return {
         checkbox = {
             enabled = true,
             create_new = true,
-            order = { ' ', '~', '!', '>', 'x' },
+            order = { ' ', 'x' },
         },
 
         ---@class obsidian.config.CommentOpts
