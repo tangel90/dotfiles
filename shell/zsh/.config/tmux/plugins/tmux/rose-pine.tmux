@@ -406,12 +406,12 @@ main() {
         right_column=$right_column$show_host$field_separator
     fi
 
-    if [[ "$date_time" != "" ]]; then
-        right_column=$right_column$show_date_time$field_separator
+    if [[ "$directory" == "on" ]]; then
+        right_column=$right_column$show_directory$field_separator$show_session
     fi
 
-    if [[ "$directory" == "on" ]]; then
-        right_column=$right_column$show_directory$field_separator$show_session$spacer
+    if [[ "$date_time" != "" ]]; then
+        right_column=$right_column$field_separator$show_date_time
     fi
 
     # The append and prepend sections are for inter-plugin compatibility

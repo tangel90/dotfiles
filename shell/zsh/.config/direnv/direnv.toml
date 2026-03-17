@@ -1,0 +1,8 @@
+[global]
+disable_stdin=true
+load_dotenv=true
+strict_env=true
+log_filter="loading"
+
+[whitelist]
+prefix = [ "~/dev", "~/projects" ]
