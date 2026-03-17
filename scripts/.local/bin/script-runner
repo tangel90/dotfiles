@@ -7,5 +7,5 @@ if [[ -z $selected ]]; then
   exit 0
 fi
 
-"${script_dir}/${selected}"
+exec "${script_dir}/${selected}"
 

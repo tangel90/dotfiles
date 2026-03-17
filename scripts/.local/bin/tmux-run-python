@@ -1,21 +1,14 @@
-#!/usr/bin/env bash
-local file file_name dir pane target="run-python"
-local NVIM_LISTEN_ADDRESS="$HOME/.local/tmp/nvimsocket"
+#!/usr/bin/env zsh
+current_window=$(tmux display-message -p '#W')
 
-file="$(nvim --server "$NVIM_LISTEN_ADDRESS" --remote-expr 'expand("%:p")')"
-if ! [[ -f "$file" && "$file" == *.py ]]; then
-   tmux display-message "Not a python file"
-   exit 1
+if [[ "$current_window" == "run" ]]; then
+  tmux last-window
+  exit 0
 fi
 
-dir="$(dirname "$file")"
-# See if the pane already exists
-pane=$(tmux list-panes -a -F '#{pane_id} #{pane_title}' | awk -v target="$target" '$2==target {print $1; exit}')
-if [[ -z "$pane" ]]; then
-    pane=$(tmux split-window -v -p 40 -c "$dir" -P -F '#{pane_id}' "tmux select-pane -T '$target'; exec \$SHELL")
+if ! tmux select-window -Tt run 2>/dev/null; then
+  tmux new-window -n run
 fi
-tmux select-pane -T \"$target\"
-# Send the python command to the pane
-file_name=$(basename  "$file")
-tmux send-keys -t "$pane" "cd '$dir' && python '$file_name'" C-m
+
+tmux send-keys -t run "run_cli" C-m
 

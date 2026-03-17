@@ -11,6 +11,7 @@ if [[ -z $selected ]]; then
 fi
 
 selected_name=$(basename "$selected" | tr . _)
+selected_name=${selected_name%%[_-]*}
 tmux_running=$(pgrep tmux)
 
 # OK - tmux is not running
@@ -24,6 +25,7 @@ if ! tmux has-session -t="$selected_name" 2> /dev/null; then
     if git -C $selected rev-parse --show-toplevel > /dev/null 2>&1; then
         repo_root=$(git -C "$selected" rev-parse --show-toplevel)
         repo_name=$(basename "$repo_root")
+        repo_name=${repo_name%%[_-]*}
         selected_name=$repo_name
         tmux new-session -ds "$selected_name" -c "$selected"
         tmux send-keys -t "$selected_name" "nvim" C-m

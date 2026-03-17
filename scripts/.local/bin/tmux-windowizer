@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
+
+shopt -s expand_aliases
+alias fzf="fzf --preview 'bat --color=always {}' --bind='F2:toggle-preview'"
+
 if [[ -n "$1" ]]; then
-    selected=$(command fd . "$PWD" -d 4 --type f --follow --hidden --exclude .git --no-ignore-vcs | fzf )
+    selected=$(fd --strip-cwd-prefix . -d 4 --type f --follow --hidden --exclude .git --no-ignore-vcs | fzf)
 else
     selected=$(command fd . "$HOME" -d 8 --type f --follow --hidden --exclude .git --no-ignore-vcs | fzf )
 fi
@@ -33,9 +37,9 @@ if [[ ! -z $TMUX ]]; then
         program="nvim"
     fi
     if tmux list-windows | grep -Fxq "$window_name"; then
-        window_name="${alt_window_name}"
+        window_name="$alt_window_name"
     fi
-    tmux new-window -n "$window_name" -c $parent_dir $program $file_name
+    tmux new-window -n "$window_name" -c "$parent_dir" "$program" "$file_name"
     # tmux select-window -t $window_name
     exit 0
 fi
