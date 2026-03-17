@@ -4,13 +4,13 @@ OpenUrl = function(url)
 end
 
 -- <Tab> will only switch between two files
-ToggleBuffers = function()
-    local current = vim.fn.bufnr '%'
-    local last = vim.fn.bufnr '#'
-    if last ~= -1 and last ~= current then
-        vim.cmd('buffer ' .. last)
-    end
-end
+-- ToggleBuffers = function()
+--     local current = vim.fn.bufnr '%'
+--     local last = vim.fn.bufnr '#'
+--     if last ~= -1 and last ~= current then
+--         vim.cmd('buffer ' .. last)
+--     end
+-- end
 
 function FetchChtSh(input)
   if input:find '/' then

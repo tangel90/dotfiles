@@ -18,6 +18,7 @@ return { -- Collection of various small independent plugins/modules
         require('mini.surround').setup()
 
         vim.keymap.set('n', '<leader>ss', ':normal saiw"<CR>', { noremap = true, silent = true })
+        vim.keymap.set('n', '<leader>.', ':normal saiw"<CR>', { noremap = true, silent = true })
         vim.keymap.set('n', '<leader>s.', ':normal saiw"<CR>', { noremap = true, silent = true })
         vim.keymap.set('n', '<leader>s"', ':normal saiw"<CR>', { noremap = true, silent = true })
         vim.keymap.set('n', "<leader>s'", ":normal saiw'<CR>", { noremap = true, silent = true })

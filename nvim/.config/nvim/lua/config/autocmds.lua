@@ -22,6 +22,19 @@ vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
   command = "set filetype=markdown"
 })
 
+vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
+  pattern = '*.log',
+  callback = function()
+    vim.opt_local.buftype = 'nofile'
+    vim.opt_local.bufhidden = 'wipe'
+    vim.opt_local.swapfile = false
+    vim.opt_local.modifiable = true
+    vim.opt_local.wrap = false
+    vim.opt_local.number = false
+    vim.opt_local.relativenumber = false
+  end
+})
+
 vim.api.nvim_create_autocmd("FileType", {
   pattern = 'markdown',
   callback = function()
@@ -43,27 +56,20 @@ vim.api.nvim_create_autocmd("FileType", {
 })
 
 vim.api.nvim_create_autocmd("FileType", {
+  pattern = "python",  -- or your target language
+  callback = function()
+    vim.api.nvim_buf_set_keymap(0, 'n', '<leader>sf', '<cmd>normal! F"if<Esc>', { noremap = true, silent = true })
+    vim.api.nvim_buf_set_keymap(0, 'n', '<leader>li', '<cmd>normal! ologger.info(f"")<Esc>', { noremap = true, silent = true })
+  end,
+})
+
+vim.api.nvim_create_autocmd("FileType", {
   pattern = "go",  -- or your target language
   callback = function()
     -- Map <leader>r to replace '=' with ':=' in the current line
     vim.api.nvim_buf_set_keymap(0, 'n', '<leader>rd', [[:s/=/:=/g<CR>]], { noremap = true, silent = true })
   end,
 })
--- vim.api.nvim_create_autocmd("VimEnter", {
---   callback = function()
---     if vim.fn.argc() == 0 then
---       require("persistence").load({ last = true })
---     end
---   end,
--- })
--- if vim.fn.has 'wsl' == 1 then
---   vim.api.nvim_create_autocmd('TextYankPost', {
---     group = vim.api.nvim_create_augroup('Yank', { clear = true }),
---     callback = function()
---       vim.fn.system('clip.exe', vim.fn.getreg '"')
---     end,
---   })
--- end
 
 local function augroup(name)
   return vim.api.nvim_create_augroup('lazyvim_' .. name, { clear = true })

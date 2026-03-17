@@ -33,6 +33,16 @@ return { -- LSP Configuration & Plugins
                 },
             },
         })
+        vim.lsp.config('ruff', {
+            init_options = {
+                settings = {
+                    -- Ruff language server settings go here
+                    logLevel = 'debug',
+                },
+            },
+        })
+
+        vim.lsp.enable 'ruff'
 
         vim.diagnostic.config {
             virtual_text = {
@@ -155,13 +165,17 @@ return { -- LSP Configuration & Plugins
             jqls = {
                 filetypes = { 'json', 'jq' },
             },
-            -- ruff = {
-            --   filetypes = { 'python' },
-            -- },
+            python = {
+                analysis = {
+                    -- Ignore all files for analysis to exclusively use Ruff for linting
+                    ignore = { '*' },
+                },
+            },
             pyright = {
                 settings = {
                     pyright = {
                         analysis = {
+                            disableOrganizeImports = true,
                             autoSearchPaths = true,
                             diagnosticMode = 'openFilesOnly',
                             useLibraryCodeForTypes = true,

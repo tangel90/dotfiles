@@ -5,6 +5,7 @@ map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python3 %<CR>', { desc = 'python 
 map('n', '<leader>e', '<cmd>Ex<cr>', { desc = 'Open NetRW' })
 map('n', '<leader>"', '<cmd>registers<cr>', { desc = 'List registers' })
 map('n', '<leader>tw', '<cmd>set wrap!<cr>', { desc = 'Toggle word wrap'})
+-- map({ 'n', 'v' }, 'p', ']p')
 map({ 'n', 'v' }, '0', '^')
 map({ 'n', 'v' }, '^', '0')
 
@@ -59,7 +60,6 @@ map('n', 'gco', 'o<esc>Vcx<esc><cmd>normal gcc<cr>fxa<bs>', { desc = 'Add Commen
 map('n', 'gcO', 'O<esc>Vcx<esc><cmd>normal gcc<cr>fxa<bs>', { desc = 'Add Comment Above' })
 
 -- yank / delete / visual behavior
-map('n', '<leader>.', 'viw', { noremap = true, silent = true })
 map('n', '<leader>d.', 'diwsdb', { noremap = false, silent = true })
 map('n', '<leader>y', 'yiw', { noremap = true, silent = true })
 map('n', '<leader>y', 'yiw', { noremap = true, silent = true })
