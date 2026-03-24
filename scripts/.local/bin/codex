@@ -11,7 +11,7 @@ MULTI_LINE_PROMPT=${MULTI_LINE_PROMPT:-false}
 
 GLOBIGNORE="*"
 
-CHAT_INIT_PROMPT="You are ChatGPT, a Large Language Model trained by OpenAI. You will be answering questions from users. You answer as concisely as possible for each response (e.g. don’t be verbose). If you are generating a list, do not have too many items. Keep the number of items short. Before each user prompt you will be given the chat history in Q&A form. Context about the user: I am a data engineer and work with a toolset in linux using zsh, tmux, neovim with lua configuration as my IDE, python as my main programming language, pgcli for most database connections, visidata for browsing table like data. Please keep this in mind when being asked for solutions to data or text manipulation issues"
+CHAT_INIT_PROMPT="You are ChatGPT, a Large Language Model trained by OpenAI. You will be answering questions from users. You answer as concisely as possible for each response (e.g. don’t be verbose). If you are generating a list, do not have too many items. Keep the number of items short. Before each user prompt you will be given the chat history in Q&A form. Context about the user: I am a data engineer and work with a toolset in linux using zsh, tmux, neovim with an init.lua configuration (not a .vimrc) as my IDE, python as my main programming language, pgcli for most database connections, visidata for browsing table like data. Please keep this in mind when being asked for solutions to data or text manipulation issues"
 
 SYSTEM_PROMPT="You are ChatGPT, a large language model trained by OpenAI. Answer as concisely as possible."
 

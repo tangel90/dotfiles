@@ -6,8 +6,6 @@ map('n', '<leader>e', '<cmd>Ex<cr>', { desc = 'Open NetRW' })
 map('n', '<leader>"', '<cmd>registers<cr>', { desc = 'List registers' })
 map('n', '<leader>tw', '<cmd>set wrap!<cr>', { desc = 'Toggle word wrap'})
 -- map({ 'n', 'v' }, 'p', ']p')
-map({ 'n', 'v' }, '0', '^')
-map({ 'n', 'v' }, '^', '0')
 
 map("i", "u:", function()
   return "ü"
@@ -71,6 +69,7 @@ map({ 'n', 'v' }, '<leader>d', '"_d')
 -- Buffer/window management
 map( { 'n', 'i', 'v' }, '<C-s>', '<cmd>noautocmd w<cr>', { noremap = true, desc = 'Save current buffer (without formatting)' })
 map({ 'n', 'i' }, '<C-W><C-Q>', '<cmd>qa<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
+map({ 'n', 'i' }, '<C-W><C-X>', '<cmd>q!<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
 map({ 'n', 'i' }, '<C-S><C-S>', '<cmd>wq<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
 map('n', '<leader>q', ':bdelete<CR>', { noremap = true, desc = 'Close current buffer' })
 map({ 'n', 'v' }, '<Leader>v', ':vsplit<CR>', { noremap = true, silent = true, desc = 'New vertical split' })

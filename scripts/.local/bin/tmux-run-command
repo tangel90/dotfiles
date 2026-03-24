@@ -1,0 +1,16 @@
+#!/usr/bin/env zsh
+readonly RUN_WINDOW="run"
+
+current_window=$(tmux display-message -p '#W')
+
+if [[ "$current_window" == "$RUN_WINDOW" ]]; then
+  tmux last-window
+  exit 0
+fi
+
+if ! tmux select-window -Tt "$RUN_WINDOW" &>/dev/null; then
+  tmux new-window -n "$RUN_WINDOW"
+fi
+
+tmux send-keys -t "$RUN_WINDOW" "$RUN_COMMAND $RUN_DEFAULT_ARGS" C-m
+

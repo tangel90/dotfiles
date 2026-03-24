@@ -34,6 +34,11 @@ run = "cd /mnt/c/Users/T2192"
 desc = "cd into Windows Home directory"
 
 [[mgr.prepend_keymap]]
+on = ["f"]
+run = "filter --smart"
+desc = "filter by pattern"
+
+[[mgr.prepend_keymap]]
 on = ["F"]
 run = "plugin zoxide"
 desc = "jump to a directory using zoxide"
@@ -72,6 +77,11 @@ desc = "cd into ~/.local/tmp"
 on = ["g", "d"]
 run = "cd ~/dev"
 desc = "cd into ~/dev"
+
+[[mgr.prepend_keymap]]
+on = ["g", "D"]
+run = "cd /mnt/c/Users/T2192/dev/"
+desc = "cd into $WIN_HOME/dev"
 
 [[mgr.prepend_keymap]]
 on = ["c", "/"]
