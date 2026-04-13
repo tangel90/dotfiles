@@ -32,10 +32,13 @@ if ! tmux has-session -t="$selected_name" 2> /dev/null; then
         run_cmd=""
         if [[ -f "$selected/.envrc" ]]; then
             run_cmd=$( (source "$selected/.envrc"; printf '%s\n' "${RUN_COMMAND:-}") )
-            run_default_args=$( (source "$selected/.envrc"; printf '%s\n' "${RUN_DEFAULT_ARGS:-}") )
             if [[ -n $run_cmd ]]; then
               tmux set-environment -t "$selected_name" RUN_COMMAND "$run_cmd"
-              tmux set-environment -t "$selected_name" RUN_DEFAULT_ARGS "$run_default_args"
+
+              run_default_args=$( (source "$selected/.envrc"; printf '%s\n' "${RUN_DEFAULT_ARGS:-}") )
+              if [[ -n $run_default_args ]]; then
+                tmux set-environment -t "$selected_name" RUN_DEFAULT_ARGS "$RUN_DEFAULT_ARGS"
+              fi
             else
               echo "No RUN_COMMAND exported."
             fi

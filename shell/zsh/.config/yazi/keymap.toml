@@ -84,6 +84,11 @@ run = "cd /mnt/c/Users/T2192/dev/"
 desc = "cd into $WIN_HOME/dev"
 
 [[mgr.prepend_keymap]]
+on = "<C-f>"
+run = "search fd --args --hidden --follow --exclude .git"
+desc = "Search files by name using fd" 
+
+[[mgr.prepend_keymap]]
 on = ["c", "/"]
 run = "cd --interactive"
 desc = "cd interactively"
