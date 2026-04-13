@@ -1,95 +1,108 @@
 #!/usr/bin/env bash
-# Claude Code status line — Rosé Pine styled
+# Claude Code status line — rose-pine flavoured
+
 input=$(cat)
 
-cwd=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // empty')
-model=$(echo "$input" | jq -r '.model.display_name // empty')
-used=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
-session=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
-daily=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
+# Rose Pine main palette (ANSI 24-bit)
+pine="\033[38;2;49;116;143m"      # #31748f
+foam="\033[38;2;156;207;216m"     # #9ccfd8
+iris="\033[38;2;196;167;231m"     # #c4a7e7
+gold="\033[38;2;246;193;119m"     # #f6c177
+rose="\033[38;2;235;188;186m"     # #ebbcba
+love="\033[38;2;235;111;146m"     # #eb6f92
+subtle="\033[38;2;153;156;186m"   # #999cba
+text="\033[38;2;224;222;244m"     # #e0def4
+muted="\033[38;2;106;110;111m"    # #6a6e6f
+reset="\033[0m"
 
-# Rosé Pine (main) palette via ANSI 24-bit color
-# thm_pine    #31748f  → directories
-# thm_iris    #c4a7e7  → git branch
-# thm_gold    #f6c177  → git dirty marker
-# thm_foam    #9ccfd8  → model name
-# thm_subtle  #999cba  → separators / labels
-# thm_love    #eb6f92  → high-usage warning (>75%)
-# thm_peach   #ffaa88  → mid-usage warning (>50%)
-# thm_muted   #6a6e6f  → muted/dimmed values
+# ── directory ────────────────────────────────────────────────────────────────
+cwd=$(echo "$input" | jq -r '.cwd // .workspace.current_dir // ""')
+# shorten: replace $HOME with ~, then keep last 2 components
+cwd="${cwd/#$HOME/~}"
+short_pwd=$(echo "$cwd" | awk -F'/' '{
+    n=NF
+    if (n<=2) { print $0 }
+    else { print $(n-1)"/"$n }
+}')
 
-pine=$'\033[38;2;49;116;143m'
-iris=$'\033[38;2;196;167;231m'
-gold=$'\033[38;2;246;193;119m'
-foam=$'\033[38;2;156;207;216m'
-subtle=$'\033[38;2;153;156;186m'
-love=$'\033[38;2;235;111;146m'
-peach=$'\033[38;2;255;170;136m'
-muted=$'\033[38;2;106;110;111m'
-reset=$'\033[0m'
+# ── model ─────────────────────────────────────────────────────────────────────
+model=$(echo "$input" | jq -r '.model.display_name // ""')
 
-# Shorten home directory to ~
-home="$HOME"
-short_cwd="${cwd/#$home/\~}"
+# ── context bar ───────────────────────────────────────────────────────────────
+ctx_used=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
+make_bar() {
+    local pct="$1"
+    local width=10
+    local pct_int=$(printf "%.0f" "$pct" 2>/dev/null || echo 0)
+    local filled=$(( pct_int * width / 100 ))
+    [ "$filled" -gt "$width" ] && filled=$width
+    local empty=$(( width - filled ))
+    local bar=""
+    for ((i=0; i<filled; i++)); do bar="${bar}█"; done
+    for ((i=0; i<empty; i++)); do bar="${bar}░"; done
+    echo "$bar"
+}
 
-# Git branch and dirty status
-git_info=""
-if git_branch=$(GIT_OPTIONAL_LOCKS=0 git -C "$cwd" symbolic-ref --short HEAD 2>/dev/null); then
-  dirty=$(GIT_OPTIONAL_LOCKS=0 git -C "$cwd" status --porcelain 2>/dev/null)
-  if [ -n "$dirty" ]; then
-    git_info="${iris} ${git_branch}${gold}*${reset}"
-  else
-    git_info="${iris} ${git_branch}${reset}"
-  fi
+# ── 5-hour session limit ──────────────────────────────────────────────────────
+five_pct=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
+
+# ── 7-day weekly limit ────────────────────────────────────────────────────────
+week_pct=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
+
+# ── pick bar color based on percentage ───────────────────────────────────────
+bar_color() {
+    local pct="$1"
+    local int_pct=$(printf "%.0f" "$pct" 2>/dev/null || echo 0)
+    if   [ "$int_pct" -ge 85 ]; then echo "$love"
+    elif [ "$int_pct" -ge 60 ]; then echo "$gold"
+    else                              echo "$pine"
+    fi
+}
+
+# ── assemble ──────────────────────────────────────────────────────────────────
+parts=()
+
+# directory
+parts+=("$(printf "${iris}${short_pwd}${reset}")")
+
+# model
+if [ -n "$model" ]; then
+    parts+=("$(printf "${muted}${model}${reset}")")
 fi
 
-# Context usage — color shifts at thresholds
-ctx_info=""
-if [ -n "$used" ] && [ "$used" != "null" ]; then
-  pct=$(printf '%.0f' "$used")
-  if [ "$pct" -ge 75 ]; then
-    ctx_color="$love"
-  elif [ "$pct" -ge 50 ]; then
-    ctx_color="$peach"
-  else
-    ctx_color="$muted"
-  fi
-  ctx_info="${subtle} | ${ctx_color}ctx:${pct}%${reset}"
+# context
+if [ -n "$ctx_used" ]; then
+    bar=$(make_bar "$ctx_used")
+    color=$(bar_color "$ctx_used")
+    pct_int=$(printf "%.0f" "$ctx_used")
+    parts+=("$(printf "${subtle}ctx ${color}${bar}${subtle} ${pct_int}%%${reset}")")
 fi
 
-# 5-hour session rate limit usage
-session_info=""
-if [ -n "$session" ] && [ "$session" != "null" ]; then
-  spct=$(printf '%.0f' "$session")
-  if [ "$spct" -ge 75 ]; then
-    session_color="$love"
-  elif [ "$spct" -ge 50 ]; then
-    session_color="$peach"
-  else
-    session_color="$muted"
-  fi
-  session_info="${subtle} | ${session_color}5h:${spct}%${reset}"
+# 5-hour session limit
+if [ -n "$five_pct" ]; then
+    bar=$(make_bar "$five_pct")
+    color=$(bar_color "$five_pct")
+    pct_int=$(printf "%.0f" "$five_pct")
+    parts+=("$(printf "${subtle}5h ${color}${bar}${subtle} ${pct_int}%%${reset}")")
 fi
 
-# 7-day rate limit usage
-daily_info=""
-if [ -n "$daily" ] && [ "$daily" != "null" ]; then
-  dpct=$(printf '%.0f' "$daily")
-  if [ "$dpct" -ge 75 ]; then
-    daily_color="$love"
-  elif [ "$dpct" -ge 50 ]; then
-    daily_color="$peach"
-  else
-    daily_color="$muted"
-  fi
-  daily_info="${subtle} | ${daily_color}7d:${dpct}%${reset}"
+# weekly limit
+if [ -n "$week_pct" ]; then
+    bar=$(make_bar "$week_pct")
+    color=$(bar_color "$week_pct")
+    pct_int=$(printf "%.0f" "$week_pct")
+    parts+=("$(printf "${subtle}7d ${color}${bar}${subtle} ${pct_int}%%${reset}")")
 fi
 
-# Assemble: dir  git  separator  model  ctx  session  daily
-printf "${pine}%s${subtle}%s${subtle} | ${foam}%s${reset}%s%s%s\n\n" \
-  "$short_cwd" \
-  "$git_info" \
-  "$model" \
-  "$ctx_info" \
-  "$daily_info" \
-  "$session_info"
+# join with rose-pine field separator style
+sep="$(printf "${muted} | ${reset}")"
+result=""
+for part in "${parts[@]}"; do
+    if [ -z "$result" ]; then
+        result="$part"
+    else
+        result="${result}${sep}${part}"
+    fi
+done
+
+printf "%b\n" "$result"
