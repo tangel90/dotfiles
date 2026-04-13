@@ -118,13 +118,13 @@ return {
         mode = { 'n', 'x', 'o' },
       },
       {
-        '<leader>i',
+        '<leader>sl',
         function() require('nvim-treesitter-textobjects.swap').swap_next('@parameter.inner') end,
         desc = 'prev argument end',
         mode = { 'n', 'x', 'o' },
       },
       {
-        '<leader>I',
+        '<leader>sh',
         function() require('nvim-treesitter-textobjects.swap').swap_previous('@parameter.inner') end,
         desc = 'next argument end',
         mode = { 'n', 'x', 'o' },

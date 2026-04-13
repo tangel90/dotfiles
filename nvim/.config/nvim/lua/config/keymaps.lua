@@ -1,5 +1,10 @@
---- custom keymaps --
 local map = vim.keymap.set
+
+--- markdown keymaps ---
+
+map('n', '<leader>id', "<cmd>r!date +\\%b-\\%d<CR>", { desc = "Insert today's date" })
+
+--- custom keymaps ---
 
 map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python3 %<CR>', { desc = 'python main.py' })
 map('n', '<leader>e', '<cmd>Ex<cr>', { desc = 'Open NetRW' })
