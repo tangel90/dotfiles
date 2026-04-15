@@ -8,6 +8,11 @@ if [[ "$current_window" == "$RUN_WINDOW" ]]; then
   exit 0
 fi
 
+if [[ -z $RUN_COMMAND ]]; then
+  echo "RUN_COMMAND not exported."
+  exit 0
+fi
+
 if ! tmux select-window -Tt "$RUN_WINDOW" &>/dev/null; then
   tmux new-window -n "$RUN_WINDOW"
 fi

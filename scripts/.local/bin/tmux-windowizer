@@ -31,15 +31,21 @@ alt_window_name="${window_name}_$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c
 tmux_running=$(pgrep tmux)
 
 if [[ ! -z $TMUX ]]; then
+    program="nvim"
+    program_args=""
     if [[ "$file_name" == *.csv || "$file_name" == *.tsv ]]; then
         program="vd"
-    else
-        program="nvim"
+        if [[ "$file_name" == *.csv ]]; then
+            first_line=$(head -n 1 "$selected")
+            if [[ "$first_line" == *";"* ]]; then
+                program_args="--csv-delimiter=\";\""
+            fi
+        fi
     fi
     if tmux list-windows | grep -Fxq "$window_name"; then
         window_name="$alt_window_name"
     fi
-    tmux new-window -n "$window_name" -c "$parent_dir" "$program" "$file_name"
+    tmux new-window -n "$window_name" -c "$parent_dir" "$program $program_args $(printf %q "$file_name")"
     # tmux select-window -t $window_name
     exit 0
 fi

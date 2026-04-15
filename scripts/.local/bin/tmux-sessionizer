@@ -44,7 +44,7 @@ if ! tmux has-session -t="$selected_name" 2> /dev/null; then
             fi
         fi
 
-        tmux send-keys -t "$selected_name" "nvim" C-m
+        tmux send-keys -t "$selected_name" "git fetch && nvim" C-m
     elif [[ "$selected_name" == *data || "$selected_name" == "reports" ]]; then
         tmux new-session -ds "$selected_name" -c "$selected" vd
     else
