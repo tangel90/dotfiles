@@ -203,7 +203,7 @@
             "brightGreen": "#31748F",
             "brightPurple": "#C4A7E7",
             "brightRed": "#EB6F92",
-            "brightWhite": "#E0DEF4",
+            "brightWhite": "#D9D4D6",
             "brightYellow": "#F6C177",
             "cursorColor": "#EBBCBA",
             "cyan": "#EBBCBA",
@@ -213,7 +213,7 @@
             "purple": "#C4A7E7",
             "red": "#EB6F92",
             "selectionBackground": "#2A2837",
-            "white": "#E0DEF4",
+            "white": "#D9D4D6",
             "yellow": "#F6C177"
         }
     ],

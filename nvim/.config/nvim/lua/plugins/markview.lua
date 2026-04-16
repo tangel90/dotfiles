@@ -95,12 +95,12 @@ return {
         local hl = vim.api.nvim_set_hl
 
         -- Headings
-        hl(0, 'MarkviewHeading1', { fg = p.iris, bold = true })
-        hl(0, 'MarkviewHeading2', { fg = p.foam, bold = true })
-        hl(0, 'MarkviewHeading3', { fg = p.rose, bold = true })
-        hl(0, 'MarkviewHeading4', { fg = p.gold, bold = true })
-        hl(0, 'MarkviewHeading5', { fg = p.pine, bold = true })
-        hl(0, 'MarkviewHeading6', { fg = p.foam, bold = true })
+        hl(0, 'MarkviewHeading1', { fg = p.iris, bold = true, underline = true })
+        hl(0, 'MarkviewHeading2', { fg = p.foam, bold = true, underline = true })
+        hl(0, 'MarkviewHeading3', { fg = p.rose, bold = true, underline = true })
+        hl(0, 'MarkviewHeading4', { fg = p.gold, bold = true, underline = true })
+        hl(0, 'MarkviewHeading5', { fg = p.pine, bold = true, underline = true })
+        hl(0, 'MarkviewHeading6', { fg = p.foam, bold = true, underline = true })
 
         -- Heading sign column markers
         hl(0, 'MarkviewHeading1Sign', { fg = p.iris })
@@ -119,7 +119,7 @@ return {
         -- Code blocks
         hl(0, 'MarkviewCode', { bg = p.surface })
         hl(0, 'MarkviewCodeInfo', { fg = p.subtle })
-        hl(0, 'MarkviewInlineCode', { fg = p.foam, bg = p.surface })
+        hl(0, 'MarkviewInlineCode', { fg = p.foam })
 
         -- Block quotes
         hl(0, 'MarkviewBlockQuoteDefault', { fg = p.subtle })
@@ -133,6 +133,9 @@ return {
         hl(0, 'MarkviewHyperlink', { fg = p.iris, underline = true })
         hl(0, 'MarkviewImage', { fg = p.iris, underline = true })
         hl(0, 'MarkviewEmail', { fg = p.foam, underline = true })
+
+        -- Body text
+        hl(0, '@spell.markdown', { fg = '#d9d4d6' })
 
         -- Lists
         hl(0, 'MarkviewListItemMinus', { fg = p.subtle })

@@ -6,6 +6,8 @@ map('n', '<leader>id', "<cmd>r!date +\\%b-\\%d<CR>", { desc = "Insert today's da
 
 --- custom keymaps ---
 
+map('n', '<leader>T', function() require('config.timetracking').open_week() end, { desc = 'Open time tracker' })
+
 map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python3 %<CR>', { desc = 'python main.py' })
 map('n', '<leader>e', '<cmd>Ex<cr>', { desc = 'Open NetRW' })
 map('n', '<leader>"', '<cmd>registers<cr>', { desc = 'List registers' })

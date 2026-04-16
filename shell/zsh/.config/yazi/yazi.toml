@@ -8,13 +8,20 @@ prepend_previewers = [
   { name = "*.ipynb", run = "nbpreview" },
 ]
 
-# [opener]
-# edit = [
-#   { run = '$EDITOR "$@"', block = true, for = "unix", desc = "nvim" },
-#   { run = "%EDITOR% %*", block = true, for = "windows" },
-# ]
-# view = [{ run = 'visidata $@', block = true, for = "unix", desc = "visidata" }]
-# open = [{ run = 'xdg-open "$@"', desc = "Open" }]
-# #
-# [open]
-# rules = [{ name = "*.csv", use = "view" }, { name = "*.json", use = ["edit", "view"] }]
+[opener]
+edit = [
+  { run = '$EDITOR %s', block = true, for = "unix", desc = "nvim" },
+  { run = "%EDITOR% %s", block = true, for = "windows" },
+]
+
+view = [{ run = 'visidata %s', block = true, for = "unix", desc = "visidata" }]
+view-semicolon = [{ run = "visidata --csv-delimiter ';' %s", block = true, for = "unix", desc = "visidata (;)" }]
+open = [{ run = 'xdg-open %s', desc = "Open" }]
+pdf = [{ run = '/mnt/c/Windows/explorer.exe "$(wslpath -w %s)"', desc = "Edge (Windows)" }]
+
+[open]
+prepend_rules = [
+  { url = "*.csv", use = ["view", "view-semicolon", "edit"] },
+  { url = "*.json", use = ["edit", "view"] },
+  { url = "*.pdf", use = ["pdf", "edit"] },
+]

@@ -54,9 +54,9 @@ return {
             palette = {
                 -- Override the builtin palette per variant
                 main = {
-                    base = '#1E1E1E',
+                    base = '#242424',
                     surface = '#242424',
-                    overlay = '#22282F',
+                    overlay = '#292929',
                     muted = "#6a6e6f",
                     subtle = "#999cba",
                     text = "#e0def4",
