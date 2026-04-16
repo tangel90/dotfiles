@@ -222,7 +222,63 @@ return {
         ---
         ---Runs anytime the workspace is set/changed.
         ---@field post_set_workspace? fun(workspace: obsidian.Workspace)
-        callbacks = {},
+        callbacks = {
+            enter_note = function()
+                local map = function(mode, lhs, rhs, desc)
+                    vim.keymap.set(mode, lhs, rhs, { buffer = true, desc = 'Obsidian: ' .. desc })
+                end
+                map('n', '<leader>oo', '<cmd>Obsidian quick_switch<CR>', 'Quick Switch')
+                map('n', '<leader>og', '<cmd>Obsidian search<CR>', 'Grep Notes')
+                map('n', '<leader>ot', function()
+                    vim.lsp.buf.document_symbol {
+                        on_list = function(t)
+                            for _, item in ipairs(t.items) do
+                                item.text = item.text:gsub('^%[%w+%]%s*', '')
+                            end
+                            vim.api.nvim_feedkeys('', 'nx', true)
+                            if Obsidian.picker then
+                                Obsidian.picker.pick(t.items, { prompt_title = 'Table of Contents' })
+                            else
+                                vim.fn.setloclist(0, {}, ' ', t)
+                                vim.cmd('lopen')
+                            end
+                        end,
+                    }
+                end, 'Table of Contents')
+                map('n', '<leader>oT', function()
+                    vim.lsp.buf.document_symbol {
+                        on_list = function(t)
+                            for _, item in ipairs(t.items) do
+                                item.text = item.text:gsub('^%[%w+%]%s*', '')
+                            end
+                            vim.fn.setqflist({}, ' ', { title = 'Table of Contents', items = t.items })
+                            vim.cmd('copen')
+                        end,
+                    }
+                end, 'TOC quick-list')
+                map('n', '<leader>od', '<cmd>Obsidian dailies<CR>', 'Dailies')
+                map('n', '<leader>on', '<cmd>Obsidian new<CR>', 'New Note')
+                map('n', '<leader>or', '<cmd>Obsidian rename<CR>', 'Rename Note')
+                map('n', '<leader>of', '<cmd>Obsidian tags<CR>', 'Find by Tag')
+                map('n', '<leader>ow', '<cmd>Obsidian workspace<CR>', 'Select Workspace')
+                map('n', '<leader>ob', '<cmd>Obsidian backlinks<CR>', 'Backlinks')
+                map('n', '<leader>ol', '<cmd>Obsidian links<CR>', 'Links')
+                map('n', '<leader><leader>', '<cmd>Obsidian toggle_checkbox<CR>', 'Toggle Checkbox')
+                map('n', '<leader>oa', function()
+                    local save = vim.fn.winsaveview()
+                    vim.cmd('silent! /^tags:/')
+                    local line = vim.fn.getline('.')
+                    if line:match('^tags:') then
+                        vim.cmd('nohlsearch')
+                        vim.cmd('normal! A ')
+                        vim.cmd('startinsert!')
+                    else
+                        vim.fn.winrestview(save)
+                        vim.notify('No tags: field found in frontmatter', vim.log.levels.WARN)
+                    end
+                end, 'Add Tag')
+            end,
+        },
 
         ---@class obsidian.config.FooterOpts
         ---

@@ -63,7 +63,7 @@ bar_color() {
 parts=()
 
 # directory
-parts+=("$(printf "${iris}${short_pwd}${reset}")")
+parts+=("$(printf "${pine}${short_pwd}${reset}")")
 
 # model
 if [ -n "$model" ]; then
@@ -105,4 +105,4 @@ for part in "${parts[@]}"; do
     fi
 done
 
-printf "%b\n" "$result"
+printf "\n%b\n\n" "$result"

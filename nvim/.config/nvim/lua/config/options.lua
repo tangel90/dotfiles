@@ -3,6 +3,7 @@
 --  See `:help 'clipboard'`
 vim.opt.clipboard:append 'unnamedplus'
 
+
 vim.filetype.add({
   extension = {
     ['http'] = 'http',

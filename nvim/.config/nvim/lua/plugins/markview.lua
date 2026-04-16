@@ -22,10 +22,8 @@ return {
         	on_enable = function(_, wins)
         		for _, win in ipairs(wins) do
         			vim.wo[win].conceallevel = 2
-        			-- vim.wo[win].concealcursor = "n,v"
-        			-- vim.wo[win].linebreak = true
         		end
-        	end
+        	end,
         }
 
         opts.markdown = {}
@@ -65,16 +63,16 @@ return {
             sign = true,
         }
 
-        -- opts.markdown.headings = {
-        --     heading_1 = { style = 'icon' },
-        --     heading_2 = { style = 'icon' },
-        --     heading_3 = { style = 'icon' },
-        --     heading_4 = { style = 'icon' },
-        --     heading_5 = { style = 'icon' },
-        --     heading_6 = { style = 'icon' },
-        --     setext_1 = { sign = '', icon = ' ' },
-        --     setext_2 = { sign = '', icon = ' ' },
-        -- }
+        opts.markdown.headings = {
+            heading_1 = { style = 'icon' },
+            heading_2 = { style = 'icon' },
+            heading_3 = { style = 'icon' },
+            heading_4 = { style = 'simple' },
+            heading_5 = { style = 'simple' },
+            heading_6 = { style = 'simple' },
+            setext_1 = { style = 'simple' },
+            setext_2 = { style = 'simple' },
+        }
 
         local presets = require 'markview.presets'
 
@@ -91,6 +89,61 @@ return {
             marker_star = { text = '*' },
         }
         require('markview').setup(opts)
+
+        -- Override markview colors to match rose-pine
+        local p = require('rose-pine.palette')
+        local hl = vim.api.nvim_set_hl
+
+        -- Headings
+        hl(0, 'MarkviewHeading1', { fg = p.iris, bold = true })
+        hl(0, 'MarkviewHeading2', { fg = p.foam, bold = true })
+        hl(0, 'MarkviewHeading3', { fg = p.rose, bold = true })
+        hl(0, 'MarkviewHeading4', { fg = p.gold, bold = true })
+        hl(0, 'MarkviewHeading5', { fg = p.pine, bold = true })
+        hl(0, 'MarkviewHeading6', { fg = p.foam, bold = true })
+
+        -- Heading sign column markers
+        hl(0, 'MarkviewHeading1Sign', { fg = p.iris })
+        hl(0, 'MarkviewHeading2Sign', { fg = p.foam })
+        hl(0, 'MarkviewHeading3Sign', { fg = p.rose })
+        hl(0, 'MarkviewHeading4Sign', { fg = p.gold })
+        hl(0, 'MarkviewHeading5Sign', { fg = p.pine })
+        hl(0, 'MarkviewHeading6Sign', { fg = p.foam })
+
+        -- Checkboxes
+        hl(0, 'MarkviewCheckboxUnchecked', { fg = p.leaf })
+        hl(0, 'MarkviewCheckboxChecked', { fg = p.muted })
+        hl(0, 'MarkviewCheckboxPending', { fg = p.gold })
+        hl(0, 'MarkviewCheckboxCancelled', { fg = p.muted, strikethrough = true })
+
+        -- Code blocks
+        hl(0, 'MarkviewCode', { bg = p.surface })
+        hl(0, 'MarkviewCodeInfo', { fg = p.subtle })
+        hl(0, 'MarkviewInlineCode', { fg = p.foam, bg = p.surface })
+
+        -- Block quotes
+        hl(0, 'MarkviewBlockQuoteDefault', { fg = p.subtle })
+        hl(0, 'MarkviewBlockQuoteError', { fg = p.love })
+        hl(0, 'MarkviewBlockQuoteWarn', { fg = p.gold })
+        hl(0, 'MarkviewBlockQuoteNote', { fg = p.foam })
+        hl(0, 'MarkviewBlockQuoteOk', { fg = p.leaf })
+        hl(0, 'MarkviewBlockQuoteSpecial', { fg = p.iris })
+
+        -- Links
+        hl(0, 'MarkviewHyperlink', { fg = p.iris, underline = true })
+        hl(0, 'MarkviewImage', { fg = p.iris, underline = true })
+        hl(0, 'MarkviewEmail', { fg = p.foam, underline = true })
+
+        -- Lists
+        hl(0, 'MarkviewListItemMinus', { fg = p.subtle })
+        hl(0, 'MarkviewListItemPlus', { fg = p.subtle })
+        hl(0, 'MarkviewListItemStar', { fg = p.subtle })
+
+        -- Tables
+        hl(0, 'MarkviewTableHeader', { fg = p.foam, bold = true })
+        hl(0, 'MarkviewTableBorder', { fg = p.muted })
+
+
         vim.keymap.set('n', '<leader>tm', '<cmd>Markview toggle<cr>', { desc = 'Toggle Markdown Rendering'})
     end,
 }

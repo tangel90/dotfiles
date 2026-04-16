@@ -100,6 +100,8 @@ alias vim="nvim"
 alias vimdev='NVIM_APPNAME=nvim-dev nvim'
 alias nvr="nvim --listen $HOME/.local/tmp/nvimsocket"
 
+export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '/mnt/c' | tr '\n' ':' | sed 's/:$//')
+
 function gpg-unlock-lazygit() {
     git fetch
     lazygit
@@ -125,4 +127,5 @@ function yazi-cwd() {
 
 function load-nvm() {
   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+  [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 }

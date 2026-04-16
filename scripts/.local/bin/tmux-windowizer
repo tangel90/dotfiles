@@ -35,17 +35,26 @@ if [[ ! -z $TMUX ]]; then
     program_args=""
     if [[ "$file_name" == *.csv || "$file_name" == *.tsv ]]; then
         program="vd"
+        csv_delimiter=","
         if [[ "$file_name" == *.csv ]]; then
-            first_line=$(head -n 1 "$selected")
-            if [[ "$first_line" == *";"* ]]; then
-                program_args="--csv-delimiter=\";\""
+            first_line=$(head -1 "$selected")
+            semicolons="${first_line//[^;]}"
+            commas="${first_line//[^,]}"
+            if (( ${#semicolons} > ${#commas} )); then
+                csv_delimiter=";"
             fi
         fi
+    else
+        program="nvim"
     fi
     if tmux list-windows | grep -Fxq "$window_name"; then
         window_name="$alt_window_name"
     fi
-    tmux new-window -n "$window_name" -c "$parent_dir" "$program $program_args $(printf %q "$file_name")"
+    if [[ "$program" == "vd" ]]; then
+        tmux new-window -n "$window_name" -c "$parent_dir" bash -c "vd --csv-delimiter '$csv_delimiter' '$file_name'"
+    else
+        tmux new-window -n "$window_name" -c "$parent_dir" "$program" "$file_name"
+    fi
     # tmux select-window -t $window_name
     exit 0
 fi

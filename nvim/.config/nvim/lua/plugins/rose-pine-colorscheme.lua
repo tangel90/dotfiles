@@ -66,7 +66,7 @@ return {
                     rose = "#fbbcba",
                     pine = "#31748f",
                     foam = "#9ccfd8",
-                    iris = "#c4a7e7",
+                    iris = "#a4a7e7",
                     leaf = "#95b1ac",
                     highlight_low = "#21202e",
                     highlight_med = "#403d52",
