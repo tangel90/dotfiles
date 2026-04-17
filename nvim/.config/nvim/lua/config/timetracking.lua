@@ -184,7 +184,7 @@ function M.setup_keymaps()
   vim.keymap.set('n', '<leader>to', M.clock_out, opts('Time: clock out'))
   vim.keymap.set('n', '<leader>tb', M.break_start, opts('Time: break start'))
   vim.keymap.set('n', '<leader>te', M.break_end, opts('Time: break end'))
-  vim.keymap.set('n', '<leader>tc', M.calculate, opts('Time: calculate'))
+  vim.keymap.set('n', '<leader>tm', M.calculate, opts('Time: calculate'))
 end
 
 return M

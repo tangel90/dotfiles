@@ -35,7 +35,7 @@ return {
             info_hl = 'MarkviewCodeInfo',
 
             label_direction = 'right',
-            label_hl = nil,
+            label_hl = 'MarkviewCodeLabel',
 
             min_width = 50,
             pad_amount = 2,
@@ -119,6 +119,7 @@ return {
         -- Code blocks
         hl(0, 'MarkviewCode', { bg = p.surface })
         hl(0, 'MarkviewCodeInfo', { fg = p.subtle })
+        hl(0, 'MarkviewCodeLabel', { fg = p.muted, bg = p.surface })
         hl(0, 'MarkviewInlineCode', { fg = p.foam })
 
         -- Block quotes

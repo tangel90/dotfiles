@@ -1,2 +1,12 @@
 # [flavor]
 # dark = 'kanagawa'
+
+# Rose-pine tinted which-key popup
+[which]
+cols            = 3
+mask            = { bg = "#242424" }
+cand            = { fg = "#9ccfd8" }
+rest            = { fg = "#6e6a86" }
+desc            = { fg = "#e0def4" }
+separator       = "  "
+separator_style = { fg = "#6e6a86" }
