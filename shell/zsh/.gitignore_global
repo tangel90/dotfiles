@@ -6,3 +6,5 @@ __pycache__/
 .config_backup/
 .envrc
 .env
+
+settings.local.json
