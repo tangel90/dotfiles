@@ -45,6 +45,20 @@ make_bar() {
 
 # ── 5-hour session limit ──────────────────────────────────────────────────────
 five_pct=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
+five_resets=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
+
+# derive elapsed time: 5h window = 18000s; elapsed = 18000 - seconds_until_reset
+five_elapsed=""
+if [ -n "$five_resets" ]; then
+    now=$(date +%s)
+    seconds_until=$(( five_resets - now ))
+    [ "$seconds_until" -lt 0 ] && seconds_until=0
+    elapsed_s=$(( 18000 - seconds_until ))
+    [ "$elapsed_s" -lt 0 ] && elapsed_s=0
+    elapsed_h=$(( elapsed_s / 3600 ))
+    elapsed_m=$(( (elapsed_s % 3600) / 60 ))
+    five_elapsed=$(printf "%dh%02dm" "$elapsed_h" "$elapsed_m")
+fi
 
 # ── 7-day weekly limit ────────────────────────────────────────────────────────
 week_pct=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
@@ -78,12 +92,16 @@ if [ -n "$ctx_used" ]; then
     parts+=("$(printf "${subtle}ctx ${color}${bar}${subtle} ${pct_int}%%${reset}")")
 fi
 
-# 5-hour session limit
+# 5-hour session limit + elapsed timer
 if [ -n "$five_pct" ]; then
     bar=$(make_bar "$five_pct")
     color=$(bar_color "$five_pct")
     pct_int=$(printf "%.0f" "$five_pct")
-    parts+=("$(printf "${subtle}5h ${color}${bar}${subtle} ${pct_int}%%${reset}")")
+    if [ -n "$five_elapsed" ]; then
+        parts+=("$(printf "${subtle}5h ${color}${bar}${subtle} ${pct_int}%% ${muted}(${five_elapsed})${reset}")")
+    else
+        parts+=("$(printf "${subtle}5h ${color}${bar}${subtle} ${pct_int}%%${reset}")")
+    fi
 fi
 
 # weekly limit
