@@ -121,3 +121,6 @@ vim.opt.inccommand = 'split'
 
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.scrolloff = 10
+
+-- Suppress LSP stderr captures (rust-analyzer panic-loop can balloon lsp.log to GBs).
+vim.lsp.set_log_level("WARN")
