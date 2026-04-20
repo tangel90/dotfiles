@@ -26,7 +26,7 @@ return { -- Autoformat
         formatters_by_ft = {
             lua = { 'stylua' },
             cs = { 'csharpier' },
-            ['markdown'] = { 'markdownlint-cli2', 'markdown-toc' },
+            ['markdown'] = { 'markdownlint-cli2', 'markdown-toc', 'prettierd' },
             ['markdown.mdx'] = { 'markdownlint-cli2', 'markdown-toc' },
             -- You can use a sub-list to tell conform to run *until* a formatter is found. DEPRECATED
             javascript = { 'prettierd' },

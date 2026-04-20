@@ -38,7 +38,7 @@ return {
             label_hl = 'MarkviewCodeLabel',
 
             min_width = 50,
-            pad_amount = 2,
+            pad_amount = 4,
             pad_char = ' ',
 
             default = {
@@ -117,9 +117,10 @@ return {
         hl(0, 'MarkviewCheckboxCancelled', { fg = p.muted, strikethrough = true })
 
         -- Code blocks
-        hl(0, 'MarkviewCode', { bg = p.surface })
-        hl(0, 'MarkviewCodeInfo', { fg = p.subtle })
-        hl(0, 'MarkviewCodeLabel', { fg = p.muted, bg = p.surface })
+        hl(0, 'MarkviewCode', { bg = p.base })
+        hl(0, 'MarkviewCodeInfo', { fg = p.subtle, bg = p.base })
+        hl(0, 'MarkviewCodeLabel', { fg = p.rose, bg = p.base })
+        hl(0, 'MarkviewCodeSign', { fg = p.rose })
         hl(0, 'MarkviewInlineCode', { fg = p.foam })
 
         -- Block quotes
@@ -149,5 +150,50 @@ return {
 
 
         vim.keymap.set('n', '<leader>tm', '<cmd>Markview toggle<cr>', { desc = 'Toggle Markdown Rendering'})
+
+        -- Vertical bar in sign column for each line of a fenced code block
+        local ns = vim.api.nvim_create_namespace('md_code_bar')
+        local query = vim.treesitter.query.parse('markdown', '(fenced_code_block) @b')
+        vim.api.nvim_create_autocmd({ 'BufEnter', 'TextChanged', 'TextChangedI' }, {
+            callback = function(ev)
+                if vim.bo[ev.buf].filetype ~= 'markdown' then return end
+                vim.api.nvim_buf_clear_namespace(ev.buf, ns, 0, -1)
+                local ok, parser = pcall(vim.treesitter.get_parser, ev.buf, 'markdown')
+                if not ok or not parser then return end
+                local tree = parser:parse()[1]
+                local mini_ok, mini_icons = pcall(require, 'mini.icons')
+                for _, node in query:iter_captures(tree:root(), ev.buf) do
+                    local srow, _, erow, _ = node:range()
+                    -- Hide the opening and closing fence rows
+                    vim.api.nvim_buf_set_extmark(ev.buf, ns, srow, 0, { conceal_lines = '' })
+                    vim.api.nvim_buf_set_extmark(ev.buf, ns, erow - 1, 0, { conceal_lines = '' })
+
+                    -- Extract language from (info_string (language))
+                    local lang
+                    for child in node:iter_children() do
+                        if child:type() == 'info_string' then
+                            for gc in child:iter_children() do
+                                if gc:type() == 'language' then
+                                    lang = vim.treesitter.get_node_text(gc, ev.buf)
+                                end
+                            end
+                        end
+                    end
+
+                    local icon_text, icon_hl
+                    if mini_ok and lang then
+                        icon_text, icon_hl = mini_icons.get('filetype', lang)
+                    end
+
+                    for row = srow + 1, erow - 2 do
+                        local is_first = row == srow + 1
+                        vim.api.nvim_buf_set_extmark(ev.buf, ns, row, 0, {
+                            sign_text = (is_first and icon_text) or '▎',
+                            sign_hl_group = (is_first and icon_hl) or 'MarkviewCodeSign',
+                        })
+                    end
+                end
+            end,
+        })
     end,
 }

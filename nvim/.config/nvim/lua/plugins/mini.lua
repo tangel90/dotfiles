@@ -6,7 +6,15 @@ return { -- Collection of various small independent plugins/modules
         --  - va)  - [V]isually select [A]round [)]paren
         --  - yinq - [Y]ank [I]nside [N]ext [']quote
         --  - ci'  - [C]hange [I]nside [']quote
-        require('mini.ai').setup { n_lines = 500 }
+        require('mini.ai').setup {
+            n_lines = 500,
+            custom_textobjects = {
+                c = { '\n```%w*\n().-()\n```' },
+            },
+        }
+
+        vim.keymap.set('n', '<leader>cb', 'yic', { remap = true, desc = 'Yank markdown code [B]lock' })
+        vim.keymap.set('v', '<leader>cb', '<Esc>vic', { remap = true, desc = 'Select markdown code [B]lock' })
 
         -- require('mini.icons').setup()
         -- require('mini.completion').setup {}

@@ -93,7 +93,7 @@ return {
         ---@field substitutions table<string, string|fun(ctx: obsidian.TemplateContext, suffix: string|?):string|?>
         ---@field customizations table<string, obsidian.config.CustomTemplateOpts>|?
         templates = {
-            enabled = true,
+            enabled = false,
             folder = nil,
             date_format = 'YYYY-MM-DD',
             time_format = 'HH:mm',
@@ -330,8 +330,72 @@ return {
             enabled = false,
         },
     },
-    -- config = function(_, opts)
-    --     local obsidian = require 'obsidian'
-    --     obsidian.setup(opts)
-    -- end,
+    config = function(_, opts)
+        local p = require('rose-pine.palette')
+
+        opts.ui = vim.tbl_deep_extend('force', opts.ui or {}, {
+            enable = true,
+            checkboxes = {
+                [' '] = { char = '󰄱', hl_group = 'ObsidianTodo' },
+                ['/'] = { char = '󰥔', hl_group = 'ObsidianInProgress' },
+                ['x'] = { char = '', hl_group = 'ObsidianDone' },
+                ['-'] = { char = '󰅖', hl_group = 'ObsidianCancelled' },
+                ['>'] = { char = '', hl_group = 'ObsidianForwarded' },
+                ['!'] = { char = '', hl_group = 'ObsidianImportant' },
+                ['?'] = { char = '', hl_group = 'ObsidianQuestion' },
+                ['~'] = { char = '󰰱', hl_group = 'ObsidianTilde' },
+            },
+            bullets = { char = '•', hl_group = 'ObsidianBullet' },
+            external_link_icon = { char = '', hl_group = 'ObsidianExtLinkIcon' },
+            reference_text = { hl_group = 'ObsidianRefText' },
+            highlight_text = { hl_group = 'ObsidianHighlightText' },
+            tags = { hl_group = 'ObsidianTag' },
+            block_ids = { hl_group = 'ObsidianBlockID' },
+            hl_groups = {
+                ObsidianTodo = { fg = p.gold, bold = true },
+                ObsidianInProgress = { fg = p.foam, bold = true },
+                ObsidianDone = { fg = p.muted },
+                ObsidianCancelled = { fg = p.muted, strikethrough = true },
+                ObsidianForwarded = { fg = p.foam, bold = true },
+                ObsidianImportant = { fg = p.love, bold = true },
+                ObsidianQuestion = { fg = p.iris, bold = true },
+                ObsidianTilde = { fg = p.subtle },
+                ObsidianRightArrow = { fg = p.foam, bold = true },
+                ObsidianBullet = { fg = p.subtle },
+                ObsidianRefText = { fg = p.iris, underline = true },
+                ObsidianExtLinkIcon = { fg = p.iris },
+                ObsidianTag = { fg = p.foam, italic = true },
+                ObsidianBlockID = { fg = p.subtle, italic = true },
+                ObsidianHighlightText = { fg = p.base, bg = p.gold },
+            },
+        })
+
+        require('obsidian').setup(opts)
+
+        -- Re-apply hl_groups on ColorScheme so they survive theme reloads
+        vim.api.nvim_create_autocmd('ColorScheme', {
+            callback = function()
+                local pal = require('rose-pine.palette')
+                for name, val in pairs({
+                    ObsidianTodo = { fg = pal.gold, bold = true },
+                    ObsidianInProgress = { fg = pal.foam, bold = true },
+                    ObsidianDone = { fg = pal.muted },
+                    ObsidianCancelled = { fg = pal.muted, strikethrough = true },
+                    ObsidianForwarded = { fg = pal.foam, bold = true },
+                    ObsidianImportant = { fg = pal.love, bold = true },
+                    ObsidianQuestion = { fg = pal.iris, bold = true },
+                    ObsidianTilde = { fg = pal.subtle },
+                    ObsidianRightArrow = { fg = pal.foam, bold = true },
+                    ObsidianBullet = { fg = pal.subtle },
+                    ObsidianRefText = { fg = pal.iris, underline = true },
+                    ObsidianExtLinkIcon = { fg = pal.iris },
+                    ObsidianTag = { fg = pal.foam, italic = true },
+                    ObsidianBlockID = { fg = pal.subtle, italic = true },
+                    ObsidianHighlightText = { fg = pal.base, bg = pal.gold },
+                }) do
+                    vim.api.nvim_set_hl(0, name, val)
+                end
+            end,
+        })
+    end,
 }

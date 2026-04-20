@@ -3,3 +3,4 @@ shell/zsh/.config/tmux/plugins/*
 !shell/zsh/.config/tmux/plugins/tmux/
 !shell/zsh/.config/tmux/plugins/tmux/rose-pine.tmux
 vfs.toml
+settings.local.json
