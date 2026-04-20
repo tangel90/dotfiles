@@ -21,7 +21,9 @@ if [[ -z $tmux_running ]]; then
 fi
 
 if ! tmux has-session -t="$selected_name" 2> /dev/null; then
-    if git -C $selected rev-parse --show-toplevel > /dev/null 2>&1; then
+    if [[ -d "$selected/.claude" ]]; then
+        tmux new-session -ds "$selected_name" -c "$selected" claude
+    elif git -C $selected rev-parse --show-toplevel > /dev/null 2>&1; then
         repo_root=$(git -C "$selected" rev-parse --show-toplevel)
         repo_name=$(basename "$repo_root")
         repo_name=${repo_name%%[_-]*}
@@ -37,7 +39,7 @@ if ! tmux has-session -t="$selected_name" 2> /dev/null; then
 
               run_default_args=$( (source "$selected/.envrc"; printf '%s\n' "${RUN_DEFAULT_ARGS:-}") )
               if [[ -n $run_default_args ]]; then
-                tmux set-environment -t "$selected_name" RUN_DEFAULT_ARGS "$RUN_DEFAULT_ARGS"
+                tmux set-environment -t "$selected_name" RUN_DEFAULT_ARGS "$run_default_args"
               fi
             else
               echo "No RUN_COMMAND exported."
