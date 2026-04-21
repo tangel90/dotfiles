@@ -94,6 +94,8 @@ require 'config.keymaps'
 
 require 'config.functions'
 
+require 'config.todo_tasks'
+
 require 'config.highlights'
 
 require 'lazy-bootstrap'
