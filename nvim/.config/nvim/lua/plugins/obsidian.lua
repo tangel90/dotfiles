@@ -335,16 +335,6 @@ return {
 
         opts.ui = vim.tbl_deep_extend('force', opts.ui or {}, {
             enable = true,
-            checkboxes = {
-                [' '] = { char = '󰄱', hl_group = 'ObsidianTodo' },
-                ['/'] = { char = '󰥔', hl_group = 'ObsidianInProgress' },
-                ['x'] = { char = '', hl_group = 'ObsidianDone' },
-                ['-'] = { char = '󰅖', hl_group = 'ObsidianCancelled' },
-                ['>'] = { char = '', hl_group = 'ObsidianForwarded' },
-                ['!'] = { char = '', hl_group = 'ObsidianImportant' },
-                ['?'] = { char = '', hl_group = 'ObsidianQuestion' },
-                ['~'] = { char = '󰰱', hl_group = 'ObsidianTilde' },
-            },
             bullets = { char = '•', hl_group = 'ObsidianBullet' },
             external_link_icon = { char = '', hl_group = 'ObsidianExtLinkIcon' },
             reference_text = { hl_group = 'ObsidianRefText' },

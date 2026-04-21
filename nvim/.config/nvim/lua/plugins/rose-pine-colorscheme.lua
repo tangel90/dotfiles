@@ -2,6 +2,7 @@ return {
     'rose-pine/neovim',
     name = 'rose-pine',
     config = function()
+        local palette = require('config.palette')
         require('rose-pine').setup {
             variant = 'auto', -- auto, main, moon, or dawn
             dark_variant = 'main', -- main, moon, or dawn
@@ -53,25 +54,7 @@ return {
 
             palette = {
                 -- Override the builtin palette per variant
-                main = {
-                    base = '#1E1E1E',
-                    surface = '#242424',
-                    overlay = '#242424',
-                    muted = "#6a6e6f",
-                    subtle = "#999cba",
-                    text = "#e0def4",
-                    love = "#eb6f92",
-                    peach = "#ffaa88", -- copied from tmux as template, not used in the scheme
-                    gold = "#f6c177",
-                    rose = "#fbbcba",
-                    pine = "#31748f",
-                    foam = "#9ccfd8",
-                    iris = "#a4a7e7",
-                    leaf = "#95b1ac",
-                    highlight_low = "#21202e",
-                    highlight_med = "#403d52",
-                    highlight_high = "#524f67",
-                },
+                main = palette,
             },
 
             -- NOTE: Highlight groups are extended (merged) by default. Disable this

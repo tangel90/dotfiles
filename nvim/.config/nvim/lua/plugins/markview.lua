@@ -64,9 +64,9 @@ return {
         }
 
         opts.markdown.headings = {
-            heading_1 = { style = 'icon' },
-            heading_2 = { style = 'icon' },
-            heading_3 = { style = 'icon' },
+            heading_1 = { style = 'icon', icon = '- ', hl = 'MarkviewHeading1' },
+            heading_2 = { style = 'icon', icon = '-- ', hl = 'MarkviewHeading2' },
+            heading_3 = { style = 'icon', icon = '--- ', hl = 'MarkviewHeading3' },
             heading_4 = { style = 'simple' },
             heading_5 = { style = 'simple' },
             heading_6 = { style = 'simple' },
@@ -90,17 +90,17 @@ return {
         }
         require('markview').setup(opts)
 
-        -- Override markview colors to match rose-pine
-        local p = require('rose-pine.palette')
+        -- Override markview colors to match rose-pine (using shared custom palette)
+        local p = require('config.palette')
         local hl = vim.api.nvim_set_hl
 
         -- Headings
-        hl(0, 'MarkviewHeading1', { fg = p.iris, bold = true, underline = true })
-        hl(0, 'MarkviewHeading2', { fg = p.foam, bold = true, underline = true })
-        hl(0, 'MarkviewHeading3', { fg = p.rose, bold = true, underline = true })
-        hl(0, 'MarkviewHeading4', { fg = p.gold, bold = true, underline = true })
-        hl(0, 'MarkviewHeading5', { fg = p.pine, bold = true, underline = true })
-        hl(0, 'MarkviewHeading6', { fg = p.foam, bold = true, underline = true })
+        hl(0, 'MarkviewHeading1', { fg = p.peach, bold = true, underline = false })
+        hl(0, 'MarkviewHeading2', { fg = p.text, bold = true, underline = false })
+        hl(0, 'MarkviewHeading3', { fg = p.text, bold = true, underline = false })
+        hl(0, 'MarkviewHeading4', { fg = p.text, bold = true, underline = false })
+        hl(0, 'MarkviewHeading5', { fg = p.text, bold = true, underline = false })
+        hl(0, 'MarkviewHeading6', { fg = p.text, bold = true, underline = false })
 
         -- Heading sign column markers
         hl(0, 'MarkviewHeading1Sign', { fg = p.iris })
