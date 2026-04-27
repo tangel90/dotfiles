@@ -123,4 +123,4 @@ vim.opt.inccommand = 'split'
 vim.opt.scrolloff = 10
 
 -- Suppress LSP stderr captures (rust-analyzer panic-loop can balloon lsp.log to GBs).
-vim.lsp.set_log_level("WARN")
+vim.lsp.log.set_level("WARN")
