@@ -1,4 +1,10 @@
 .swap
+yay/
+swap/
+.cargo
+undo/
+.password-store
+miniconda3/
 .venv/
 .git/
 .wine/

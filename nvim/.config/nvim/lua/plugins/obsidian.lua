@@ -237,7 +237,10 @@ return {
                             end
                             vim.api.nvim_feedkeys('', 'nx', true)
                             if Obsidian.picker then
-                                Obsidian.picker.pick(t.items, { prompt_title = 'Table of Contents' })
+                                Obsidian.picker.pick(t.items, {
+                                    prompt_title = 'Table of Contents',
+                                    format_item = function(item) return item.text end,
+                                })
                             else
                                 vim.fn.setloclist(0, {}, ' ', t)
                                 vim.cmd('lopen')
@@ -251,7 +254,19 @@ return {
                             for _, item in ipairs(t.items) do
                                 item.text = item.text:gsub('^%[%w+%]%s*', '')
                             end
-                            vim.fn.setqflist({}, ' ', { title = 'Table of Contents', items = t.items })
+                            vim.fn.setqflist({}, ' ', {
+                                title = 'Table of Contents',
+                                items = t.items,
+                                quickfixtextfunc = function(info)
+                                    local list = vim.fn.getqflist({ id = info.id, items = 1 }).items
+                                    local lines = {}
+                                    for idx = info.start_idx, info.end_idx do
+                                        local it = list[idx]
+                                        lines[#lines + 1] = (it and it.text) or ''
+                                    end
+                                    return lines
+                                end,
+                            })
                             vim.cmd('copen')
                         end,
                     }

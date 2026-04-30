@@ -9,7 +9,13 @@ map('n', '<leader>id', "<cmd>r!date +\\%b-\\%d<CR>", { desc = "Insert today's da
 map('n', '<leader>T', function() require('config.timetracking').open_week() end, { desc = 'Open time tracker' })
 
 map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python3 %<CR>', { desc = 'python main.py' })
-map('n', '<leader>e', '<cmd>Ex<cr>', { desc = 'Open NetRW' })
+map('n', '<leader>e', function()
+  if vim.bo.filetype == 'netrw' then
+    vim.cmd('bd')
+  else
+    vim.cmd('Ex')
+  end
+end, { desc = 'Toggle NetRW' })
 map('n', '<leader>"', '<cmd>registers<cr>', { desc = 'List registers' })
 map('n', '<leader>tw', '<cmd>set wrap!<cr>', { desc = 'Toggle word wrap'})
 -- map({ 'n', 'v' }, 'p', ']p')
@@ -67,8 +73,6 @@ map('n', 'gcO', 'O<esc>Vcx<esc><cmd>normal gcc<cr>fxa<bs>', { desc = 'Add Commen
 -- yank / delete / visual behavior
 map('n', '<leader>d.', 'diwsdb', { noremap = false, silent = true })
 map('n', '<leader>y', 'yiw', { noremap = true, silent = true })
-map('n', '<leader>y', 'yiw', { noremap = true, silent = true })
-map('n', '<leader>w', 'yiw', { noremap = true, silent = true })
 map('v', '<leader>p', '"_dP')
 map({ 'n', 'v' }, '<leader>d', '"_d')
 -- map({ 'n', 'i', 'v' }, '<C-_>', '<Plug>(comment_toggle_linewise)')

@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
 if [[ $# -ge 1 ]]; then
-    selected=$(fd . $@ --type d -d 4 --hidden --follow | fzf)
+    selected=$(fd . $@ --type d -d 4 --hidden --follow \
+        | awk -F/ '{print NF, $0}' | sort -n -k1,1 -k2 | cut -d' ' -f2- \
+        | fzf --tiebreak=length,index)
 else
-    selected=$(fd . "$HOME" --type d -d 6 --hidden --follow | fzf )
+    selected=$(fd . "$HOME" --type d -d 6 --hidden --follow -E "notes/" -E "tmp/" -E ".password-store" -E "queries/" \
+        | awk -F/ '{print NF, $0}' | sort -n -k1,1 -k2 | cut -d' ' -f2- \
+        | fzf --tiebreak=length,index)
 fi
 
 if [[ -z $selected ]]; then

@@ -1,8 +1,8 @@
 [mgr]
 show_hidden = true
 ratio = [2, 6, 7]
-sort_by = "mtime"
-sort_reverse = true
+sort_by = "alphabetical"
+sort_reverse = false
 sort_dir_first = true
 
 [plugin]

@@ -103,12 +103,12 @@ return {
         hl(0, 'MarkviewHeading6', { fg = p.text, bold = true, underline = false })
 
         -- Heading sign column markers
-        hl(0, 'MarkviewHeading1Sign', { fg = p.iris })
-        hl(0, 'MarkviewHeading2Sign', { fg = p.foam })
-        hl(0, 'MarkviewHeading3Sign', { fg = p.rose })
-        hl(0, 'MarkviewHeading4Sign', { fg = p.gold })
-        hl(0, 'MarkviewHeading5Sign', { fg = p.pine })
-        hl(0, 'MarkviewHeading6Sign', { fg = p.foam })
+        hl(0, 'MarkviewHeading1Sign', { fg = p.peach })
+        hl(0, 'MarkviewHeading2Sign', { fg = p.text })
+        hl(0, 'MarkviewHeading3Sign', { fg = p.text })
+        hl(0, 'MarkviewHeading4Sign', { fg = p.text })
+        hl(0, 'MarkviewHeading5Sign', { fg = p.text })
+        hl(0, 'MarkviewHeading6Sign', { fg = p.text })
 
         -- Checkboxes
         hl(0, 'MarkviewCheckboxUnchecked', { fg = p.leaf })

@@ -84,8 +84,8 @@ return { -- LSP Configuration & Plugins
                 --  the definition of its *type*, not where it was *defined*.
                 map('<leader>D', require('telescope.builtin').lsp_type_definitions, 'Type [D]efinition')
                 map('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
-                map('<leader>ds', require('telescope.builtin').lsp_document_symbols, '[D]ocument [S]ymbols')
-                map('<leader>ws', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[W]orkspace [S]ymbols')
+                map('<leader>ld', require('telescope.builtin').lsp_document_symbols, '[Lsp] [D]ocument Symbols')
+                map('<leader>lw', require('telescope.builtin').lsp_dynamic_workspace_symbols, '[Lsp] [W]orkspace Symbols')
 
                 -- map('<leader>wa', vim.lsp.buf.add_workspace_folder(), '[W]orkspace: [A]dd Folder')
                 -- map('<leader>wr', vim.lsp.buf.remove_workspace_folder(), '[W]orkspace: [R]emove Folder')

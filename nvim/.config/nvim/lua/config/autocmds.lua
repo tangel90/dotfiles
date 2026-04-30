@@ -56,6 +56,11 @@ vim.api.nvim_create_autocmd("FileType", {
     vim.opt_local.linebreak = true
     -- vim.opt_local.showbreak = "↪ "
     -- vim.opt_local.listchars = { tab = "→ ", trail = "·" }
+
+    vim.keymap.set('n', ']]', function() vim.fn.search('^#\\+ ', 'W') end,
+      { buffer = true, desc = 'Next markdown heading' })
+    vim.keymap.set('n', '[[', function() vim.fn.search('^#\\+ ', 'bW') end,
+      { buffer = true, desc = 'Prev markdown heading' })
   end
 })
 
@@ -64,6 +69,13 @@ vim.api.nvim_create_autocmd("FileType", {
   callback = function()
     vim.api.nvim_buf_set_keymap(0, 'n', '<leader>sf', '<cmd>normal! F"if<Esc>', { noremap = true, silent = true })
     vim.api.nvim_buf_set_keymap(0, 'n', '<leader>li', '<cmd>normal! ologger.info(f"")<Esc>', { noremap = true, silent = true })
+  end,
+})
+
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "netrw",
+  callback = function()
+    vim.keymap.set('n', '<Esc><Esc>', '<cmd>bd<cr>', { buffer = true, desc = 'Close NetRW' })
   end,
 })
 
