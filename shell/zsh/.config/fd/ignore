@@ -8,7 +8,7 @@ miniconda3/
 .venv/
 .git/
 .wine/
-docker/
+.docker/
 Trash/
 go/
 .cache/

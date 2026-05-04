@@ -9,5 +9,6 @@ vault_item=$(fd . $PREFIX --extension=$EXT | sed -e "s:$PREFIX::gi" -e "s:$EXT::
 if [[ -z $1 ]]; then
   pass -c -- "$vault_item"
 else
-  pass "$vault_item" | NVIM_APPNAME=nvim-scratchpad nvim -
+  content=$(pass -- "$vault_item") || exit $?
+  NVIM_APPNAME=nvim-scratchpad nvim - <<< "$content"
 fi
