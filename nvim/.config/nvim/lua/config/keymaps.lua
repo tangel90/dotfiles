@@ -76,6 +76,10 @@ map('n', '<leader>y', 'yiw', { noremap = true, silent = true })
 map('v', '<leader>p', '"_dP')
 map({ 'n', 'v' }, '<leader>d', '"_d')
 -- map({ 'n', 'i', 'v' }, '<C-_>', '<Plug>(comment_toggle_linewise)')
+map('n', '<leader>yf', function()
+  vim.fn.setreg('+', vim.fn.expand('%:p'))
+  vim.notify('copied: ' .. vim.fn.expand('%:p'))
+end, { desc = 'Yank full path of current buffer' })
 
 -- Buffer/window management
 map( { 'n', 'i', 'v' }, '<C-s>', '<cmd>noautocmd w<cr>', { noremap = true, desc = 'Save current buffer (without formatting)' })
@@ -114,6 +118,11 @@ end, {
 -- map('n', '<leader>cc', ':lua require("iris").prompt_claudeai()<CR>', { noremap = true, silent = true })
 
 -- Diagnostic keymaps
+local enabled = true
+function ToggleDiagnosticsVirtualText()
+  enabled = not enabled
+  vim.diagnostic.config({ virtual_text = enabled })
+end
 map('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
 map('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
 map('n', '<leader>de', vim.diagnostic.open_float, { desc = 'Show [d]iagnostic [E]rror messages' })

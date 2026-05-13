@@ -16,6 +16,8 @@ export LC_CTYPE=en_US.UTF-8
 export FZF_DEFAULT_OPTS='--height 40% --layout reverse --border top'
 export FZF_DEFAULT_COMMAND='fd . --follow --hidden --exclude .git'
 export FZF_TMUX_OPTS='-p80%,60%'
+export TARGET_LANG=de
+export SOURCE_LANG=en
 
 # SSH_AUTH_SOCK set to GPG. This enables using gpgagent as the ssh agent.
 unset SSH_AGENT_PID

@@ -94,6 +94,20 @@ vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
   end,
 })
 
+-- Anything under ~/.local/tmp (Claude Code prompt edits, other transient
+-- scratch files): skip markview + obsidian decoration.
+vim.api.nvim_create_autocmd({ 'BufNewFile', 'BufReadPost' }, {
+  pattern = vim.fn.expand('~/.local/tmp') .. '/*',
+  callback = function(args)
+    vim.b[args.buf].markview = false
+    vim.b[args.buf].markview_state = { enable = false }
+    pcall(vim.cmd, 'Markview disable')
+    if vim.bo[args.buf].filetype == 'markdown' then
+      vim.bo[args.buf].filetype = 'markdown.scratch'
+    end
+  end,
+})
+
 local function augroup(name)
   return vim.api.nvim_create_augroup('lazyvim_' .. name, { clear = true })
 end

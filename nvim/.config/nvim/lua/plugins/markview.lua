@@ -3,7 +3,7 @@ return {
     lazy = false,
 
     -- Completion for `blink.cmp`
-    dependencies = { 'saghen/blink.cmp' },
+    -- dependencies = { 'saghen/blink.cmp' },
     config = function()
         local opts = {}
 
@@ -64,9 +64,9 @@ return {
         }
 
         opts.markdown.headings = {
-            heading_1 = { style = 'icon', icon = '- ', hl = 'MarkviewHeading1' },
-            heading_2 = { style = 'icon', icon = '-- ', hl = 'MarkviewHeading2' },
-            heading_3 = { style = 'icon', icon = '--- ', hl = 'MarkviewHeading3' },
+            heading_1 = { style = 'icon', icon = '# ', hl = 'MarkviewHeading1' },
+            heading_2 = { style = 'icon', icon = '## ', hl = 'MarkviewHeading2' },
+            heading_3 = { style = 'icon', icon = '### ', hl = 'MarkviewHeading3' },
             heading_4 = { style = 'simple' },
             heading_5 = { style = 'simple' },
             heading_6 = { style = 'simple' },
@@ -91,12 +91,12 @@ return {
         require('markview').setup(opts)
 
         -- Override markview colors to match rose-pine (using shared custom palette)
-        local p = require('config.palette')
+        local p = require('config.palette').moon
         local hl = vim.api.nvim_set_hl
 
         -- Headings
         hl(0, 'MarkviewHeading1', { fg = p.peach, bold = true, underline = false })
-        hl(0, 'MarkviewHeading2', { fg = p.text, bold = true, underline = false })
+        hl(0, 'MarkviewHeading2', { fg = p.leaf, bold = true, underline = false })
         hl(0, 'MarkviewHeading3', { fg = p.text, bold = true, underline = false })
         hl(0, 'MarkviewHeading4', { fg = p.text, bold = true, underline = false })
         hl(0, 'MarkviewHeading5', { fg = p.text, bold = true, underline = false })

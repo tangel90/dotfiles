@@ -2,8 +2,8 @@ return {
     'rose-pine/neovim',
     name = 'rose-pine',
     config = function()
-        local palette = require('config.palette')
         require('rose-pine').setup {
+            palette = require('config.palette'),
             variant = 'auto', -- auto, main, moon, or dawn
             dark_variant = 'main', -- main, moon, or dawn
             dim_inactive_windows = false,
@@ -50,11 +50,6 @@ return {
                 h4 = 'gold',
                 h5 = 'pine',
                 h6 = 'foam',
-            },
-
-            palette = {
-                -- Override the builtin palette per variant
-                main = palette,
             },
 
             -- NOTE: Highlight groups are extended (merged) by default. Disable this

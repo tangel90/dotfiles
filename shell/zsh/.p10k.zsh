@@ -65,6 +65,7 @@
     # command_execution_time    # previous command duration
     virtualenv                # python virtual environment
     anaconda
+    kubecontext               # current kubernetes context
     context                   # user@host
     # time                    # current time
     # =========================[ Line #2 ]=========================
@@ -101,6 +102,10 @@
   # Don't show Python version.
   typeset -g POWERLEVEL9K_VIRTUALENV_SHOW_PYTHON_VERSION=true
   typeset -g POWERLEVEL9K_VIRTUALENV_{LEFT,RIGHT}_DELIMITER=
+
+  # Kubernetes context: always show when KUBECONFIG is active.
+  typeset -g POWERLEVEL9K_KUBECONTEXT_FOREGROUND=81
+  typeset -g POWERLEVEL9K_KUBECONTEXT_CONTENT_EXPANSION='⎈ ${P9K_KUBECONTEXT_NAME}${P9K_KUBECONTEXT_NAMESPACE:+:${P9K_KUBECONTEXT_NAMESPACE}}'
 
   # Blue current directory.
   typeset -g POWERLEVEL9K_DIR_FOREGROUND=$blue

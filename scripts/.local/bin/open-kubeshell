@@ -1,0 +1,34 @@
+#!/usr/bin/env zsh
+
+PREFIX="$HOME/.password-store/config/kubeconfig/"
+EXT=".gpg"
+
+[[ -d $PREFIX ]] || { echo "No kubeconfigs in pass at config/kubeconfig/"; exit 1; }
+
+cluster=$(fd . "$PREFIX" --extension=$EXT \
+  | sed -e "s:$PREFIX::gi" -e "s:$EXT::gi" \
+  | fzf --select-1 --prompt="kubeconfig> ")
+[[ -z $cluster ]] && { echo "No cluster selected"; exit 1; }
+
+tmp=$(mktemp -p /dev/shm "kubeconfig-${cluster}.XXXXXX")
+chmod 600 "$tmp"
+pass show "config/kubeconfig/$cluster" > "$tmp" || { rm -f "$tmp"; exit 1; }
+
+# Rename tmux window if we're inside tmux
+if [[ -n $TMUX ]]; then
+    old_name=$(tmux display-message -p '#W')
+    auto_rename=$(tmux show-window-options -v automatic-rename 2>/dev/null)
+    tmux set-window-option automatic-rename off >/dev/null
+    tmux rename-window "k8s:$cluster"
+fi
+
+# Spawn a subshell; cleanup on exit
+KUBECONFIG="$tmp" kubectl config set-context --current --namespace=calculation-engine >/dev/null
+KUBECONFIG="$tmp" zsh -i
+
+# Cleanup
+rm -f "$tmp"
+if [[ -n $TMUX ]]; then
+    tmux rename-window "$old_name"
+    [[ -n $auto_rename ]] && tmux set-window-option automatic-rename "$auto_rename" >/dev/null
+fi

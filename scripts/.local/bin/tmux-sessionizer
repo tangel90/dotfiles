@@ -14,7 +14,15 @@ if [[ -z $selected ]]; then
     exit 0
 fi
 
-selected_name=$(basename "$selected" | tr . _)
+# Resolve session name. If selected is inside a git repo, use the repo root's
+# basename so subdirs of the same repo collapse onto one session.
+if repo_root=$(git -C "$selected" rev-parse --show-toplevel 2>/dev/null); then
+    name_source=$(basename "$repo_root")
+else
+    repo_root=""
+    name_source=$(basename "$selected")
+fi
+selected_name=$(echo "$name_source" | tr . _)
 selected_name=${selected_name%%[_-]*}
 tmux_running=$(pgrep tmux)
 
@@ -42,13 +50,11 @@ if ! tmux has-session -t="$selected_name" 2> /dev/null; then
         fi
     fi
 
-    if [[ -d "$selected/.claude" ]]; then
+    # Prefer .claude at the repo root (or selected dir if not in a repo).
+    claude_check_dir="${repo_root:-$selected}"
+    if [[ -d "$claude_check_dir/.claude" ]]; then
         tmux send-keys -t "$selected_name" "claude" C-m
-    elif git -C $selected rev-parse --show-toplevel > /dev/null 2>&1; then
-        repo_root=$(git -C "$selected" rev-parse --show-toplevel)
-        repo_name=$(basename "$repo_root")
-        repo_name=${repo_name%%[_-]*}
-        selected_name=$repo_name
+    elif [[ -n "$repo_root" ]]; then
         tmux send-keys -t "$selected_name" "git fetch && nvim" C-m
     elif [[ "$selected_name" == *data || "$selected_name" == "reports" ]]; then
         tmux send-keys -t "$selected_name" "vd" C-m

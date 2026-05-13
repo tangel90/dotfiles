@@ -10,5 +10,5 @@ if [[ -z $1 ]]; then
   pass -c -- "$vault_item"
 else
   content=$(pass -- "$vault_item") || exit $?
-  NVIM_APPNAME=nvim-scratchpad nvim - <<< "$content"
+  scratchpad <<< "$content"
 fi

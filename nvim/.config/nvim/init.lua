@@ -92,8 +92,6 @@ require 'config.usercmds'
 
 require 'config.keymaps'
 
-require 'config.functions'
-
 require 'config.todo_tasks'
 
 require 'config.highlights'

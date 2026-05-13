@@ -1,5 +1,5 @@
 # tmux init
-if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
+if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ] && [ -z "$KUBECONFIG" ]; then
     sessions=$(tmux list-sessions 2>/dev/null)
     if [ -z "$sessions" ]; then
         tmux new-session -A -s "workspace0" -c "$HOME/dotfiles" claude
@@ -44,8 +44,6 @@ zinit light zsh-users/zsh-autosuggestions
 zinit ice lucid wait
 zinit snippet OMZP::fzf
 # zinit snippet OMZP::aws
-# zinit snippet OMZP::kubectl
-# zinit snippet OMZP::kubectx
 # zinit snippet OMZP::command-not-found
 
 autoload -Uz compinit && compinit
@@ -69,7 +67,30 @@ zstyle ':completion:*' menu no
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls $realpath'
 zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls $realpath'
 
+# >>> Custom completions >>>
+dealstore() {
+  python -m cli "$@"
+}
+
+_dealstore() {
+  local -a tenants
+  tenants=("${(@f)$(pass show dealstore/tenants 2>/dev/null)}")
+  _arguments \
+    '--tenant=[tenant name]:tenant:($tenants)' \
+    '--stage=[pipeline stage]:stage:(bronze silver gold)' \
+    'etl'
+}
+
+compdef _dealstore dealstore
+# <<< Custom completions <<<
+
 # >>> Shell integrations >>>
+ if [[ -n $KUBECONFIG ]] && command -v kubectl &>/dev/null; then
+    source <(kubectl completion zsh)
+    zinit snippet OMZP::kubectl
+    # zinit snippet OMZP::kubectx
+fi
+
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 eval "$(fzf --zsh)"
 eval "$(zoxide init zsh --cmd cd)"

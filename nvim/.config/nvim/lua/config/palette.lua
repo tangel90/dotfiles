@@ -1,6 +1,7 @@
 -- Shared color palette used by rose-pine colorscheme setup and any plugin
 -- that needs direct palette access (e.g. markview, obsidian ui highlights).
 return {
+  main = {
     base = '#1E1E1E',
     surface = '#242424',
     overlay = '#242424',
@@ -18,4 +19,24 @@ return {
     highlight_low = '#21202e',
     highlight_med = '#403d52',
     highlight_high = '#524f67',
+  },
+  moon = {
+    base = '#222222',
+    surface = '#242424',
+    overlay = '#242424',
+    muted = '#6a6e6f',
+    subtle = '#999cba',
+    text = '#D9D4D6',
+    love = '#eb6f92',
+    peach = '#ffaa88',
+    gold = '#f6c177',
+    rose = '#fbbcba',
+    pine = '#31748f',
+    foam = '#9ccfd8',
+    iris = '#a4a7e7',
+    leaf = '#95b1ac',
+    highlight_low = '#21202e',
+    highlight_med = '#403d52',
+    highlight_high = '#524f67',
+  }
 }
