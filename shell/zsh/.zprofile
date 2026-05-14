@@ -18,19 +18,15 @@ export FZF_DEFAULT_COMMAND='fd . --follow --hidden --exclude .git'
 export FZF_TMUX_OPTS='-p80%,60%'
 export TARGET_LANG=de
 export SOURCE_LANG=en
+export NVM_DIR="$HOME/.config/nvm"
+
+export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '/mnt/c' | tr '\n' ':' | sed 's/:$//')
 
 # SSH_AUTH_SOCK set to GPG. This enables using gpgagent as the ssh agent.
 unset SSH_AGENT_PID
 if [ "${gnupg_SSH_AUTH_SOCK_by:-0}" -ne $$ ]; then
   export SSH_AUTH_SOCK="$(gpgconf --list-dirs agent-ssh-socket)"
 fi
-
-if [ -n "$TTY" ]; then
-  export GPG_TTY=$(tty)
-else
-  export GPG_TTY="$TTY"
-fi
-
 
 if [ -d "$PERSONALCONFIG" ]; then
     for i in $(find -L "$PERSONALCONFIG" -type f); do

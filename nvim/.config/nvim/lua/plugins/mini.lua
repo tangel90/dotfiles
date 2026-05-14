@@ -74,7 +74,7 @@ return { -- Collection of various small independent plugins/modules
             -- Use `''` (empty string) to not create one.
             mappings = {
                 -- close = '<ESC><ESC>',
-                close = 'q',
+                close = '<ESC><ESC>',
                 go_in = 'l',
                 go_in_plus = '<CR>',
                 go_out = 'H',
@@ -119,5 +119,12 @@ return { -- Collection of various small independent plugins/modules
                 mf.open(vim.api.nvim_buf_get_name(0))
             end
         end, { desc = 'mini.files: toggle' })
+
+        vim.api.nvim_create_autocmd('User', {
+            pattern = 'MiniFilesBufferCreate',
+            callback = function(args)
+                vim.keymap.set('n', 'q', function() require('mini.files').close() end, { buffer = args.data.buf_id, desc = 'mini.files: close' })
+            end,
+        })
     end,
 }

@@ -15,6 +15,13 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
+if [ -n "$TTY" ]; then
+  export GPG_TTY=$(tty)
+else
+  export GPG_TTY="$TTY"
+fi
+
+
 # Set the directory we want to store zinit and plugins
 # Download Zinit, if it's not there yet
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
@@ -33,9 +40,9 @@ zinit ice depth=1; zinit light romkatv/powerlevel10k
 # Add in zsh plugins
 zinit light jeffreytse/zsh-vi-mode
 zinit light Aloxaf/fzf-tab
-zinit light zsh-users/zsh-syntax-highlighting
-zinit light zsh-users/zsh-completions
-zinit light zsh-users/zsh-autosuggestions
+zinit ice wait lucid; zinit light zsh-users/zsh-syntax-highlighting
+zinit ice wait lucid; zinit light zsh-users/zsh-completions
+zinit ice wait lucid atload"_zsh_autosuggest_start"; zinit light zsh-users/zsh-autosuggestions
 
 # Add in snippets
 # zinit snippet OMZP::git
@@ -91,7 +98,6 @@ compdef _dealstore dealstore
     # zinit snippet OMZP::kubectx
 fi
 
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 eval "$(fzf --zsh)"
 eval "$(zoxide init zsh --cmd cd)"
 eval "$(direnv hook zsh)"
@@ -119,8 +125,6 @@ alias cat="bat"
 alias vim="nvim"
 alias vimdev='NVIM_APPNAME=nvim-dev nvim'
 alias nvr="nvim --listen $HOME/.local/tmp/nvimsocket"
-
-export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v '/mnt/c' | tr '\n' ':' | sed 's/:$//')
 
 function gpg-unlock-lazygit() {
     git fetch
