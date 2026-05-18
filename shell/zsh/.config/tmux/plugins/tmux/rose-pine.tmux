@@ -51,7 +51,7 @@ main() {
     # or in the plugin's features
     if [[ $theme == main ]]; then
 
-        thm_base="#1e1e1e";
+        thm_base="#282C34";
         thm_surface="#2a273f";
         thm_overlay="#393552";
         thm_muted="#6a6e6f";

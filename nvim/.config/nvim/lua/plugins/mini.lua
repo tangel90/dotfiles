@@ -94,7 +94,7 @@ return { -- Collection of various small independent plugins/modules
                 -- Whether to delete permanently or move into module-specific trash
                 permanent_delete = true,
                 -- Whether to use for editing directories
-                use_as_default_explorer = true,
+                use_as_default_explorer = false,
                 -- Timeout for synchronous LSP integration requests
                 lsp_timeout = 1000,
             },

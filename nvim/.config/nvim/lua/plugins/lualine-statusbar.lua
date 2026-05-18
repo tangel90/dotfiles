@@ -3,16 +3,16 @@ return {
     dependencies = { 'nvim-tree/nvim-web-devicons' },
     config = function()
         local custom_scheme = require 'lualine.themes.auto'
-        custom_scheme.normal.a.bg = '#1E1E1E'
-        custom_scheme.insert.a.bg = '#1E1E1E'
-        custom_scheme.visual.a.bg = '#1E1E1E'
-        custom_scheme.normal.b.bg = '#1E1E1E'
-        custom_scheme.insert.b.bg = '#1E1E1E'
-        custom_scheme.visual.b.bg = '#1E1E1E'
-        custom_scheme.insert.c.bg = '#1E1E1E'
-        custom_scheme.normal.c.bg = '#1E1E1E'
-        custom_scheme.visual.c.bg = '#1E1E1E'
-        custom_scheme.command.c.bg = '#1E1E1E'
+        custom_scheme.normal.a.bg = '#282C34'
+        custom_scheme.insert.a.bg = '#282C34'
+        custom_scheme.visual.a.bg = '#282C34'
+        custom_scheme.normal.b.bg = '#282C34'
+        custom_scheme.insert.b.bg = '#282C34'
+        custom_scheme.visual.b.bg = '#282C34'
+        custom_scheme.insert.c.bg = '#282C34'
+        custom_scheme.normal.c.bg = '#282C34'
+        custom_scheme.visual.c.bg = '#282C34'
+        custom_scheme.command.c.bg = '#282C34'
         -- custom_everforest.normal.x.fg = '#ebbcba'
 
         require('lualine').setup {
@@ -56,7 +56,7 @@ return {
                     {
                         'filetype',
                         icon_only = true,
-                        -- color = { fg = '#e0def4', bg = '#1E1E1E' },
+                        -- color = { fg = '#e0def4', bg = '#282C34' },
                     },
                     {
                         'filename',
@@ -78,16 +78,16 @@ return {
                             unnamed = '[No Name]', -- Text to show for unnamed buffers.
                             newfile = '[New]', -- Text to show for newly created file before first write
                         },
-                        color = { fg = '#e0def4', bg = '#1E1E1E' },
+                        color = { fg = '#e0def4', bg = '#282C34' },
                     },
                 },
                 lualine_x = {},
                 lualine_y = {
-                    { 'diagnostics', colored = false, color = { fg = '#999cba', bg = '#1E1E1E' } },
+                    { 'diagnostics', colored = false, color = { fg = '#999cba', bg = '#282C34' } },
                 },
                 lualine_z = {
-                    { 'diff', colored = false, color = { fg = '#999cba', bg = '#1E1E1E' } },
-                    { 'branch', color = { fg = '#999cba', bg = '#1E1E1E', gui = 'bold' }, padding = { left = 2 } },
+                    { 'diff', colored = false, color = { fg = '#999cba', bg = '#282C34' } },
+                    { 'branch', color = { fg = '#999cba', bg = '#282C34', gui = 'bold' }, padding = { left = 2 } },
                 },
             },
             inactive_sections = {

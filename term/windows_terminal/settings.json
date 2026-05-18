@@ -142,25 +142,25 @@
     "schemes":
     [
         {
-            "background": "#1E1E1E",
-            "black": "#26233A",
+            "background": "#282C34",
+            "black": "#1E1E1E",
             "blue": "#9CCFD8",
             "brightBlack": "#6E6A86",
             "brightBlue": "#9CCFD8",
-            "brightCyan": "#EBBCBA",
-            "brightGreen": "#31748F",
+            "brightCyan": "#EA9A97",
+            "brightGreen": "#3E8FB0",
             "brightPurple": "#C4A7E7",
             "brightRed": "#EB6F92",
             "brightWhite": "#D9D4D6",
             "brightYellow": "#F6C177",
             "cursorColor": "#FFAA88",
-            "cyan": "#EBBCBA",
+            "cyan": "#EA9A97",
             "foreground": "#D9D4D6",
-            "green": "#31748F",
+            "green": "#3E8FB0",
             "name": "rose-pine",
             "purple": "#C4A7E7",
             "red": "#EB6F92",
-            "selectionBackground": "#2A2837",
+            "selectionBackground": "#44415A",
             "white": "#D9D4D6",
             "yellow": "#F6C177"
         },
@@ -196,15 +196,15 @@
             "name": "rose-pine",
             "tab":
             {
-                "background": "#1E1E1EFF",
+                "background": "#282C34FF",
                 "iconStyle": "default",
                 "showCloseButton": "always",
                 "unfocusedBackground": null
             },
             "tabRow":
             {
-                "background": "#1E1E1EFF",
-                "unfocusedBackground": "#1E1E1EFF"
+                "background": "#282C34FF",
+                "unfocusedBackground": "#282C34FF"
             },
             "window":
             {

@@ -2,9 +2,9 @@
 -- that needs direct palette access (e.g. markview, obsidian ui highlights).
 return {
   main = {
-    base = '#1E1E1E',
-    surface = '#242424',
-    overlay = '#242424',
+    base = '#282C34',
+    surface = '#2C313A',
+    overlay = '#353B45',
     muted = '#6a6e6f',
     subtle = '#999cba',
     text = '#e0def4',
@@ -21,9 +21,9 @@ return {
     highlight_high = '#524f67',
   },
   moon = {
-    base = '#222222',
-    surface = '#242424',
-    overlay = '#242424',
+    base = '#2C313A',
+    surface = '#353B45',
+    overlay = '#3E4452',
     muted = '#6a6e6f',
     subtle = '#999cba',
     text = '#D9D4D6',
