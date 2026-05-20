@@ -6,8 +6,24 @@ EXT=".gpg"
 vault_item=$(fd . $PREFIX --extension=$EXT | sed -e "s:$PREFIX::gi" -e "s:$EXT::gi" | fzf --select-1)
 [[ -z $vault_item ]] && { echo "No vault item selected"; exit 1; }
 
+copy_to_clipboard() {
+  if command -v win32yank.exe >/dev/null 2>&1; then
+    win32yank.exe -i --crlf
+  elif command -v wl-copy >/dev/null 2>&1; then
+    wl-copy
+  elif command -v xclip >/dev/null 2>&1; then
+    xclip -selection clipboard
+  else
+    echo "no clipboard tool found" >&2
+    return 1
+  fi
+}
+
 if [[ -z $1 ]]; then
-  pass -c -- "$vault_item"
+  password=$(pass -- "$vault_item" | head -n 1) || exit $?
+  printf '%s' "$password" | copy_to_clipboard || exit $?
+  echo "Copied first line of $vault_item to clipboard. Clearing in 45s."
+  ( sleep 45 && printf '' | copy_to_clipboard ) &!
 else
   content=$(pass -- "$vault_item") || exit $?
   scratchpad <<< "$content"

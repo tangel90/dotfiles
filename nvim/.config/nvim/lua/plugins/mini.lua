@@ -94,7 +94,7 @@ return { -- Collection of various small independent plugins/modules
                 -- Whether to delete permanently or move into module-specific trash
                 permanent_delete = true,
                 -- Whether to use for editing directories
-                use_as_default_explorer = false,
+                use_as_default_explorer = true,
                 -- Timeout for synchronous LSP integration requests
                 lsp_timeout = 1000,
             },
@@ -124,6 +124,7 @@ return { -- Collection of various small independent plugins/modules
             pattern = 'MiniFilesBufferCreate',
             callback = function(args)
                 vim.keymap.set('n', 'q', function() require('mini.files').close() end, { buffer = args.data.buf_id, desc = 'mini.files: close' })
+                vim.keymap.set('n', '-', function() require('mini.files').go_out() end, { buffer = args.data.buf_id, desc = 'mini.files: go to parent (oil-style)' })
             end,
         })
     end,

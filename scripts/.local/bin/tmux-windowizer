@@ -33,7 +33,7 @@ tmux_running=$(pgrep tmux)
 if [[ ! -z $TMUX ]]; then
     program="nvim"
     program_args=""
-    if [[ "$file_name" == *.csv || "$file_name" == *.tsv ]]; then
+    if [[ "$file_name" == *.csv || "$file_name" == *.ndjson || "$file_name" == *.tsv ]]; then
         program="vd"
         csv_delimiter=","
         if [[ "$file_name" == *.csv ]]; then
