@@ -1,7 +1,7 @@
 # tmux init
-if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ] && [ -z "$KUBECONFIG" ]; then
+if command -v tmux &> /dev/null && [ "$PS1" != "" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ "$TMUX" = "" ] && [ "$KUBECONFIG" = "" ]; then
     sessions=$(tmux list-sessions 2>/dev/null)
-    if [ -z "$sessions" ]; then
+    if [ "$sessions" = "" ]; then
         tmux new-session -A -s "workspace0" -c "$HOME/dotfiles" claude
     else
         tmux attach
@@ -15,7 +15,7 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 fi
 
-if [ -n "$TTY" ]; then
+if [ "$TTY" != "" ]; then
   export GPG_TTY=$(tty)
 else
   export GPG_TTY="$TTY"
@@ -26,7 +26,7 @@ fi
 # Download Zinit, if it's not there yet
 ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 if [ ! -d "$ZINIT_HOME" ]; then
-   mkdir -p "$(dirname $ZINIT_HOME)"
+   mkdir -p "$(dirname "$ZINIT_HOME")"
    git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
 fi
 source "${ZINIT_HOME}/zinit.zsh"
@@ -74,23 +74,6 @@ zstyle ':completion:*' menu no
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls $realpath'
 zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls $realpath'
 
-# >>> Custom completions >>>
-dealstore() {
-  python -m cli "$@"
-}
-
-_dealstore() {
-  local -a tenants
-  tenants=("${(@f)$(pass show dealstore/tenants 2>/dev/null)}")
-  _arguments \
-    '--tenant=[tenant name]:tenant:($tenants)' \
-    '--stage=[pipeline stage]:stage:(bronze silver gold)' \
-    'etl'
-}
-
-compdef _dealstore dealstore
-# <<< Custom completions <<<
-
 # >>> Shell integrations >>>
 if command -v kubectl &>/dev/null; then
     source <(kubectl completion zsh)
@@ -127,26 +110,41 @@ alias vim="nvim"
 alias vimdev='NVIM_APPNAME=nvim-dev nvim'
 alias nvr="nvim --listen $HOME/.local/tmp/nvimsocket"
 
+
+# >>> Custom completions >>>
+positioning-cli() { (cd ~/projects/sanitized/dealstore_deal_adapter && uv run etl-bronze "$@") }
+
+_tenants() {
+  local cache="${XDG_CACHE_HOME:-$HOME/.cache}/tenants.list"
+  local -a tenants
+  [[ -r "$cache" ]] && tenants=("${(@f)$(<$cache)}")
+  _arguments \
+    '--tenant=[tenant name]:tenant:($tenants)' \
+    '*:tenant:($tenants)'
+}
+
+compdef _tenants positioning-cli
+# <<< Custom completions <<<
 function gpg-unlock-lazygit() {
     git fetch
     lazygit
 }
 
 function vv() {
-    local CONFIG_DIRS=$(find -L $XDG_CONFIG_HOME -type d -name "nvim*")
+    local CONFIG_DIRS=$(find -L "$XDG_CONFIG_HOME" -type d -name "nvim*")
     selected_config=$(echo "$CONFIG_DIRS" | fzf --prompt "Nvim Config > ")
 
     [[ -z $selected_config ]] && echo "No config selected" && return
 
     echo "Config selected: $selected_config"
-    NVIM_APPNAME=$(basename $selected_config) nvim $@
+    NVIM_APPNAME=$(basename "$selected_config") nvim "$@"
 }
 
 function yazi-cwd() {
     local tmp="$(mktemp -t "yazi-cwd.XXXXXX")" cwd
     yazi "$@" --cwd-file="$tmp"
     IFS= read -r -d '' cwd < "$tmp"
-    [ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
+    [ "$cwd" != "" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
     rm -f -- "$tmp"
 }
 

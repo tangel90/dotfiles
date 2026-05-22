@@ -1,4 +1,21 @@
 #!/usr/bin/env zsh
+# Usage:
+#   open-pass            # default: copy
+#   open-pass copy       # copy first line to clipboard, clear in 45s
+#   open-pass show       # decrypt full entry into a scratchpad buffer (read-only)
+#   open-pass edit       # decrypt and re-encrypt via $EDITOR (uses `pass edit`)
+
+action="${1:-copy}"
+
+case "$action" in
+  copy|show|edit) ;;
+  -h|--help)
+    sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//'
+    exit 0 ;;
+  *)
+    echo "open-pass: unknown action '$action' (use copy|show|edit)" >&2
+    exit 2 ;;
+esac
 
 PREFIX="$HOME/.password-store/"
 EXT=".gpg"
@@ -28,3 +45,18 @@ else
   content=$(pass -- "$vault_item") || exit $?
   nvim -u ~/.config/nvim/scratchpad.lua - <<< "$content"
 fi
+case "$action" in
+  copy)
+    password=$(pass -- "$vault_item" | head -n 1) || exit $?
+    printf '%s' "$password" | copy_to_clipboard || exit $?
+    echo "Copied first line of $vault_item to clipboard. Clearing in 45s."
+    ( sleep 45 && printf '' | copy_to_clipboard ) &!
+    ;;
+  show)
+    content=$(pass -- "$vault_item") || exit $?
+    scratchpad <<< "$content"
+    ;;
+  edit)
+    EDITOR=${EDITOR:-nvim} pass edit -- "$vault_item"
+    ;;
+esac

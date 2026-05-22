@@ -54,11 +54,6 @@ run = "cd /"
 desc = "cd into root /"
 
 [[mgr.prepend_keymap]]
-on = "s"
-run = "search fd --args --hidden --follow --exclude .git"
-desc = "Search files by name using fd" 
-
-[[mgr.prepend_keymap]]
 on = ["g", "l"]
 run = "cd ~/.local"
 desc = "cd into ~/.local"
@@ -85,7 +80,7 @@ desc = "cd into $WIN_HOME/dev"
 
 [[mgr.prepend_keymap]]
 on = "<C-f>"
-run = "search fd --args --hidden --follow --exclude .git"
+run = "search --via=fd"
 desc = "Search files by name using fd" 
 
 [[mgr.prepend_keymap]]

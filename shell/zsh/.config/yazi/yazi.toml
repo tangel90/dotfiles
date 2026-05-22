@@ -7,8 +7,8 @@ sort_dir_first = true
 
 [plugin]
 prepend_previewers = [
-  { name = "*.tsv", run = "rich-preview" },
-  { name = "*.ipynb", run = "nbpreview" },
+  { url = "*.tsv", run = "rich-preview" },
+  { url = "*.ipynb", run = "nbpreview" },
 ]
 
 [opener]

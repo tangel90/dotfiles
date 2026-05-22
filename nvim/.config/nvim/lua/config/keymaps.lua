@@ -1,40 +1,110 @@
 local map = vim.keymap.set
+local function run_in_term(cmd, opts)
+    opts = opts or {}
+    vim.cmd('tabnew | term ' .. cmd)
+    vim.cmd 'startinsert'
+    if opts.auto_close then
+        local buf = vim.api.nvim_get_current_buf()
+        vim.api.nvim_create_autocmd('TermClose', {
+            buffer = buf,
+            once = true,
+            callback = function()
+                vim.schedule(function()
+                    if vim.api.nvim_buf_is_valid(buf) then
+                        vim.api.nvim_buf_delete(buf, { force = true })
+                    end
+                end)
+            end,
+        })
+    end
+end
 
 --- markdown keymaps ---
 
-map('n', '<leader>id', "<cmd>r!date +\\%b-\\%d<CR>", { desc = "Insert today's date" })
+map('n', '<leader>id', '<cmd>r!date +\\%b-\\%d<CR>', { desc = "Insert today's date" })
+
+-- Snowflake / Postgres runners: scoped to .sql files under ~/data or ~/dev
+local sql_runner_dirs = {
+    vim.fn.expand '~' .. '/data/',
+    vim.fn.expand '~' .. '/dev/',
+}
+
+local function in_sql_runner_dir(path)
+    for _, dir in ipairs(sql_runner_dirs) do
+        if path:sub(1, #dir) == dir then
+            return true
+        end
+    end
+    return false
+end
+
+vim.api.nvim_create_autocmd('FileType', {
+    pattern = 'sql',
+    callback = function(args)
+        local path = vim.api.nvim_buf_get_name(args.buf)
+        if not in_sql_runner_dir(path) then
+            return
+        end
+        local bufopt = { buffer = args.buf }
+
+        vim.keymap.set('n', '<leader>rs', function()
+            local out = vim.fn.tempname() .. '.json'
+            run_in_term(
+                string.format(
+                    "snow sql --format json -f %s | jq -c '.[]' > %s && visidata %s",
+                    vim.fn.shellescape(path),
+                    vim.fn.shellescape(out),
+                    vim.fn.shellescape(out)
+                ),
+                { auto_close = true }
+            )
+        end, vim.tbl_extend('force', bufopt, { desc = 'snow → JSON → visidata' }))
+
+        vim.keymap.set('n', '<leader>rp', function()
+          local out = vim.fn.tempname() .. '.csv'
+          run_in_term(string.format(
+            "psql -q -v ON_ERROR_STOP=1 -P pager=off -c 'SET client_min_messages = error;' --csv -f %s > %s && visidata %s",
+            vim.fn.shellescape(path),
+            vim.fn.shellescape(out),
+            vim.fn.shellescape(out)
+          ), { auto_close = true })
+        end, vim.tbl_extend('force', bufopt, { desc = 'psql → CSV → visidata' }))
+    end,
+})
 
 --- custom keymaps ---
 
-map('n', '<leader>T', function() require('config.timetracking').open_week() end, { desc = 'Open time tracker' })
+map('n', '<leader>T', function()
+    require('config.timetracking').open_week()
+end, { desc = 'Open time tracker' })
 
 map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python3 %<CR>', { desc = 'python main.py' })
 map('n', '<leader>e', function()
-  if vim.bo.filetype == 'netrw' then
-    vim.cmd('bd')
-  else
-    vim.cmd('Ex')
-  end
+    if vim.bo.filetype == 'netrw' then
+        vim.cmd 'bd'
+    else
+        vim.cmd 'Ex'
+    end
 end, { desc = 'Toggle NetRW' })
 map('n', '<leader>"', '<cmd>registers<cr>', { desc = 'List registers' })
-map('n', '<leader>tw', '<cmd>set wrap!<cr>', { desc = 'Toggle word wrap'})
+map('n', '<leader>tw', '<cmd>set wrap!<cr>', { desc = 'Toggle word wrap' })
 -- map({ 'n', 'v' }, 'p', ']p')
 
-map("i", "u:", function()
-  return "ü"
+map('i', 'u:', function()
+    return 'ü'
 end, { expr = true })
-map("i", "o:", function()
-  return "ö"
+map('i', 'o:', function()
+    return 'ö'
 end, { expr = true })
-map("i", "a:", function()
-  return "ä"
+map('i', 'a:', function()
+    return 'ä'
 end, { expr = true })
-map("i", "sz", function()
-  return "ß"
+map('i', 'sz', function()
+    return 'ß'
 end, { expr = true })
 
 -- Vim motion keymaps
-map({'n', 'i'}, '<C-k>', '<C-a>', { noremap = true })
+map({ 'n', 'i' }, '<C-k>', '<C-a>', { noremap = true })
 map('i', 'kj', '<ESC>', { noremap = true })
 map({ 'n', 'v' }, 'gl', 'L')
 map({ 'n', 'v' }, 'L', '%')
@@ -77,12 +147,17 @@ map('v', '<leader>p', '"_dP')
 map({ 'n', 'v' }, '<leader>d', '"_d')
 -- map({ 'n', 'i', 'v' }, '<C-_>', '<Plug>(comment_toggle_linewise)')
 map('n', '<leader>yf', function()
-  vim.fn.setreg('+', vim.fn.expand('%:p'))
-  vim.notify('copied: ' .. vim.fn.expand('%:p'))
+    vim.fn.setreg('+', vim.fn.expand '%:p')
+    vim.notify('copied: ' .. vim.fn.expand '%:p')
 end, { desc = 'Yank full path of current buffer' })
 
 -- Buffer/window management
-map( { 'n', 'i', 'v' }, '<C-s>', '<cmd>noautocmd w<cr>', { noremap = true, desc = 'Save current buffer (without formatting)' })
+map(
+    { 'n', 'i', 'v' },
+    '<C-s>',
+    '<cmd>noautocmd w<cr>',
+    { noremap = true, desc = 'Save current buffer (without formatting)' }
+)
 map({ 'n', 'i' }, '<C-W><C-Q>', '<cmd>qa<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
 map({ 'n', 'i' }, '<C-W><C-X>', '<cmd>q!<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
 map({ 'n', 'i' }, '<C-S><C-S>', '<cmd>wq<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
@@ -93,15 +168,15 @@ map({ 'n', 'v' }, '<Tab>', '<C-^>', { noremap = true, silent = true, desc = 'Las
 map('n', '<Leader>rm', 'mz:%s/\\r//g<CR>`z', { desc = 'Remove Carriage Returns From Buffer' })
 
 map({ 'n', 'v' }, '<Leader>n', function()
-  vim.cmd('enew')
-  vim.opt_local.buftype = 'nofile'
-  vim.opt_local.bufhidden = 'wipe'
-  vim.opt_local.swapfile = false
-  vim.opt_local.modifiable = true
+    vim.cmd 'enew'
+    vim.opt_local.buftype = 'nofile'
+    vim.opt_local.bufhidden = 'wipe'
+    vim.opt_local.swapfile = false
+    vim.opt_local.modifiable = true
 end, {
-  noremap = true,
-  silent = true,
-  desc = 'Open scratch buffer',
+    noremap = true,
+    silent = true,
+    desc = 'Open scratch buffer',
 })
 map({ 'n', 'v' }, '<Leader>rr', function()
     vim.cmd 'e!'
@@ -120,8 +195,8 @@ end, {
 -- Diagnostic keymaps
 local enabled = true
 function ToggleDiagnosticsVirtualText()
-  enabled = not enabled
-  vim.diagnostic.config({ virtual_text = enabled })
+    enabled = not enabled
+    vim.diagnostic.config { virtual_text = enabled }
 end
 map('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
 map('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })
