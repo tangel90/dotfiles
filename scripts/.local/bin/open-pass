@@ -26,5 +26,5 @@ if [[ -z $1 ]]; then
   ( sleep 45 && printf '' | copy_to_clipboard ) &!
 else
   content=$(pass -- "$vault_item") || exit $?
-  scratchpad <<< "$content"
+  nvim -u ~/.config/nvim/scratchpad.lua - <<< "$content"
 fi

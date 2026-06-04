@@ -92,9 +92,10 @@ compdef _dealstore dealstore
 # <<< Custom completions <<<
 
 # >>> Shell integrations >>>
- if [[ -n $KUBECONFIG ]] && command -v kubectl &>/dev/null; then
+if command -v kubectl &>/dev/null; then
     source <(kubectl completion zsh)
     zinit snippet OMZP::kubectl
+    alias kk=k9s
     # zinit snippet OMZP::kubectx
 fi
 
