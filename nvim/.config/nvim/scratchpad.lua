@@ -6,7 +6,8 @@ require('config.keymaps')
 
 require('rose-pine').setup({
   palette = require('config.palette'),
-  variant = 'moon',
+  variant = 'auto',
+  dark_variant = 'main',
 })
 vim.cmd.colorscheme('rose-pine')
 require('csvview').setup({})
@@ -36,6 +37,17 @@ vim.opt.termguicolors = true
 
 vim.g.mapleader = ' '
 vim.keymap.set('n', '<Esc><Esc>', '<cmd>qa!<cr>', { desc = 'Close scratchpad' })
+
+-- Start in insert mode for a fresh (empty) scratchpad. When content is piped
+-- in (e.g. `open-pass show`), the buffer is non-empty so we stay in normal.
+vim.api.nvim_create_autocmd('VimEnter', {
+  callback = function()
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    if #lines <= 1 and (lines[1] or '') == '' then
+      vim.cmd.startinsert()
+    end
+  end,
+})
 
 -- require 'config.keymaps'
 

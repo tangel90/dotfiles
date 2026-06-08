@@ -36,15 +36,6 @@ copy_to_clipboard() {
   fi
 }
 
-if [[ -z $1 ]]; then
-  password=$(pass -- "$vault_item" | head -n 1) || exit $?
-  printf '%s' "$password" | copy_to_clipboard || exit $?
-  echo "Copied first line of $vault_item to clipboard. Clearing in 45s."
-  ( sleep 45 && printf '' | copy_to_clipboard ) &!
-else
-  content=$(pass -- "$vault_item") || exit $?
-  nvim -u ~/.config/nvim/scratchpad.lua - <<< "$content"
-fi
 case "$action" in
   copy)
     password=$(pass -- "$vault_item" | head -n 1) || exit $?
@@ -54,7 +45,7 @@ case "$action" in
     ;;
   show)
     content=$(pass -- "$vault_item") || exit $?
-    scratchpad <<< "$content"
+    nvim -u ~/.config/nvim/scratchpad.lua - <<< "$content"
     ;;
   edit)
     EDITOR=${EDITOR:-nvim} pass edit -- "$vault_item"

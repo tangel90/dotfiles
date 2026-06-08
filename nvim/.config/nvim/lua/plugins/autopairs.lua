@@ -4,13 +4,10 @@
 return {
   'windwp/nvim-autopairs',
   event = 'InsertEnter',
-  -- Optional dependency
-  dependencies = { 'hrsh7th/nvim-cmp' },
+  -- With blink.cmp we drop the cmp-event integration; blink handles bracket
+  -- pairing on accept through its own keymap layer, and autopairs still does
+  -- the right thing in regular insert mode.
   config = function()
     require('nvim-autopairs').setup {}
-    -- If you want to automatically add `(` after selecting a function or method
-    local cmp_autopairs = require 'nvim-autopairs.completion.cmp'
-    local cmp = require 'cmp'
-    cmp.event:on('confirm_done', cmp_autopairs.on_confirm_done())
   end,
 }

@@ -54,6 +54,8 @@ return { -- LSP Configuration & Plugins
                     return first_lhs
                 end,
             },
+            underline = { severity = { min = vim.diagnostic.severity.WARN } },
+            signs = { severity = { min = vim.diagnostic.severity.WARN } },
         }
 
         vim.api.nvim_create_autocmd('LspAttach', {
@@ -140,8 +142,9 @@ return { -- LSP Configuration & Plugins
             end,
         })
 
+        -- blink.cmp registers its enhanced LSP capabilities into vim.lsp.config
+        -- automatically on load, so a manual require + extend is no longer needed.mason
         local capabilities = vim.lsp.protocol.make_client_capabilities()
-        capabilities = vim.tbl_deep_extend('force', capabilities, require('cmp_nvim_lsp').default_capabilities())
 
         --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
         local servers = {
@@ -185,7 +188,7 @@ return { -- LSP Configuration & Plugins
                     },
                 },
             },
-            -- sqlls = {},
+            sqls = {},
             rust_analyzer = {},
             -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
             --

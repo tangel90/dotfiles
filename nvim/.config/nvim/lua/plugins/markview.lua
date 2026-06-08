@@ -2,8 +2,10 @@ return {
     'OXY2DEV/markview.nvim',
     lazy = false,
 
-    -- Completion for `blink.cmp`
-    -- dependencies = { 'saghen/blink.cmp' },
+    -- Skip markview's auto-registration as a blink.cmp source — we use markview
+    -- only for previewing, not completion. Setting this flag before the plugin's
+    -- VimEnter autocmd runs prevents the integration code path entirely.
+    init = function() vim.g.markview_blink_loaded = true end,
     config = function()
         local opts = {}
 

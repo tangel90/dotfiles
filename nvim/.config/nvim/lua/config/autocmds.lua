@@ -112,6 +112,19 @@ vim.api.nvim_create_autocmd('FileType', {
   end,
 })
 
+-- Autosave for scratchpad.sql only. noautocmd write avoids triggering
+-- format-on-save / LSP didSave churn while editing.
+vim.api.nvim_create_autocmd({ 'InsertLeave', 'TextChanged' }, {
+  group = vim.api.nvim_create_augroup('scratchpad-autosave', { clear = true }),
+  pattern = { 'scratchpad.sql', '*/scratchpad.sql' },
+  callback = function(args)
+    local bo = vim.bo[args.buf]
+    if bo.modified and bo.modifiable and bo.buftype == '' then
+      vim.cmd('silent! noautocmd write')
+    end
+  end,
+})
+
 local function augroup(name)
   return vim.api.nvim_create_augroup('lazyvim_' .. name, { clear = true })
 end
