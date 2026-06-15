@@ -61,6 +61,19 @@ vim.api.nvim_create_autocmd("FileType", {
       { buffer = true, desc = 'Next markdown heading' })
     vim.keymap.set('n', '[[', function() vim.fn.search('^#\\+ ', 'bW') end,
       { buffer = true, desc = 'Prev markdown heading' })
+
+    -- Follow the link under the cursor. Set here (not in obsidian's enter_note
+    -- callback) so it works in every markdown buffer, not just recognised vault
+    -- notes. obsidian.follow_link handles wikilinks, [md](links), headings, and
+    -- opens http(s) URLs via vim.ui.open (→ xdg-open → browser). Falls back to
+    -- gx for URLs if obsidian isn't available for this buffer.
+    local function follow_link()
+      if not pcall(vim.cmd, 'Obsidian follow_link') then
+        pcall(vim.cmd, 'normal! gx')
+      end
+    end
+    vim.keymap.set('n', 'gf', follow_link, { buffer = true, desc = 'Follow markdown link' })
+    vim.keymap.set('n', '<CR>', follow_link, { buffer = true, desc = 'Follow markdown link' })
   end
 })
 

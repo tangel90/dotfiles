@@ -5,4 +5,4 @@ strict_env=true
 log_filter="loading"
 
 [whitelist]
-prefix = [ "~/dev", "~/projects" ]
+prefix = [ "~/dev", "~/projects", "~/data" ]

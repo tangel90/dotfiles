@@ -106,11 +106,11 @@ return { -- Collection of various small independent plugins/modules
                 -- Whether to show preview of file/directory under cursor
                 preview = true,
                 -- Width of focused window
-                width_focus = 50,
+                width_focus = 40,
                 -- Width of non-focused window
                 width_nofocus = 15,
                 -- Width of preview window
-                width_preview = 80,
+                width_preview = 70,
             },
         }
         vim.keymap.set('n', '<leader>e', function()

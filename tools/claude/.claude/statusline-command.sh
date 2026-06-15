@@ -25,6 +25,32 @@ short_pwd=$(echo "$cwd" | awk -F'/' '{
     else { print $(n-1)"/"$n }
 }')
 
+# ── git ───────────────────────────────────────────────────────────────────────
+git_cwd=$(echo "$input" | jq -r '.cwd // .workspace.current_dir // ""')
+git_info=""
+if [ -n "$git_cwd" ] && git -C "$git_cwd" rev-parse --git-dir >/dev/null 2>&1; then
+    branch=$(git -C "$git_cwd" symbolic-ref --short HEAD 2>/dev/null \
+             || git -C "$git_cwd" rev-parse --short HEAD 2>/dev/null | sed 's/^/@/')
+    dirty=""
+    git -C "$git_cwd" diff --quiet 2>/dev/null && git -C "$git_cwd" diff --cached --quiet 2>/dev/null \
+        || dirty="*"
+    # untracked
+    [ -z "$dirty" ] && [ -n "$(git -C "$git_cwd" ls-files --others --exclude-standard 2>/dev/null | head -1)" ] \
+        && dirty="*"
+    ahead=0; behind=0
+    ab=$(git -C "$git_cwd" rev-list --count --left-right '@{upstream}...HEAD' 2>/dev/null) \
+        && behind=${ab%%	*} ahead=${ab##*	}
+    arrows=""
+    [ "$behind" -gt 0 ] && arrows="${arrows}⇣"
+    [ "$ahead"  -gt 0 ] && arrows="${arrows}⇡"
+    if [ -n "$dirty" ]; then
+        git_info="$(printf "${subtle}${branch}${gold}${dirty}${reset}")"
+    else
+        git_info="$(printf "${subtle}${branch}${reset}")"
+    fi
+    [ -n "$arrows" ] && git_info="${git_info}$(printf "${foam}:${arrows}${reset}")"
+fi
+
 # ── model ─────────────────────────────────────────────────────────────────────
 model=$(echo "$input" | jq -r '.model.display_name // ""')
 
@@ -62,6 +88,18 @@ fi
 
 # ── 7-day weekly limit ────────────────────────────────────────────────────────
 week_pct=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
+week_resets=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty')
+
+# derive elapsed days: 7d window = 604800s; elapsed = 604800 - seconds_until_reset
+week_elapsed_days=""
+if [ -n "$week_resets" ]; then
+    now=$(date +%s)
+    seconds_until=$(( week_resets - now ))
+    [ "$seconds_until" -lt 0 ] && seconds_until=0
+    elapsed_s=$(( 604800 - seconds_until ))
+    [ "$elapsed_s" -lt 0 ] && elapsed_s=0
+    week_elapsed_days=$(( elapsed_s / 86400 ))
+fi
 
 # ── pick bar color based on percentage ───────────────────────────────────────
 bar_color() {
@@ -79,17 +117,25 @@ parts=()
 # directory
 parts+=("$(printf "${pine}${short_pwd}${reset}")")
 
-# model
+# git branch + status
+if [ -n "$git_info" ]; then
+    parts+=("$git_info")
+fi
+
+# model (line 1 terminus — no embedded newline; newline inserted at join time)
 if [ -n "$model" ]; then
     parts+=("$(printf "${muted}${model}${reset}")")
 fi
+
+# line-2 parts
+line2=()
 
 # context
 if [ -n "$ctx_used" ]; then
     bar=$(make_bar "$ctx_used")
     color=$(bar_color "$ctx_used")
     pct_int=$(printf "%.0f" "$ctx_used")
-    parts+=("$(printf "${subtle}ctx ${color}${bar}${subtle} ${pct_int}%%${reset}")")
+    line2+=("$(printf "${subtle}ctx ${color}${bar}${subtle} ${pct_int}%%${reset}")")
 fi
 
 # 5-hour session limit + elapsed timer
@@ -98,29 +144,44 @@ if [ -n "$five_pct" ]; then
     color=$(bar_color "$five_pct")
     pct_int=$(printf "%.0f" "$five_pct")
     if [ -n "$five_elapsed" ]; then
-        parts+=("$(printf "${subtle}5h ${color}${bar}${subtle} ${pct_int}%% ${muted}(${five_elapsed})${reset}")")
+        line2+=("$(printf "${subtle}5h ${color}${bar}${subtle} ${pct_int}%% ${muted}(${five_elapsed})${reset}")")
     else
-        parts+=("$(printf "${subtle}5h ${color}${bar}${subtle} ${pct_int}%%${reset}")")
+        line2+=("$(printf "${subtle}5h ${color}${bar}${subtle} ${pct_int}%%${reset}")")
     fi
 fi
 
-# weekly limit
+# weekly limit + elapsed days
 if [ -n "$week_pct" ]; then
     bar=$(make_bar "$week_pct")
     color=$(bar_color "$week_pct")
     pct_int=$(printf "%.0f" "$week_pct")
-    parts+=("$(printf "${subtle}7d ${color}${bar}${subtle} ${pct_int}%%${reset}")")
+    if [ -n "$week_elapsed_days" ]; then
+        line2+=("$(printf "${subtle}7d ${color}${bar}${subtle} ${pct_int}%% ${muted}(day ${week_elapsed_days})${reset}")")
+    else
+        line2+=("$(printf "${subtle}7d ${color}${bar}${subtle} ${pct_int}%%${reset}")")
+    fi
 fi
 
-# join with rose-pine field separator style
-sep="$(printf "${muted} | ${reset}")"
-result=""
-for part in "${parts[@]}"; do
-    if [ -z "$result" ]; then
-        result="$part"
-    else
-        result="${result}${sep}${part}"
-    fi
-done
+# join helper: joins an array with sep into a variable
+join_parts() {
+    local _sep="$1"; shift
+    local _result=""
+    for _part in "$@"; do
+        if [ -z "$_result" ]; then
+            _result="$_part"
+        else
+            _result="${_result}${_sep}${_part}"
+        fi
+    done
+    printf '%s' "$_result"
+}
 
-printf "\n%b\n\n" "$result"
+sep="$(printf "${muted} | ${reset}")"
+line1=$(join_parts "$sep" "${parts[@]}")
+line2_str=$(join_parts "$sep" "${line2[@]}")
+
+if [ -n "$line2_str" ]; then
+    printf "\n%b\n%b\n\n" "$line1" "$line2_str"
+else
+    printf "\n%b\n\n" "$line1"
+fi
