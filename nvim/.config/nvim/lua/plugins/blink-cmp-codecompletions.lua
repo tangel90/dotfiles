@@ -19,35 +19,7 @@ return {
     opts = {
         keymap = {
             preset = 'none',
-            ['<Tab>'] = {
-                function(cmp)
-                    -- if menu is open with 1 item, accept it
-                    if cmp.is_visible() and #require('blink.cmp.completion.list').items == 1 then
-                        return cmp.select_and_accept()
-                    end
-                    -- otherwise: trigger show only when the cursor is after
-                    -- non-whitespace content (i.e. likely a completion context,
-                    -- not start-of-line indentation).
-                    local col = vim.fn.col('.') - 1
-                    if col > 0 then
-                        local prev = vim.fn.getline('.'):sub(col, col)
-                        if not prev:match('%s') then
-                            return cmp.show()
-                        end
-                        -- prev char is whitespace — show only if the char before
-                        -- that is an identifier/keyword character (after `FROM ` etc.)
-                        if col > 1 then
-                            local prev2 = vim.fn.getline('.'):sub(col - 1, col - 1)
-                            if prev2:match('[%w_]') then
-                                return cmp.show()
-                            end
-                        end
-                    end
-                end,
-                'select_next',
-                'fallback',
-            },
-            ['<S-Tab>'] = { 'select_prev', 'fallback' },
+            ['<Tab>'] = { 'accept', 'fallback' },
             ['<C-n>'] = { 'select_next', 'show' },
             ['<C-p>'] = { 'select_prev', 'show' },
             ['<C-u>'] = { 'scroll_documentation_up', 'fallback' },
