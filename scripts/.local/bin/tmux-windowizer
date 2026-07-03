@@ -33,7 +33,9 @@ tmux_running=$(pgrep tmux)
 if [[ ! -z $TMUX ]]; then
     program="nvim"
     program_args=""
-    if [[ "$file_name" == *.csv || "$file_name" == *.ndjson || "$file_name" == *.tsv ]]; then
+    valid_exts=(csv ndjson tsv parquet)
+    ext="${file_name##*.}"
+    if [[ " ${valid_exts[*]} " == *" $ext "* ]]; then
         program="vd"
         csv_delimiter=","
         if [[ "$file_name" == *.csv ]]; then

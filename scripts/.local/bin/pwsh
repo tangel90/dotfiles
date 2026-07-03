@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /mnt/c/Users/T2192/.dotnet/tools/pwsh.exe "$@"

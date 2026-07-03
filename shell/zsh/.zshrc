@@ -8,17 +8,14 @@ if command -v tmux &> /dev/null && [ "$PS1" != "" ] && [[ ! "$TERM" =~ screen ]]
     fi
 fi
 
+export GPG_TTY="$TTY"
+gpg-connect-agent updatestartuptty /bye >/dev/null 2>&1
+
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
-
-if [ "$TTY" != "" ]; then
-  export GPG_TTY=$(tty)
-else
-  export GPG_TTY="$TTY"
 fi
 
 
@@ -73,19 +70,6 @@ zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 zstyle ':completion:*' menu no
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls $realpath'
 zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls $realpath'
-
-# >>> Shell integrations >>>
-if command -v kubectl &>/dev/null; then
-    source <(kubectl completion zsh)
-    zinit snippet OMZP::kubectl
-    alias kk=k9s
-    # zinit snippet OMZP::kubectx
-fi
-
-eval "$(fzf --zsh)"
-eval "$(zoxide init zsh --cmd cd)"
-eval "$(direnv hook zsh)"
-# <<< Shell integrations <<<
 
 bindkey -r '^L' #removes C-l for clear-console
 bindkey -v
@@ -152,3 +136,16 @@ function load-nvm() {
   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
   [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 }
+
+# >>> Shell hooks >>>
+if command -v kubectl &>/dev/null; then
+    source <(kubectl completion zsh)
+    zinit snippet OMZP::kubectl
+    alias kk=k9s
+    # zinit snippet OMZP::kubectx
+fi
+
+eval "$(fzf --zsh)"
+eval "$(zoxide init zsh --cmd cd)"
+eval "$(direnv hook zsh)"
+# <<< Shell hooks <<<
