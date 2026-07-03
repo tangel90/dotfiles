@@ -151,6 +151,12 @@ return { -- LSP Configuration & Plugins
             -- clangd = {},
             marksman = {
                 lineLength = 120,
+                -- marksman's fileOperations filters produce an invalid glob (**/*.{})
+                -- in mini.files' LSP hook — drop the capability so it isn't consulted
+                on_init = function(client)
+                    client.server_capabilities.workspace = client.server_capabilities.workspace or {}
+                    client.server_capabilities.workspace.fileOperations = nil
+                end,
             },
             gopls = {
                 cmd = { 'gopls' },
