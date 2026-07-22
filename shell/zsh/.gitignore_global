@@ -3,7 +3,6 @@
 Trash/
 debug/
 __pycache__/
-.config_backup/
 .envrc
 .env
 
