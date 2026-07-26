@@ -7,3 +7,5 @@ __pycache__/
 .env
 
 settings.local.json
+
+**/.claude/.cc-writes/
