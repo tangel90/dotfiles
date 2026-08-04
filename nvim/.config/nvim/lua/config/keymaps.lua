@@ -74,6 +74,65 @@ local function buf_sql(buf)
     return table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n')
 end
 
+-- Persistent snowflake session: a reader process (started with <leader>rQ, or by
+-- hand) sits on a FIFO and executes whatever is written to it, so session state
+-- (USE WAREHOUSE, temp tables, …) survives between sends — unlike <leader>rs,
+-- which is one `snow sql -f` invocation per run.
+-- Override the paths/commands with vim.g.snow_session_fifo / vim.g.snow_session_cmd.
+local function snow_fifo()
+    return vim.g.snow_session_fifo or '/tmp/snow_session_tst.fifo'
+end
+
+-- Writing to a FIFO blocks until a reader shows up, so this must never run on
+-- nvim's main loop: vim.system pipes the SQL in via stdin asynchronously.
+local function snow_session_send(sql, label)
+    local fifo = snow_fifo()
+    if vim.fn.getftype(fifo) ~= 'fifo' then
+        vim.notify('no snow session FIFO at ' .. fifo .. ' — start one with <leader>rQ', vim.log.levels.ERROR)
+        return
+    end
+    if not sql:match '\n$' then
+        sql = sql .. '\n'
+    end
+    vim.system({ 'sh', '-c', 'cat > ' .. vim.fn.shellescape(fifo) }, { stdin = sql }, function(res)
+        if res.code ~= 0 then
+            vim.schedule(function()
+                vim.notify('snow session write failed: ' .. (res.stderr or ('exit ' .. res.code)), vim.log.levels.ERROR)
+            end)
+        end
+    end)
+    vim.notify('sent ' .. label .. ' → snow session', vim.log.levels.INFO)
+end
+
+-- Create the FIFO (if missing) and run the reader in a new tmux window.
+local function snow_session_start()
+    if not vim.env.TMUX then
+        vim.notify('not inside tmux — cannot host the snow session', vim.log.levels.ERROR)
+        return
+    end
+    local fifo = snow_fifo()
+    if vim.fn.getftype(fifo) ~= 'fifo' then
+        vim.fn.system({ 'mkfifo', fifo })
+        if vim.v.shell_error ~= 0 then
+            vim.notify('mkfifo ' .. fifo .. ' failed', vim.log.levels.ERROR)
+            return
+        end
+    end
+    -- tail -f keeps the write end open, so the reader doesn't exit on EOF
+    -- after each send.
+    local tmpl = vim.g.snow_session_cmd or 'tail -f %s | snow sql -i'
+    local cmd = tmpl:format(vim.fn.shellescape(fifo))
+    vim.system({ 'tmux', 'new-window', '-d', '-n', 'snow', cmd }, { text = true }, function(res)
+        vim.schedule(function()
+            if res.code ~= 0 then
+                vim.notify('failed to start snow session: ' .. (res.stderr or ''), vim.log.levels.ERROR)
+            else
+                vim.notify('snow session listening on ' .. fifo, vim.log.levels.INFO)
+            end
+        end)
+    end)
+end
+
 -- Run a shell pipeline that writes query results to `out_file`, then — only on
 -- success — open visidata on it in a new tmux window. The query itself runs as
 -- an async background job in nvim (no terminal buffer); errors are surfaced via
@@ -154,6 +213,24 @@ vim.api.nvim_create_autocmd('FileType', {
             )
             run_to_visidata_tmux(cmd, out, 'snow query', vim.fn.expand('~/data/snowflake/'))
         end, vim.tbl_extend('force', bufopt, { desc = 'snow → JSON → visidata (tmux)' }))
+
+        -- Feed the long-lived session instead of a one-shot run.
+        vim.keymap.set('n', '<leader>rq', function()
+            snow_session_send(buf_sql(args.buf), 'buffer')
+        end, vim.tbl_extend('force', bufopt, { desc = 'snow session ← buffer' }))
+
+        vim.keymap.set('x', '<leader>rq', function()
+            -- Read the range while still in visual mode; linewise is enough for SQL.
+            local s, e = vim.fn.line 'v', vim.fn.line '.'
+            if s > e then
+                s, e = e, s
+            end
+            vim.api.nvim_feedkeys(vim.keycode '<Esc>', 'nx', false)
+            local lines = vim.api.nvim_buf_get_lines(args.buf, s - 1, e, false)
+            snow_session_send(table.concat(lines, '\n'), 'selection')
+        end, vim.tbl_extend('force', bufopt, { desc = 'snow session ← selection' }))
+
+        vim.keymap.set('n', '<leader>rQ', snow_session_start, vim.tbl_extend('force', bufopt, { desc = 'start snow session (tmux + FIFO)' }))
 
         vim.keymap.set('n', '<leader>rp', function()
             if not explain_check_psql(buf_sql(args.buf)) then return end
@@ -271,7 +348,7 @@ vim.api.nvim_create_autocmd('FileType', {
 
     -- yank / delete / visual behavior
     map('n', '<leader>d.', 'diwsdb', { noremap = false, silent = true })
-    map('n', '<leader>y', 'yiw', { noremap = true, silent = true })
+    map('n', '<leader>w', 'yiw', { noremap = true, silent = true })
     map('v', '<leader>p', '"_dP')
     map({ 'n', 'v' }, '<leader>d', '"_d')
     -- map({ 'n', 'i', 'v' }, '<C-_>', '<Plug>(comment_toggle_linewise)')

@@ -29,7 +29,9 @@ if [ "${gnupg_SSH_AUTH_SOCK_by:-0}" -ne $$ ]; then
 fi
 
 if [ -d "$PERSONALCONFIG" ]; then
-    for i in $(find -L "$PERSONALCONFIG" -type f); do
+    # depth 1 only: $PERSONALCONFIG/zsh/*.zsh is interactive-only and is
+    # sourced from .zshrc after compinit (compdef isn't available yet here).
+    for i in $(find -L "$PERSONALCONFIG" -maxdepth 1 -type f); do
         source "$i"
     done
 fi

@@ -35,6 +35,8 @@ return { -- Autoformat
             javascriptreact = { 'prettierd' },
             typescriptreact = { 'prettierd' },
             json = { 'prettierd' },
+            -- ndjson/jsonl: one JSON value per line, so prettier chokes on it.
+            jsonl = { 'jq_ndjson' },
             bash = { 'shellharden' },
             sh = { 'shellharden' },
             zsh = { 'shellharden' },
@@ -75,6 +77,14 @@ return { -- Autoformat
                 end,
             },
             ruff = {},
+            -- jq reads the whole newline-delimited stream and re-emits one
+            -- compact JSON value per line (-c), which is the canonical ndjson
+            -- shape. Drop -c for pretty-printing and you break the format.
+            jq_ndjson = {
+                command = 'jq',
+                args = { '-c', '.' },
+                stdin = true,
+            },
             stylua = {
                 prepend_args = {
                     '--column-width',

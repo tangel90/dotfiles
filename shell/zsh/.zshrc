@@ -94,21 +94,6 @@ alias vim="nvim"
 alias vimdev='NVIM_APPNAME=nvim-dev nvim'
 alias nvr="nvim --listen $HOME/.local/tmp/nvimsocket"
 
-
-# >>> Custom completions >>>
-positioning-cli() { (cd ~/projects/sanitized/dealstore_deal_adapter && uv run etl-bronze "$@") }
-
-_tenants() {
-  local cache="${XDG_CACHE_HOME:-$HOME/.cache}/tenants.list"
-  local -a tenants
-  [[ -r "$cache" ]] && tenants=("${(@f)$(<$cache)}")
-  _arguments \
-    '--tenant=[tenant name]:tenant:($tenants)' \
-    '*:tenant:($tenants)'
-}
-
-compdef _tenants positioning-cli
-# <<< Custom completions <<<
 function gpg-unlock-lazygit() {
     git fetch
     lazygit
@@ -153,3 +138,14 @@ eval "$(fzf --zsh)"
 eval "$(zoxide init zsh --cmd cd)"
 eval "$(direnv hook zsh)"
 # <<< Shell hooks <<<
+
+# >>> Personal (untracked) interactive config >>>
+# Loaded after compinit so compdef/zstyle/completions work.
+# Env vars belong in $PERSONALCONFIG/* (sourced from .zprofile).
+if [[ -d "$PERSONALCONFIG/zsh" ]]; then
+  for f in "$PERSONALCONFIG"/zsh/*.zsh(N.); do
+    source "$f"
+  done
+  unset f
+fi
+# <<< Personal (untracked) interactive config <<<

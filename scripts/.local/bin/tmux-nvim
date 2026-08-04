@@ -1,0 +1,30 @@
+#!/bin/sh
+# Open nvim in the current directory with direnv's environment applied.
+#
+# Why this wrapper exists instead of `direnv exec . nvim` straight from the
+# tmux binding: many project .envrc files call `pass show`, which makes
+# gpg-agent spawn pinentry. In a freshly created pane the prompt was drawn on
+# the same pty that nvim was in the middle of claiming — garbled display,
+# swallowed keystrokes, and occasionally a dead tmux server. Two mitigations:
+#
+#   1. Point the agent at *this* pane's tty. The binding runs no shell, so
+#      .zshrc's GPG_TTY/updatestartuptty never ran here and the agent would
+#      otherwise prompt on some other (possibly stale) pane.
+#   2. Trigger the .envrc — and therefore any passphrase prompt — while this
+#      pane is still a plain process, and only hand the pty to nvim afterwards.
+#      The passphrase is cached by then (default-cache-ttl), so the second
+#      direnv evaluation runs without prompting.
+
+GPG_TTY=$(tty 2>/dev/null) || GPG_TTY=''
+if [ -n "$GPG_TTY" ]; then
+    export GPG_TTY
+    gpg-connect-agent updatestartuptty /bye >/dev/null 2>&1
+fi
+
+if command -v direnv >/dev/null 2>&1; then
+    # Non-fatal: a broken or unauthorised .envrc must not stop nvim opening.
+    direnv exec . true || printf '%s\n' 'direnv: .envrc did not load; opening nvim anyway' >&2
+    exec direnv exec . nvim "$@"
+fi
+
+exec nvim "$@"

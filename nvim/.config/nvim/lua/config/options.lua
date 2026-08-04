@@ -9,6 +9,8 @@ vim.filetype.add({
     ['http'] = 'http',
     ddl = 'sql',
     dml = 'sql',
+    -- nvim only ships *.jsonl -> jsonl; ndjson is the same format.
+    ndjson = 'jsonl',
   },
 })
 

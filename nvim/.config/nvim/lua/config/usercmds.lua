@@ -1,5 +1,23 @@
 -- define functions for user commands --
 
+vim.api.nvim_create_user_command('FileInfo', function()
+  local path = vim.api.nvim_buf_get_name(0)
+  local st = vim.uv.fs_stat(path)
+  if not st then
+    vim.notify('No file on disk: ' .. path, vim.log.levels.WARN)
+    return
+  end
+  local kb = st.size / 1024
+  vim.notify(string.format(
+    '%s\nsize: %.1f KB\nmodified: %s\ncreated:  %s\nperms: %s',
+    vim.fn.fnamemodify(path, ':~'),
+    kb,
+    os.date('%Y-%m-%d %H:%M:%S', st.mtime.sec),
+    os.date('%Y-%m-%d %H:%M:%S', (st.birthtime and st.birthtime.sec) or st.ctime.sec),
+    vim.fn.getfperm(path)
+  ), vim.log.levels.INFO)
+end, { desc = 'Show file info for current buffer' })
+
 function FetchChtSh(input)
   if input:find '/' then
     local parts = vim.split(input, '/')
