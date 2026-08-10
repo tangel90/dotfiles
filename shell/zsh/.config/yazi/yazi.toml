@@ -6,8 +6,12 @@ sort_reverse = false
 sort_dir_first = true
 
 [plugin]
+# piper runs an arbitrary shell command and renders its stdout in the preview
+# pane ($1 = hovered file, $w = pane width). Parquet is binary, so without a
+# previewer yazi falls back to a hexdump. Needs: ya pkg add yazi-rs/plugins:piper
 prepend_previewers = [
   { url = "*.ipynb", run = "nbpreview" },
+  { url = "*.parquet", run = 'piper -- parquet-preview "$1" $w' },
 ]
 
 [opener]
@@ -17,19 +21,55 @@ edit = [
 ]
 
 view = [{ run = 'visidata %s', block = true, for = "unix", desc = "visidata" }]
-view-semicolon = [{ run = "visidata -f csv --csv-delimiter ';' %s", block = true, for = "unix", desc = "visidata (;)" }]
-view-tab = [{ run = 'visidata -f tsv %s', block = true, for = "unix", desc = "visidata (tab)" }]
-view-comma = [{ run = "visidata -f csv --csv-delimiter ',' %s", block = true, for = "unix", desc = "visidata (,)" }]
-view-jsonl = [{ run = 'visidata -f jsonl %s', block = true, for = "unix", desc = "visidata (jsonl)" }]
+view-semicolon = [
+  { run = "visidata -f csv --csv-delimiter ';' %s", block = true, for = "unix", desc = "visidata (;)" },
+]
+view-tab = [
+  { run = 'visidata -f tsv %s', block = true, for = "unix", desc = "visidata (tab)" },
+]
+view-comma = [
+  { run = "visidata -f csv --csv-delimiter ',' %s", block = true, for = "unix", desc = "visidata (,)" },
+]
+view-jsonl = [
+  { run = 'visidata -f jsonl %s', block = true, for = "unix", desc = "visidata (jsonl)" },
+]
 open = [{ run = 'xdg-open %s', desc = "Open" }]
-pdf = [{ run = '/mnt/c/Windows/explorer.exe "$(wslpath -w %s)"', desc = "Edge (Windows)" }]
+pdf = [
+  { run = '/mnt/c/Windows/explorer.exe "$(wslpath -w %s)"', desc = "Edge (Windows)" },
+]
 
 [open]
 prepend_rules = [
-  { url = "*.csv", use = ["view", "view-semicolon", "edit"] },
-  { url = "*.tsv", use = ["view", "view-tab", "view-semicolon", "view-comma", "edit"] },
-  { url = "*.json", use = ["edit", "view"] },
-  { url = "*.ndjson", use = ["view-jsonl", "edit"] },
-  { url = "*.jsonl", use = ["view-jsonl", "edit"] },
-  { url = "*.pdf", use = ["pdf", "edit"] },
+  { url = "*.csv", use = [
+    "view",
+    "view-semicolon",
+    "edit",
+  ] },
+  { url = "*.tsv", use = [
+    "view",
+    "view-tab",
+    "view-semicolon",
+    "view-comma",
+    "edit",
+  ] },
+  { url = "*.parquet", use = [
+    "view",
+    "edit",
+  ] },
+  { url = "*.json", use = [
+    "edit",
+    "view",
+  ] },
+  { url = "*.ndjson", use = [
+    "view-jsonl",
+    "edit",
+  ] },
+  { url = "*.jsonl", use = [
+    "view-jsonl",
+    "edit",
+  ] },
+  { url = "*.pdf", use = [
+    "pdf",
+    "edit",
+  ] },
 ]
