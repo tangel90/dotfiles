@@ -48,23 +48,33 @@ end
 -- Uses `psql` for postgres-flavoured files; snow explain for snowflake.
 local function explain_check_psql(sql)
     local clean = sql:gsub(';%s*$', ''):gsub('%s*$', '')
-    local out = vim.fn.systemlist({
-        'psql', '-q', '-v', 'ON_ERROR_STOP=1',
-        '-P', 'pager=off',
-        '-c', 'EXPLAIN ' .. clean,
-    })
-    if vim.v.shell_error == 0 then return true end
+    local out = vim.fn.systemlist {
+        'psql',
+        '-q',
+        '-v',
+        'ON_ERROR_STOP=1',
+        '-P',
+        'pager=off',
+        '-c',
+        'EXPLAIN ' .. clean,
+    }
+    if vim.v.shell_error == 0 then
+        return true
+    end
     local msg = table.concat(out, '\n'):gsub('\n*$', '')
     local ans = vim.fn.confirm('Query rejected by DB:\n' .. msg .. '\n\nRun anyway?', '&Yes\n&No', 2)
     return ans == 1
 end
 
 local function explain_check_snow(path)
-    local out = vim.fn.systemlist({
-        vim.fn.expand('~/.local/bin/snow'), 'sql',
-        '--format', 'json',
-        '-q', 'EXPLAIN USING TEXT SELECT 1', -- warm check that snow is reachable
-    })
+    local out = vim.fn.systemlist {
+        vim.fn.expand '~/.local/bin/snow',
+        'sql',
+        '--format',
+        'json',
+        '-q',
+        'EXPLAIN USING TEXT SELECT 1', -- warm check that snow is reachable
+    }
     -- snow doesn't support EXPLAIN on arbitrary SQL files directly;
     -- fall through without blocking if we can't validate.
     return true
@@ -72,6 +82,17 @@ end
 
 local function buf_sql(buf)
     return table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n')
+end
+
+-- Descriptive basename for query-result scratch files: reuses nvim's
+-- per-session random tempdir (still unique / auto-cleaned) but names the
+-- file after the source .sql file + a timestamp, so it's meaningful if it
+-- later gets saved (e.g. via VisiData's save prompt) instead of a bare
+-- tempname() counter like "0.jsonl".
+local function query_out_path(sql_path, ext)
+    local dir = vim.fn.fnamemodify(vim.fn.tempname(), ':h')
+    local stem = vim.fn.fnamemodify(sql_path, ':t:r')
+    return string.format('%s/%s_%s.%s', dir, stem, os.date '%Y%m%dT%H%M%S', ext)
 end
 
 -- Persistent snowflake session: a reader process (started with <leader>rQ, or by
@@ -112,7 +133,7 @@ local function snow_session_start()
     end
     local fifo = snow_fifo()
     if vim.fn.getftype(fifo) ~= 'fifo' then
-        vim.fn.system({ 'mkfifo', fifo })
+        vim.fn.system { 'mkfifo', fifo }
         if vim.v.shell_error ~= 0 then
             vim.notify('mkfifo ' .. fifo .. ' failed', vim.log.levels.ERROR)
             return
@@ -166,7 +187,7 @@ local function run_to_visidata_tmux(shell_cmd, out_file, label, cwd)
                 local win_id = (win.stdout or ''):gsub('%s+$', '')
                 if win.code == 0 and win_id ~= '' then
                     -- brief settle, then switch to the fully-initialised window
-                    vim.system({ 'tmux', 'select-window', '-t', win_id })
+                    vim.system { 'tmux', 'select-window', '-t', win_id }
                 end
             end)
             vim.notify(label .. ' → opened in tmux window', vim.log.levels.INFO)
@@ -203,7 +224,7 @@ vim.api.nvim_create_autocmd('FileType', {
         vim.keymap.set('n', '<leader>rs', function()
             -- snow EXPLAIN is not reliably available; skip pre-flight for snow.
             local raw = vim.fn.tempname() .. '.json'
-            local out = vim.fn.tempname() .. '.jsonl'
+            local out = query_out_path(path, 'jsonl')
             local cmd = string.format(
                 "snow sql --format json -f %s > %s && jq -c '.[]' < %s > %s",
                 vim.fn.shellescape(path),
@@ -211,13 +232,29 @@ vim.api.nvim_create_autocmd('FileType', {
                 vim.fn.shellescape(raw),
                 vim.fn.shellescape(out)
             )
-            run_to_visidata_tmux(cmd, out, 'snow query', vim.fn.expand('~/data/snowflake/'))
+            run_to_visidata_tmux(cmd, out, 'snow query', vim.fn.expand '~/data/snowflake/')
         end, vim.tbl_extend('force', bufopt, { desc = 'snow → JSON → visidata (tmux)' }))
 
         -- Feed the long-lived session instead of a one-shot run.
         vim.keymap.set('n', '<leader>rq', function()
             snow_session_send(buf_sql(args.buf), 'buffer')
         end, vim.tbl_extend('force', bufopt, { desc = 'snow session ← buffer' }))
+
+        vim.keymap.set('n', '<leader>rv', function()
+            local out = query_out_path(path, 'csv')
+            local done = out .. '.done'
+            vim.fn.delete(done)
+            snow_session_send(
+                ('-- out: %s\n-- format: csv\n%s'):format(out, buf_sql(args.buf)),
+                'buffer ÔåÆ visidata'
+            )
+            -- Block until the session signals completion; non-zero exit surfaces via notify.
+            local wait = ('for i in $(seq 1 6000); do [ -f %s ] && break; sleep 0.1; done; grep -q "^ok$" %s'):format(
+                vim.fn.shellescape(done),
+                vim.fn.shellescape(done)
+            )
+            run_to_visidata_tmux(wait, out, 'snow session', vim.fn.expand '~/data/snowflake/')
+        end, vim.tbl_extend('force', bufopt, { desc = 'snow session -> visidata (warm)' }))
 
         vim.keymap.set('x', '<leader>rq', function()
             -- Read the range while still in visual mode; linewise is enough for SQL.
@@ -230,167 +267,175 @@ vim.api.nvim_create_autocmd('FileType', {
             snow_session_send(table.concat(lines, '\n'), 'selection')
         end, vim.tbl_extend('force', bufopt, { desc = 'snow session ← selection' }))
 
-        vim.keymap.set('n', '<leader>rQ', snow_session_start, vim.tbl_extend('force', bufopt, { desc = 'start snow session (tmux + FIFO)' }))
+        vim.keymap.set(
+            'n',
+            '<leader>rQ',
+            snow_session_start,
+            vim.tbl_extend('force', bufopt, { desc = 'start snow session (tmux + FIFO)' })
+        )
 
         vim.keymap.set('n', '<leader>rp', function()
-            if not explain_check_psql(buf_sql(args.buf)) then return end
-            local out = vim.fn.tempname() .. '.csv'
+            if not explain_check_psql(buf_sql(args.buf)) then
+                return
+            end
+            local out = query_out_path(path, 'csv')
             local cmd = string.format(
                 "psql -q -v ON_ERROR_STOP=1 -P pager=off -c 'SET client_min_messages = error;' --csv -f %s > %s",
                 vim.fn.shellescape(path),
                 vim.fn.shellescape(out)
             )
-            run_to_visidata_tmux(cmd, out, 'psql query', vim.fn.expand('~/data/postgres/'))
+            run_to_visidata_tmux(cmd, out, 'psql query', vim.fn.expand '~/data/postgres/')
         end, vim.tbl_extend('force', bufopt, { desc = 'psql → EXPLAIN → CSV → visidata (tmux)' }))
 
         vim.keymap.set('n', '<leader>rj', function()
-          if not explain_check_psql(buf_sql(args.buf)) then return end
-          local out = vim.fn.tempname() .. '.jsonl'
-          local cmd = string.format(
-            "psql -q -v ON_ERROR_STOP=1 -P pager=off -At -c 'SET client_min_messages = error;' -f %s > %s",
-            vim.fn.shellescape(path),
-            vim.fn.shellescape(out)
-          )
-          run_to_visidata_tmux(cmd, out, 'psql query (json)', vim.fn.expand('~/data/postgres/'))
+            if not explain_check_psql(buf_sql(args.buf)) then
+                return
+            end
+            local out = query_out_path(path, 'jsonl')
+            local cmd = string.format(
+                "psql -q -v ON_ERROR_STOP=1 -P pager=off -At -c 'SET client_min_messages = error;' -f %s > %s",
+                vim.fn.shellescape(path),
+                vim.fn.shellescape(out)
+            )
+            run_to_visidata_tmux(cmd, out, 'psql query (json)', vim.fn.expand '~/data/postgres/')
         end, vim.tbl_extend('force', bufopt, { desc = 'psql ÔåÆ JSONL ÔåÆ visidata (tmux)' }))
 
         -- Same queries, but results land in a new vim buffer (CSV) instead of visidata.
         vim.keymap.set('n', '<leader>rS', function()
-          local out = vim.fn.tempname() .. '.csv'
-          local cmd = string.format(
-            'snow sql --format csv -f %s > %s',
-            vim.fn.shellescape(path),
-            vim.fn.shellescape(out)
-          )
-          run_to_vim_buffer(cmd, out, 'snow query')
+            local out = query_out_path(path, 'csv')
+            local cmd =
+                string.format('snow sql --format csv -f %s > %s', vim.fn.shellescape(path), vim.fn.shellescape(out))
+            run_to_vim_buffer(cmd, out, 'snow query')
         end, vim.tbl_extend('force', bufopt, { desc = 'snow → CSV → vim buffer' }))
 
         vim.keymap.set('n', '<leader>rP', function()
-          if not explain_check_psql(buf_sql(args.buf)) then return end
-          local out = vim.fn.tempname() .. '.csv'
-          local cmd = string.format(
-            "psql -q -v ON_ERROR_STOP=1 -P pager=off -c 'SET client_min_messages = error;' --csv -f %s > %s",
-            vim.fn.shellescape(path),
-            vim.fn.shellescape(out)
-          )
-          run_to_vim_buffer(cmd, out, 'psql query')
+            if not explain_check_psql(buf_sql(args.buf)) then
+                return
+            end
+            local out = query_out_path(path, 'csv')
+            local cmd = string.format(
+                "psql -q -v ON_ERROR_STOP=1 -P pager=off -c 'SET client_min_messages = error;' --csv -f %s > %s",
+                vim.fn.shellescape(path),
+                vim.fn.shellescape(out)
+            )
+            run_to_vim_buffer(cmd, out, 'psql query')
         end, vim.tbl_extend('force', bufopt, { desc = 'psql → EXPLAIN → CSV → vim buffer' }))
-      end,
-    })
+    end,
+})
 
-    --- custom keymaps ---
+--- custom keymaps ---
 
-    map('n', '<leader>T', function()
-      require('config.timetracking').open_week()
-    end, { desc = 'Open time tracker' })
+map('n', '<leader>T', function()
+    require('config.timetracking').open_week()
+end, { desc = 'Open time tracker' })
 
-    map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python3 %<CR>', { desc = 'python main.py' })
-    map('n', '<leader>e', function()
-      if vim.bo.filetype == 'netrw' then
+map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python3 %<CR>', { desc = 'python main.py' })
+map('n', '<leader>e', function()
+    if vim.bo.filetype == 'netrw' then
         vim.cmd 'bd'
-      else
+    else
         vim.cmd 'Ex'
-      end
-    end, { desc = 'Toggle NetRW' })
-    map('n', '<leader>"', '<cmd>registers<cr>', { desc = 'List registers' })
-    map('n', '<leader>tw', '<cmd>set wrap!<cr>', { desc = 'Toggle word wrap' })
-    -- map({ 'n', 'v' }, 'p', ']p')
+    end
+end, { desc = 'Toggle NetRW' })
+map('n', '<leader>"', '<cmd>registers<cr>', { desc = 'List registers' })
+map('n', '<leader>tw', '<cmd>set wrap!<cr>', { desc = 'Toggle word wrap' })
+-- map({ 'n', 'v' }, 'p', ']p')
 
-    map('i', 'ue', function()
-      return 'ü'
-    end, { expr = true })
-    map('i', 'oe', function()
-      return 'ö'
-    end, { expr = true })
-    map('i', 'ae', function()
-      return 'ä'
-    end, { expr = true })
-    map('i', 'sz', function()
-      return 'ß'
-    end, { expr = true })
+map('i', 'ue', function()
+    return 'ü'
+end, { expr = true })
+map('i', 'oe', function()
+    return 'ö'
+end, { expr = true })
+map('i', 'ae', function()
+    return 'ä'
+end, { expr = true })
+map('i', 'sz', function()
+    return 'ß'
+end, { expr = true })
 
-    -- Vim motion keymaps
-    map({ 'n', 'i' }, '<C-k>', '<C-a>', { noremap = true })
-    map('i', 'kj', '<ESC>', { noremap = true })
-    map({ 'n', 'v' }, 'gl', 'L')
-    map({ 'n', 'v' }, 'L', '%')
-    map({ 'n', 'v' }, 'J', '<C-e>j')
-    map({ 'n', 'v' }, 'K', '<C-y>k')
-    map({ 'n', 'v' }, 'gh', 'H')
-    map({ 'n', 'v' }, 'H', 'J')
-    map('n', 'zk', 'zt')
-    map('n', 'zj', 'zb')
-    -- map({ 'n', 'v' }, '<C-e>', 'J')
-    map({ 'n', 'v' }, '<C-d>', '<C-d>zz')
-    map({ 'n', 'v' }, '<C-u>', '<C-u>zz')
-    map('n', '<Esc>', '<cmd>nohlsearch<CR>')
-    -- https://github.com/mhinz/vim-galore#saner-behavior-of-n-and-n
-    map('n', 'n', "'Nn'[v:searchforward].'zv'", { expr = true, desc = 'Next Search Result' })
-    map('x', 'n', "'Nn'[v:searchforward]", { expr = true, desc = 'Next Search Result' })
-    map('o', 'n', "'Nn'[v:searchforward]", { expr = true, desc = 'Next Search Result' })
-    map('n', 'N', "'nN'[v:searchforward].'zv'", { expr = true, desc = 'Prev Search Result' })
-    map('x', 'N', "'nN'[v:searchforward]", { expr = true, desc = 'Prev Search Result' })
-    map('o', 'N', "'nN'[v:searchforward]", { expr = true, desc = 'Prev Search Result' })
-    -- better up/down
-    map({ 'n', 'x' }, 'j', "v:count == 0 ? 'gj' : 'j'", { desc = 'Down', expr = true, silent = true })
-    map({ 'n', 'x' }, 'k', "v:count == 0 ? 'gk' : 'k'", { desc = 'Up', expr = true, silent = true })
-    --
-    --keywordprg
-    map('n', '<leader>K', '<cmd>norm! K<cr>', { desc = 'Keywordprg' })
+-- Vim motion keymaps
+map({ 'n', 'i' }, '<C-k>', '<C-a>', { noremap = true })
+map('i', 'kj', '<ESC>', { noremap = true })
+map({ 'n', 'v' }, 'gl', 'L')
+map({ 'n', 'v' }, 'L', '%')
+map({ 'n', 'v' }, 'J', '<C-e>j')
+map({ 'n', 'v' }, 'K', '<C-y>k')
+map({ 'n', 'v' }, 'gh', 'H')
+map({ 'n', 'v' }, 'H', 'J')
+map('n', 'zk', 'zt')
+map('n', 'zj', 'zb')
+-- map({ 'n', 'v' }, '<C-e>', 'J')
+map({ 'n', 'v' }, '<C-d>', '<C-d>zz')
+map({ 'n', 'v' }, '<C-u>', '<C-u>zz')
+map('n', '<Esc>', '<cmd>nohlsearch<CR>')
+-- https://github.com/mhinz/vim-galore#saner-behavior-of-n-and-n
+map('n', 'n', "'Nn'[v:searchforward].'zv'", { expr = true, desc = 'Next Search Result' })
+map('x', 'n', "'Nn'[v:searchforward]", { expr = true, desc = 'Next Search Result' })
+map('o', 'n', "'Nn'[v:searchforward]", { expr = true, desc = 'Next Search Result' })
+map('n', 'N', "'nN'[v:searchforward].'zv'", { expr = true, desc = 'Prev Search Result' })
+map('x', 'N', "'nN'[v:searchforward]", { expr = true, desc = 'Prev Search Result' })
+map('o', 'N', "'nN'[v:searchforward]", { expr = true, desc = 'Prev Search Result' })
+-- better up/down
+map({ 'n', 'x' }, 'j', "v:count == 0 ? 'gj' : 'j'", { desc = 'Down', expr = true, silent = true })
+map({ 'n', 'x' }, 'k', "v:count == 0 ? 'gk' : 'k'", { desc = 'Up', expr = true, silent = true })
+--
+--keywordprg
+map('n', '<leader>K', '<cmd>norm! K<cr>', { desc = 'Keywordprg' })
 
-    -- better indenting
-    map('x', '<', '<gv')
-    map('x', '>', '>gv')
+-- better indenting
+map('x', '<', '<gv')
+map('x', '>', '>gv')
 
-    -- commenting
-    map('n', 'gco', 'o<esc>Vcx<esc><cmd>normal gcc<cr>fxa<bs>', { desc = 'Add Comment Below' })
-    map('n', 'gcO', 'O<esc>Vcx<esc><cmd>normal gcc<cr>fxa<bs>', { desc = 'Add Comment Above' })
+-- commenting
+map('n', 'gco', 'o<esc>Vcx<esc><cmd>normal gcc<cr>fxa<bs>', { desc = 'Add Comment Below' })
+map('n', 'gcO', 'O<esc>Vcx<esc><cmd>normal gcc<cr>fxa<bs>', { desc = 'Add Comment Above' })
 
-    -- yank / delete / visual behavior
-    map('n', '<leader>d.', 'diwsdb', { noremap = false, silent = true })
-    map('n', '<leader>w', 'yiw', { noremap = true, silent = true })
-    map('v', '<leader>p', '"_dP')
-    map({ 'n', 'v' }, '<leader>d', '"_d')
-    -- map({ 'n', 'i', 'v' }, '<C-_>', '<Plug>(comment_toggle_linewise)')
-    map('n', '<leader>yf', function()
-      vim.fn.setreg('+', vim.fn.expand '%:p')
-      vim.notify('copied: ' .. vim.fn.expand '%:p')
-    end, { desc = 'Yank full path of current buffer' })
+-- yank / delete / visual behavior
+map('n', '<leader>d.', 'diwsdb', { noremap = false, silent = true })
+map('n', '<leader>w', 'yiw', { noremap = true, silent = true })
+map('v', '<leader>p', '"_dP')
+map({ 'n', 'v' }, '<leader>d', '"_d')
+-- map({ 'n', 'i', 'v' }, '<C-_>', '<Plug>(comment_toggle_linewise)')
+map('n', '<leader>yf', function()
+    vim.fn.setreg('+', vim.fn.expand '%:p')
+    vim.notify('copied: ' .. vim.fn.expand '%:p')
+end, { desc = 'Yank full path of current buffer' })
 
-    -- Buffer/window management
-    map(
-      { 'n', 'i', 'v' },
-      '<C-s>',
-      '<cmd>noautocmd w<cr>',
-      { noremap = true, desc = 'Save current buffer (without formatting)' }
-    )
-    map({ 'n', 'i' }, '<C-W><C-Q>', '<cmd>qa<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
-    map({ 'n', 'i' }, '<C-W><C-X>', '<cmd>q!<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
-    map({ 'n', 'i' }, '<C-S><C-S>', '<cmd>wq<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
-    map('n', '<leader>q', ':bdelete<CR>', { noremap = true, desc = 'Close current buffer' })
-    map({ 'n', 'v' }, '<Leader>v', ':vsplit<CR>', { noremap = true, silent = true, desc = 'New vertical split' })
-    map({ 'n', 'v' }, '<Leader>tn', ':tabnew<CR>', { noremap = true, silent = true, desc = 'New vertical split' })
-    map({ 'n', 'v' }, '<Tab>', '<C-^>', { noremap = true, silent = true, desc = 'Last buffer' }) -- this is defined in functions.lua
-    map('n', '<Leader>rm', 'mz:%s/\\r//g<CR>`z', { desc = 'Remove Carriage Returns From Buffer' })
+-- Buffer/window management
+map(
+    { 'n', 'i', 'v' },
+    '<C-s>',
+    '<cmd>noautocmd w<cr>',
+    { noremap = true, desc = 'Save current buffer (without formatting)' }
+)
+map({ 'n', 'i' }, '<C-W><C-Q>', '<cmd>qa<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
+map({ 'n', 'i' }, '<C-W><C-X>', '<cmd>q!<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
+map({ 'n', 'i' }, '<C-S><C-S>', '<cmd>wq<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
+map('n', '<leader>q', ':bdelete<CR>', { noremap = true, desc = 'Close current buffer' })
+map({ 'n', 'v' }, '<Leader>v', ':vsplit<CR>', { noremap = true, silent = true, desc = 'New vertical split' })
+map({ 'n', 'v' }, '<Leader>tn', ':tabnew<CR>', { noremap = true, silent = true, desc = 'New vertical split' })
+map({ 'n', 'v' }, '<Tab>', '<C-^>', { noremap = true, silent = true, desc = 'Last buffer' }) -- this is defined in functions.lua
+map('n', '<Leader>rm', 'mz:%s/\\r//g<CR>`z', { desc = 'Remove Carriage Returns From Buffer' })
 
-    map({ 'n', 'v' }, '<Leader>n', function()
-      vim.cmd 'enew'
-      vim.opt_local.buftype = 'nofile'
-      vim.opt_local.bufhidden = 'wipe'
-      vim.opt_local.swapfile = false
-      vim.opt_local.modifiable = true
-    end, {
+map({ 'n', 'v' }, '<Leader>n', function()
+    vim.cmd 'enew'
+    vim.opt_local.buftype = 'nofile'
+    vim.opt_local.bufhidden = 'wipe'
+    vim.opt_local.swapfile = false
+    vim.opt_local.modifiable = true
+end, {
     noremap = true,
     silent = true,
     desc = 'Open scratch buffer',
-  })
-  map({ 'n', 'v' }, '<Leader>rr', function()
+})
+map({ 'n', 'v' }, '<Leader>rr', function()
     vim.cmd 'e!'
     vim.cmd 'LspRestart'
     vim.cmd [[echo "file reloaded"]]
-  end, {
-  noremap = true,
-  desc = 'Force reload current buffer (discard any changes)',
+end, {
+    noremap = true,
+    desc = 'Force reload current buffer (discard any changes)',
 })
 
 -- Plugin specific keymaps
@@ -401,8 +446,8 @@ vim.api.nvim_create_autocmd('FileType', {
 -- Diagnostic keymaps
 local enabled = true
 function ToggleDiagnosticsVirtualText()
-  enabled = not enabled
-  vim.diagnostic.config { virtual_text = enabled }
+    enabled = not enabled
+    vim.diagnostic.config { virtual_text = enabled }
 end
 map('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous [D]iagnostic message' })
 map('n', ']d', vim.diagnostic.goto_next, { desc = 'Go to next [D]iagnostic message' })

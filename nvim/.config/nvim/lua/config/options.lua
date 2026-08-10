@@ -3,30 +3,29 @@
 --  See `:help 'clipboard'`
 vim.opt.clipboard:append 'unnamedplus'
 
-
-vim.filetype.add({
-  extension = {
-    ['http'] = 'http',
-    ddl = 'sql',
-    dml = 'sql',
-    -- nvim only ships *.jsonl -> jsonl; ndjson is the same format.
-    ndjson = 'jsonl',
-  },
-})
-
-if vim.fn.has("wsl") == 1 then
-  vim.g.clipboard = {
-    name = "myclip",
-    copy = {
-      ["+"] = "win32yank.exe -i",
-      ["*"] = "win32yank.exe -i",
+vim.filetype.add {
+    extension = {
+        ['http'] = 'http',
+        ddl = 'sql',
+        dml = 'sql',
+        -- nvim only ships *.jsonl -> jsonl; ndjson is the same format.
+        ndjson = 'jsonl',
     },
-    paste = {
-      ["+"] = "win32yank.exe -o --lf",
-      ["*"] = "win32yank.exe -o --lf",
-    },
-    cache_enabled = 0,
-  }
+}
+
+if vim.fn.has 'wsl' == 1 then
+    vim.g.clipboard = {
+        name = 'myclip',
+        copy = {
+            ['+'] = 'win32yank.exe -i',
+            ['*'] = 'win32yank.exe -i',
+        },
+        paste = {
+            ['+'] = 'win32yank.exe -o --lf',
+            ['*'] = 'win32yank.exe -o --lf',
+        },
+        cache_enabled = 0,
+    }
 end
 
 -- Enable break indent
@@ -46,6 +45,8 @@ vim.opt.conceallevel = 2
 vim.opt.cursorline = true
 
 vim.g.OmniSharp_server_use_net6 = 1
+
+vim.g.snow_session_cmd = 'SNOW_SESSION_FIFO=%s /home/thomas/dev/snowflake-reporting/scripts/snow_session.py tst'
 
 vim.g.deprecation_warnings = false
 -- Set filetype to `bigfile` for files larger than 1.5 MB
@@ -125,4 +126,4 @@ vim.opt.inccommand = 'split'
 vim.opt.scrolloff = 10
 
 -- Suppress LSP stderr captures (rust-analyzer panic-loop can balloon lsp.log to GBs).
-vim.lsp.log.set_level("WARN")
+vim.lsp.log.set_level 'WARN'

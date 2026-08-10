@@ -7,8 +7,16 @@ return { -- LSP Configuration & Plugins
         'WhoIsSethDaniel/mason-tool-installer.nvim',
 
         -- Useful status updates for LSP.
-        -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-        { 'j-hui/fidget.nvim', opts = {} },
+        -- Default spinner + 10Hz notification redraws read as cursor flicker
+        -- during initial LSP indexing (pyright/etc). Static icon + slower
+        -- redraw keeps the progress messages without the flicker.
+        {
+            'j-hui/fidget.nvim',
+            opts = {
+                progress = { display = { progress_icon = { pattern = 'dots', period = 1e9 } } },
+                notification = { poll_rate = 3 },
+            },
+        },
 
         -- `neodev` configures Lua LSP for your Neovim config, runtime and plugins
         -- used for completion, annotations and signatures of Neovim apis

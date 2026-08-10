@@ -1,7 +1,66 @@
-from visidata import vd
+import os
+import datetime
+from visidata import vd, BaseSheet, VisiData
 
 ### options
 vd.options.csv_doublequote=True
+
+vd.option('save_dir', '/home/thomas/data/visidata', 'directory (dated subfolder appended) suggested when saving a sheet', sheettype=None)
+
+### Default save location: sheets opened from scratch/tmp files (e.g. yazi/nvim
+### previews under ~/.local/tmp) otherwise default their save prompt to that
+### same tmp path — easy to silently overwrite the tmp file instead of keeping
+### the result. Keep the suggested basename but default its directory to
+### options.save_dir/<today's date>, creating that dated folder if needed
+### (VisiData itself only auto-creates a directory when the save path ends
+### in '/', i.e. the "save each row as its own file" case — not here).
+_orig_getDefaultSaveName = BaseSheet.getDefaultSaveName
+
+@BaseSheet.api
+def getDefaultSaveName(sheet):
+    name = _orig_getDefaultSaveName(sheet)
+    savedir = sheet.options.save_dir
+    if not savedir:
+        return name
+    datedir = os.path.join(savedir, datetime.date.today().isoformat())
+    os.makedirs(datedir, exist_ok=True)
+    return os.path.join(datedir, os.path.basename(name))
+
+### Path prompts (save-sheet ^S, save-all g^S, save-selected, open-file, …) all
+### funnel through inputFilename, which defaults its cursor to position 0. With
+### a prefilled value (e.g. the save_dir path above) that means every motion
+### key is fighting a cursor sitting in front of the text instead of after it,
+### and — because VisiData treats "cursor at 0" as license to wipe the whole
+### field on the very first keystroke — there's no way to just edit the
+### filename in place. Defaulting the cursor to the end fixes both: normal
+### editing (^B/^F/^W/^A/^E/Backspace) works immediately, and a full manual
+### retype is one extra keystroke away via ^U (clear to start-of-line, which
+### from the end clears everything).
+###
+### For actual vim motions on any input field (not just save prompts): ^O
+### dumps the field to a tempfile, opens $EDITOR (nvim) on it, and feeds the
+### saved result back in — no config needed, it's a built-in VisiData keybinding.
+_orig_inputFilename = VisiData.inputFilename
+
+@VisiData.api
+def inputFilename(vd, prompt, *args, **kwargs):
+    value = kwargs.get('value', '')
+    if value and 'i' not in kwargs:
+        kwargs['i'] = len(str(value))
+    return _orig_inputFilename(vd, prompt, *args, **kwargs)
+
+### System-clipboard yank (Y / gY / gzY) prompts "copy N rows as filetype:"
+### defaulted to 'tsv'. Default it to 'csv' instead, still editable inline.
+### Scoped to just this prompt rather than options.save_filetype, since that
+### option is also read by getDefaultSaveName above (^S's suggested
+### extension) and changing it globally would affect that too.
+_orig_syscopyCells = Sheet.syscopyCells
+
+@Sheet.api
+def syscopyCells(sheet, cols, rows, filetype=None):
+    if filetype is None:
+        filetype = vd.input('copy %d %s as filetype: ' % (len(rows), sheet.rowtype), value='csv')
+    sheet.syscopyCells_async(cols, rows, filetype)
 
 ### Keybindings
 Sheet.unbindkey(':')

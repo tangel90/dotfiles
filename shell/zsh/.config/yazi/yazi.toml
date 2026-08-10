@@ -20,6 +20,7 @@ view = [{ run = 'visidata %s', block = true, for = "unix", desc = "visidata" }]
 view-semicolon = [{ run = "visidata -f csv --csv-delimiter ';' %s", block = true, for = "unix", desc = "visidata (;)" }]
 view-tab = [{ run = 'visidata -f tsv %s', block = true, for = "unix", desc = "visidata (tab)" }]
 view-comma = [{ run = "visidata -f csv --csv-delimiter ',' %s", block = true, for = "unix", desc = "visidata (,)" }]
+view-jsonl = [{ run = 'visidata -f jsonl %s', block = true, for = "unix", desc = "visidata (jsonl)" }]
 open = [{ run = 'xdg-open %s', desc = "Open" }]
 pdf = [{ run = '/mnt/c/Windows/explorer.exe "$(wslpath -w %s)"', desc = "Edge (Windows)" }]
 
@@ -28,5 +29,7 @@ prepend_rules = [
   { url = "*.csv", use = ["view", "view-semicolon", "edit"] },
   { url = "*.tsv", use = ["view", "view-tab", "view-semicolon", "view-comma", "edit"] },
   { url = "*.json", use = ["edit", "view"] },
+  { url = "*.ndjson", use = ["view-jsonl", "edit"] },
+  { url = "*.jsonl", use = ["view-jsonl", "edit"] },
   { url = "*.pdf", use = ["pdf", "edit"] },
 ]

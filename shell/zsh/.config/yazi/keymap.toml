@@ -81,7 +81,16 @@ desc = "cd into $WIN_HOME/dev"
 [[mgr.prepend_keymap]]
 on = "<C-f>"
 run = "search --via=fd"
-desc = "Search files by name using fd" 
+desc = "Search files by name using fd"
+
+# `~/.gitignore_global` has a blanket `*.csv` rule (kept globally on purpose
+# to keep data exports out of commits), and fd/rg respect it inside any git
+# work tree — so plain <C-f> finds nothing in dirs that are entirely csv
+# (e.g. dbt seeds/). This variant opts back in to gitignored matches.
+[[mgr.prepend_keymap]]
+on = "<C-g>"
+run = 'search --via=fd --args="--no-ignore"'
+desc = "Search files by name using fd (include gitignored)"
 
 [[mgr.prepend_keymap]]
 on = ["c", "/"]

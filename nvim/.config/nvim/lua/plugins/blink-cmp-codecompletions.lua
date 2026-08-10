@@ -39,17 +39,50 @@ return {
     return {
       keymap = {
         preset = 'none',
-        ['<Tab>'] = { 'accept', 'fallback' },
+        -- <Tab> does three jobs, in priority order:
+        --   1. jump to the next snippet placeholder, if a snippet is active
+        --   2. cycle to the next item, if the menu is already open
+        --   3. open the menu — e.g. after `SELECT * FROM ` where there is no
+        --      keyword to trigger on, so the snowflake source lists tables
+        -- Only when the cursor sits in leading whitespace does it fall back to
+        -- a literal tab, so indenting still works. Accept stays on <CR>/<C-y>:
+        -- if <Tab> both cycled and accepted, the first press would commit the
+        -- preselected item instead of moving off it.
+        ['<Tab>'] = {
+          function(cmp)
+            if cmp.snippet_active { direction = 1 } then
+              return cmp.snippet_forward()
+            end
+            if cmp.is_menu_visible() then
+              return cmp.select_next()
+            end
+            local col = vim.fn.col '.' - 1
+            if col == 0 or vim.api.nvim_get_current_line():sub(1, col):match '^%s*$' then
+              return false -- indent instead
+            end
+            return cmp.show()
+          end,
+          'fallback',
+        },
+        ['<S-Tab>'] = {
+          function(cmp)
+            if cmp.snippet_active { direction = -1 } then
+              return cmp.snippet_backward()
+            end
+            if cmp.is_menu_visible() then
+              return cmp.select_prev()
+            end
+            return false
+          end,
+          'fallback',
+        },
         ['<C-n>'] = { 'select_next', 'show' },
         ['<C-p>'] = { 'select_prev', 'show' },
         ['<C-u>'] = { 'scroll_documentation_up', 'fallback' },
         ['<C-d>'] = { 'scroll_documentation_down', 'fallback' },
         ['<C-y>'] = { 'select_and_accept' },
         ['<CR>'] = { 'accept', 'fallback' },
-        -- ['<Tab>'] = { 'select_and_accept', 'fallback' },
         ['<C-Space>'] = { 'show', 'show_documentation', 'hide_documentation' },
-        -- ['<S-Tab>'] = { 'snippet_forward', 'fallback' },
-        ['<C-Tab>'] = { 'snippet_backward', 'fallback' },
       },
 
       snippets = { preset = 'luasnip' },
