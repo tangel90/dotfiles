@@ -118,6 +118,23 @@ def afterLoad(sheet, _exact=vd_type_by_name, _patterns=vd_type_by_pattern, _unty
             col.type = t
 
 
+### Timezone conversion inside expressions (= addcol-expr, z| select-expr).
+### Names defined at rc top level end up in the expression globals, so this
+### replaces the __import__('zoneinfo') dance:
+###
+###   naive UTC column  ->  ts.replace(tzinfo=UTC).astimezone(BERLIN)
+###   tz-aware column   ->  ts.astimezone(BERLIN)          # parquet timestamp[us, tz=…]
+###
+### Use this rather than a fixed `ts + hours`: a delivery series stored in UTC is
+### +1h from Berlin only in winter and +2h under CEST, so a flat shift leaves
+### every summer day starting at 23:00. .astimezone() gets the DST switch right.
+### The column must actually be date-typed — on an untyped column the value is
+### still a str and .replace() silently takes the str.replace() path.
+from zoneinfo import ZoneInfo
+
+UTC = ZoneInfo('UTC')
+BERLIN = ZoneInfo('Europe/Berlin')
+
 ### Keybindings
 Sheet.unbindkey(':')
 Sheet.bindkey(':', 'split-col')
