@@ -1,0 +1,183 @@
+#!/home/thomas/.local/share/uv/tools/snowflake-cli/bin/python
+"""Run SQL against Snowflake and write the result set as parquet.
+
+Replaces `snow sql --format csv|json` for the "look at it in VisiData" path.
+
+Why not the CLI: `snow sql` only emits *text* (table/csv/json) — it has no
+parquet or arrow output format, and installing pyarrow into its venv doesn't
+change that. What pyarrow buys is the connector's arrow result format, which
+this script uses directly: Snowflake already ships arrow over the wire, so
+`fetch_arrow_batches()` hands back the server's own columnar batches. The CLI
+path instead deserializes those to Python objects, prints CSV, and then
+something downstream re-parses that CSV — two lossy conversions dropped here.
+
+Types survive end to end, so SQL casts finally mean something in VisiData:
+TIMESTAMP -> date, FLOAT/INT -> float/int, and no dateutil re-parsing per cell.
+
+The one deliberate exception is DECIMAL. Snowflake returns NUMBER(p,s) — which
+is what SUM()/AVG() and most numeric columns come back as — as arrow
+decimal128, and VisiData's arrow_to_vdtype has DECIMAL commented out, so those
+columns land as anytype holding Decimal objects: not numeric, so no aggregators,
+no histogram, no plotting. Casting to float64 here is what makes them usable.
+Pass --decimal keep if you need the exact scale (money, invoice totals) more
+than you need vd's numeric ops.
+
+Usage:
+  snow-parquet -f query.sql [-o out.parquet] [-c connection] [--decimal float|keep]
+  snow-parquet -q 'select 1' -o out.parquet
+  cat query.sql | snow-parquet -o out.parquet
+
+Prints the output path on stdout (row count and timings go to stderr), so it
+composes: vd "$(snow-parquet -f q.sql)"
+
+Interpreter note: the shebang points at the snowflake-cli uv tool venv, which is
+where snowflake-connector-python and pyarrow live
+(`uv tool install snowflake-cli --with pyarrow`). If uv's tool dir moves, fix
+the shebang — a system python3 has neither package.
+"""
+
+import argparse
+import os
+import pathlib
+import sys
+import time
+import tomllib
+
+CONFIG = pathlib.Path.home() / '.snowflake' / 'config.toml'
+CONNECTIONS = pathlib.Path.home() / '.snowflake' / 'connections.toml'
+
+# Snowflake CLI accepts private_key_path; the connector only knows
+# private_key_file. Connections written for the CLI can carry either.
+KEY_ALIASES = {'private_key_path': 'private_key_file'}
+
+
+def log(msg):
+    print(msg, file=sys.stderr)
+
+
+def connection_params(name=None):
+    'Read ~/.snowflake/*.toml the same way the CLI does, and return connect() kwargs.'
+    conns = tomllib.loads(CONNECTIONS.read_text()) if CONNECTIONS.exists() else {}
+    if not name:
+        cfg = tomllib.loads(CONFIG.read_text()) if CONFIG.exists() else {}
+        name = cfg.get('default_connection_name', 'default')
+    if name not in conns:
+        sys.exit(f'snow-parquet: unknown connection {name!r}; have {sorted(conns)}')
+    return name, {KEY_ALIASES.get(k, k): v for k, v in conns[name].items()}
+
+
+def float_schema(schema, pa):
+    'Same schema with decimal columns widened to float64; None if nothing to change.'
+    fields = []
+    changed = False
+    for f in schema:
+        if pa.types.is_decimal(f.type):
+            fields.append(f.with_type(pa.float64()))
+            changed = True
+        else:
+            fields.append(f)
+    return pa.schema(fields) if changed else None
+
+
+def write_parquet(batches, out, decimal_mode, pa, pq):
+    'Stream arrow batches to a parquet file. Returns (rows, columns).'
+    writer = None
+    schema = None
+    rows = 0
+    try:
+        for batch in batches:
+            if writer is None:
+                schema = batch.schema
+                if decimal_mode == 'float':
+                    schema = float_schema(schema, pa) or schema
+                writer = pq.ParquetWriter(out, schema)
+            writer.write_table(pa.Table.from_batches([batch]).cast(schema))
+            rows += batch.num_rows
+    finally:
+        if writer is not None:
+            writer.close()
+    return rows, schema
+
+
+def empty_parquet(cursor, out, pa, pq):
+    '''No batches at all: still produce a readable file rather than nothing.
+
+    A 0-row result yields no arrow batches, so there is no arrow schema to
+    reuse; fall back to the cursor description for column names. Types are
+    unknowable from an empty result, and an empty column is untyped in
+    VisiData anyway.
+    '''
+    names = [d.name for d in (cursor.description or [])]
+    tbl = pa.table({n: pa.array([], pa.string()) for n in names})
+    pq.write_table(tbl, out)
+    return names
+
+
+def main():
+    ap = argparse.ArgumentParser(add_help=True, description='run SQL on Snowflake, write parquet')
+    src = ap.add_mutually_exclusive_group()
+    src.add_argument('-f', '--file', help='.sql file to run (default: read stdin)')
+    src.add_argument('-q', '--query', help='SQL to run')
+    ap.add_argument('-o', '--out', help='output .parquet (default: alongside -f, or ./query.parquet)')
+    ap.add_argument('-c', '--connection', help='connection name (default: config.toml default_connection_name)')
+    ap.add_argument(
+        '--decimal',
+        choices=['float', 'keep'],
+        default='float',
+        help='DECIMAL/NUMBER columns: cast to float64 so VisiData treats them as numeric (default), or keep exact',
+    )
+    args = ap.parse_args()
+
+    if args.query:
+        sql = args.query
+    elif args.file:
+        sql = pathlib.Path(args.file).read_text()
+    else:
+        sql = sys.stdin.read()
+    if not sql.strip():
+        sys.exit('snow-parquet: no SQL given')
+
+    if args.out:
+        out = args.out
+    elif args.file:
+        out = str(pathlib.Path(args.file).with_suffix('.parquet'))
+    else:
+        out = 'query.parquet'
+
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    import snowflake.connector
+
+    name, params = connection_params(args.connection)
+    log(f'snow-parquet: connection {name}')
+
+    t0 = time.perf_counter()
+    conn = snowflake.connector.connect(**params)
+    t_conn = time.perf_counter() - t0
+    try:
+        # execute_string handles multi-statement files; the last statement that
+        # returned a result set is the one worth writing (mirrors how `snow sql`
+        # shows the final SELECT after USE/SET preamble statements).
+        t0 = time.perf_counter()
+        cursors = conn.execute_string(sql)
+        if not cursors:
+            sys.exit('snow-parquet: no statements executed')
+        cursor = next((c for c in reversed(cursors) if c.description), cursors[-1])
+        t_exec = time.perf_counter() - t0
+
+        t0 = time.perf_counter()
+        rows, schema = write_parquet(cursor.fetch_arrow_batches(), out, args.decimal, pa, pq)
+        if schema is None:
+            cols = empty_parquet(cursor, out, pa, pq)
+            log(f'snow-parquet: 0 rows, columns {cols}')
+        t_fetch = time.perf_counter() - t0
+    finally:
+        conn.close()
+
+    size = os.path.getsize(out)
+    log(f'snow-parquet: {rows} rows, {size / 1e6:.1f} MB  (connect {t_conn:.1f}s, execute {t_exec:.1f}s, fetch+write {t_fetch:.1f}s)')
+    print(out)
+
+
+if __name__ == '__main__':
+    main()

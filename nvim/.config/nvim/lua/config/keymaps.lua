@@ -247,15 +247,16 @@ vim.api.nvim_create_autocmd('FileType', {
 
         vim.keymap.set('n', '<leader>rs', function()
             -- snow EXPLAIN is not reliably available; skip pre-flight for snow.
-            -- CSV rather than the old json + `jq -c '.[]'` two-step: duckdb
-            -- reads it directly and infers the types on the way to parquet.
-            local csv = query_out_path(path, 'csv')
-            local cmd, out = csv_to_parquet(
-                string.format('snow sql --format csv -f %s > %s', vim.fn.shellescape(path), vim.fn.shellescape(csv)),
-                csv
-            )
+            -- snow-parquet instead of `snow sql`: the CLI can only print text, so
+            -- the old json/csv route made Snowflake's arrow result set into
+            -- strings just for something downstream to parse back. snow-parquet
+            -- fetches the arrow batches straight from the connector and writes
+            -- parquet — no text hop, and warehouse types (TIMESTAMP, NUMBER)
+            -- reach visidata intact. No duckdb pass needed here.
+            local out = query_out_path(path, 'parquet')
+            local cmd = string.format('snow-parquet -f %s -o %s', vim.fn.shellescape(path), vim.fn.shellescape(out))
             run_to_visidata_tmux(cmd, out, 'snow query', vim.fn.expand '~/data/snowflake/')
-        end, vim.tbl_extend('force', bufopt, { desc = 'snow → CSV → parquet → visidata (tmux)' }))
+        end, vim.tbl_extend('force', bufopt, { desc = 'snow → arrow → parquet → visidata (tmux)' }))
 
         -- Feed the long-lived session instead of a one-shot run.
         vim.keymap.set('n', '<leader>rq', function()
