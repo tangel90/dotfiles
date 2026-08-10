@@ -35,9 +35,15 @@ if [ "$schema" = 1 ]; then
 fi
 
 # Colourise like a csv when bat is around; plain text otherwise.
+#
+# --theme=ansi restricts bat to the 16 terminal ANSI colours instead of shipping
+# its own palette (default: Monokai Extended, which looked nothing like yazi's
+# csv previews). piper has no highlighter — it only ANSI-parses this stdout — so
+# whatever bat emits *is* the preview, and ansi keeps that tied to the terminal
+# theme rather than a second, unrelated colour scheme.
 if command -v bat >/dev/null 2>&1; then
     duckdb -csv -c "SELECT * FROM read_parquet('$q') LIMIT $rows" |
-        bat --language=csv --style=plain --paging=never --color=always --terminal-width="$w"
+        bat --language=csv --style=plain --paging=never --color=always --theme=ansi --terminal-width="$w"
 else
     exec duckdb -csv -c "SELECT * FROM read_parquet('$q') LIMIT $rows"
 fi
