@@ -61,6 +61,62 @@ def syscopyCells(sheet, cols, rows, filetype=None):
     if filetype is None:
         filetype = vd.input('copy %d %s as filetype: ' % (len(rows), sheet.rowtype), value='csv')
     sheet.syscopyCells_async(cols, rows, filetype)
+### Don't auto-open the guide sidebar (e.g. on the columns sheet C, or any sheet
+### with a .guide) — it stole half the screen and needed 'b' to dismiss every
+### time. 'b' still toggles it on when wanted; status/error messages continue to
+### use the sidebar area regardless of this option.
+vd.options.disp_sidebar = False
+
+### Autotyping by column name. VisiData has NO value-sniffing autotype: text
+### loaders (csv/tsv/json/jsonl) hand every column back as anytype, so #/%/@ has
+### to be pressed per column. Only self-describing formats (parquet/arrow via
+### arrow_to_vdtype, sqlite) carry real types — which also means SQL casts
+### (::float, ::timestamp) are invisible to vd when the result is piped through
+### JSON/CSV, as the snow/psql runners in nvim keymaps.lua do.
+###
+### So: type by column NAME instead, applied after every load. That makes the
+### query itself the control surface — alias a column to a name matching a rule
+### below (e.g. `sum(volume) as volume_num`, `ts::timestamp as booked_ts`) and it
+### comes up typed. Exact names win over patterns; a column that already has a
+### type (parquet, sqlite) is never overridden.
+###
+### Built-in alternative for one-offs, exact names only:  Sheet.knownCols.volume.type = float
+import re
+from visidata import Sheet, anytype, date
+
+vd_type_by_name = {
+    'volume': float,
+    'quantity': float,
+    'qty': float,
+    'amount': float,
+    'price': float,
+}
+### NB: don't add generic names like 'value' here — VisiData's own metasheets
+### (options, memory, pyobj) have a 'value' column full of strings.
+
+vd_type_by_pattern = [
+    (re.compile(r'_(start|end|date|ts|time|datetime)$'), date),
+    (re.compile(r'_(num|qty|amt|vol|volume|price|amount)$'), float),
+]
+
+
+### Rule tables are bound as default args, not read from globals: the rc is
+### exec'd with locals != globals, so module-level names here are NOT visible
+### inside a function body at call time.
+@Sheet.after
+def afterLoad(sheet, _exact=vd_type_by_name, _patterns=vd_type_by_pattern, _untyped=anytype):
+    for col in sheet.columns:
+        if col.type is not _untyped:
+            continue
+        t = _exact.get(col.name.lower())
+        if t is None:
+            for pat, pattype in _patterns:
+                if pat.search(col.name.lower()):
+                    t = pattype
+                    break
+        if t is not None:
+            col.type = t
+
 
 ### Keybindings
 Sheet.unbindkey(':')
