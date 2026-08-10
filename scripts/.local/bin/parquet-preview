@@ -1,29 +1,43 @@
 #!/bin/sh
-# Compact parquet summary for a terminal pane: row count, schema, first rows.
+# Preview a parquet file as plain CSV text — i.e. what yazi shows for a real .csv
+# — instead of a schema dump. Used as the yazi previewer for *.parquet (via
+# piper.yazi, see yazi.toml) and fine standalone: `parquet-preview f.parquet`.
 #
-# Used as the yazi previewer for *.parquet (via piper.yazi — see yazi.toml), and
-# useful standalone: `parquet-preview f.parquet | less -S`.
+# usage: parquet-preview [-s] FILE [WIDTH]
+#   -s   schema instead of content: row/column counts and column types. Useful
+#        for wide files where the CSV rows are just clipped by the pane.
 #
-# duckdb reads parquet with no extension to autoload (unlike json), so this works
-# offline and needs nothing beyond the duckdb binary. Row count comes from the
-# footer metadata, so it stays fast on large files.
-#
-# Schema is printed one column per line rather than as a wide table: yazi's
-# preview pane is narrow, and a 100-column file is unreadable side-by-side.
-#
-# WIDTH is passed to .maxwidth, but duckdb only honours it when stdout is a tty,
-# so the trailing sample rows of a wide table simply get clipped by the pane.
-# The schema list above them is the part that always stays readable.
+# duckdb does the reading: no extension autoload needed for parquet (unlike
+# json), and LIMIT keeps it ~0.02s regardless of file size — this runs on every
+# hover. `vd -b FILE -o - --save-filetype=csv` produces similar output and would
+# apply .visidatarc typing, but it converts the *whole* file (0.4s for 35k rows,
+# growing from there), so it's the wrong tool for a preview. Enter still opens
+# the file in VisiData proper via the `view` opener.
 set -eu
 
-f=${1:?usage: parquet-preview FILE [WIDTH]}
+rows=${PARQUET_PREVIEW_ROWS:-500}
+schema=0
+if [ "${1:-}" = "-s" ]; then
+    schema=1
+    shift
+fi
+
+f=${1:?usage: parquet-preview [-s] FILE [WIDTH]}
 w=${2:-120}
 
 # SQL string literal: single quotes, doubled to escape.
 q=$(printf '%s' "$f" | sed "s/'/''/g")
 
-exec duckdb -box \
-    -c ".maxwidth $w" \
-    -c "SELECT count(*) AS rows, (SELECT count(*) FROM (DESCRIBE FROM read_parquet('$q'))) AS columns FROM read_parquet('$q')" \
-    -c "SELECT column_name AS column, column_type AS type FROM (DESCRIBE FROM read_parquet('$q'))" \
-    -c "SELECT * FROM read_parquet('$q') LIMIT 10"
+if [ "$schema" = 1 ]; then
+    exec duckdb -box \
+        -c "SELECT count(*) AS rows, (SELECT count(*) FROM (DESCRIBE FROM read_parquet('$q'))) AS columns FROM read_parquet('$q')" \
+        -c "SELECT column_name AS column, column_type AS type FROM (DESCRIBE FROM read_parquet('$q'))"
+fi
+
+# Colourise like a csv when bat is around; plain text otherwise.
+if command -v bat >/dev/null 2>&1; then
+    duckdb -csv -c "SELECT * FROM read_parquet('$q') LIMIT $rows" |
+        bat --language=csv --style=plain --paging=never --color=always --terminal-width="$w"
+else
+    exec duckdb -csv -c "SELECT * FROM read_parquet('$q') LIMIT $rows"
+fi
