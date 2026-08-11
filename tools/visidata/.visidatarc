@@ -61,6 +61,35 @@ def syscopyCells(sheet, cols, rows, filetype=None):
     if filetype is None:
         filetype = vd.input('copy %d %s as filetype: ' % (len(rows), sheet.rowtype), value='csv')
     sheet.syscopyCells_async(cols, rows, filetype)
+
+### Saving parquet (^S foo.parquet) silently threw away the time of day: a date
+### column holding 2024-12-31T23:00 came back as 2024-12-31T00:00 on reopen.
+### VisiData's save_parquet hardcodes `date: pa.date64()` in its type map
+### (loaders/parquet.py), and pyarrow normalises that to date32[day] — a
+### calendar date with no time component at all. Anything sub-daily is lost at
+### write time, so no amount of retyping the column afterwards recovers it.
+###
+### Rather than copy upstream's whole writer here (it would silently drift on
+### the next VisiData release), swap out what pa.date64 returns for just the
+### duration of the save, so the same code path builds a timestamp column
+### instead. Date-only columns are unaffected in practice — they simply write as
+### timestamps at midnight, and reload as dates with a zero time.
+###
+### Caveat: the patch is process-global while the save runs, so two parquet
+### saves racing in different threads could see it. Saves are one-at-a-time in
+### practice, and the window is a single write.
+_orig_save_parquet = VisiData.save_parquet
+
+@VisiData.api
+def save_parquet(vd, p, sheet):
+    pa = vd.importExternal('pyarrow')
+    orig_date64 = pa.date64
+    pa.date64 = lambda: pa.timestamp('us')
+    try:
+        return _orig_save_parquet(vd, p, sheet)
+    finally:
+        pa.date64 = orig_date64
+
 ### Don't auto-open the guide sidebar (e.g. on the columns sheet C, or any sheet
 ### with a .guide) — it stole half the screen and needed 'b' to dismiss every
 ### time. 'b' still toggles it on when wanted; status/error messages continue to
