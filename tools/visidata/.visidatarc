@@ -125,7 +125,7 @@ vd_type_by_name = {
 
 vd_type_by_pattern = [
     (re.compile(r'_(start|end|date|ts|time|datetime)$'), date),
-    (re.compile(r'_(num|qty|amt|vol|volume|price|amount)$'), float),
+    (re.compile(r'_(num|qty|amt|vol|volume|price|amount|value)$'), float),
 ]
 
 

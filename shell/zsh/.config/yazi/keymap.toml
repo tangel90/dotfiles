@@ -89,7 +89,7 @@ desc = "Search files by name using fd"
 # (e.g. dbt seeds/). This variant opts back in to gitignored matches.
 [[mgr.prepend_keymap]]
 on = "<C-g>"
-run = 'search --via=fd --args="--no-ignore"'
+run = "search --via=fd --args=--no-ignore"
 desc = "Search files by name using fd (include gitignored)"
 
 [[mgr.prepend_keymap]]

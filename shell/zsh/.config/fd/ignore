@@ -6,11 +6,14 @@ swap/
 undo/
 .password-store
 miniconda3/
+worktrees/
+run/
 .venv/
 .git/
 .wine/
 .docker/
 Trash/
+tmp/
 go/
 .cache/
 __pycache__/

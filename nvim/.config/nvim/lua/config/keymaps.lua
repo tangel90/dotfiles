@@ -84,6 +84,18 @@ local function buf_sql(buf)
     return table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n')
 end
 
+-- Linewise text of the active visual selection. Must be called while still in
+-- visual mode ('v is only set on exit), so it reads the range first and then
+-- leaves the mode itself. Linewise is enough for SQL.
+local function visual_sql(buf)
+    local s, e = vim.fn.line 'v', vim.fn.line '.'
+    if s > e then
+        s, e = e, s
+    end
+    vim.api.nvim_feedkeys(vim.keycode '<Esc>', 'nx', false)
+    return table.concat(vim.api.nvim_buf_get_lines(buf, s - 1, e, false), '\n')
+end
+
 -- Descriptive basename for query-result scratch files: reuses nvim's
 -- per-session random tempdir (still unique / auto-cleaned) but names the
 -- file after the source .sql file + a timestamp, so it's meaningful if it
@@ -263,31 +275,32 @@ vim.api.nvim_create_autocmd('FileType', {
             snow_session_send(buf_sql(args.buf), 'buffer')
         end, vim.tbl_extend('force', bufopt, { desc = 'snow session ← buffer' }))
 
-        vim.keymap.set('n', '<leader>rv', function()
+        -- Run `sql` on the warm snow session and open the result in visidata.
+        -- The session writes the CSV itself (out/format header) and touches
+        -- <out>.done when finished, so nvim just waits on that marker.
+        local function snow_session_to_visidata(sql, label)
             local out = query_out_path(path, 'csv')
             local done = out .. '.done'
             vim.fn.delete(done)
-            snow_session_send(
-                ('-- out: %s\n-- format: csv\n%s'):format(out, buf_sql(args.buf)),
-                'buffer ÔåÆ visidata'
-            )
+            snow_session_send(('-- out: %s\n-- format: csv\n%s'):format(out, sql), label .. ' → visidata')
             -- Block until the session signals completion; non-zero exit surfaces via notify.
             local wait = ('for i in $(seq 1 6000); do [ -f %s ] && break; sleep 0.1; done; grep -q "^ok$" %s'):format(
                 vim.fn.shellescape(done),
                 vim.fn.shellescape(done)
             )
             run_to_visidata_tmux(wait, out, 'snow session', vim.fn.expand '~/data/snowflake/')
+        end
+
+        vim.keymap.set('n', '<leader>rv', function()
+            snow_session_to_visidata(buf_sql(args.buf), 'buffer')
         end, vim.tbl_extend('force', bufopt, { desc = 'snow session -> visidata (warm)' }))
 
+        vim.keymap.set('x', '<leader>rv', function()
+            snow_session_to_visidata(visual_sql(args.buf), 'selection')
+        end, vim.tbl_extend('force', bufopt, { desc = 'snow session ← selection -> visidata (warm)' }))
+
         vim.keymap.set('x', '<leader>rq', function()
-            -- Read the range while still in visual mode; linewise is enough for SQL.
-            local s, e = vim.fn.line 'v', vim.fn.line '.'
-            if s > e then
-                s, e = e, s
-            end
-            vim.api.nvim_feedkeys(vim.keycode '<Esc>', 'nx', false)
-            local lines = vim.api.nvim_buf_get_lines(args.buf, s - 1, e, false)
-            snow_session_send(table.concat(lines, '\n'), 'selection')
+            snow_session_send(visual_sql(args.buf), 'selection')
         end, vim.tbl_extend('force', bufopt, { desc = 'snow session ← selection' }))
 
         vim.keymap.set(

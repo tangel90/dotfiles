@@ -1,3 +1,8 @@
+---
+id: CLAUDE
+aliases: []
+tags: []
+---
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -34,13 +39,13 @@ config.functions → config.todo_tasks → config.highlights →
 lazy-bootstrap → lazy-plugins
 ```
 
-`config.snippets` is currently commented out. **Leader is `<Space>`** and is set in `config/options.lua` *before* `lazy-plugins` loads — preserve that ordering if you add setup steps.
+`config.snippets` is currently commented out. **Leader is `<Space>`** and is set in `config/options.lua` _before_ `lazy-plugins` loads — preserve that ordering if you add setup steps.
 
 ### Plugin system
 
 - `lua/lazy-bootstrap.lua` clones lazy.nvim into `stdpath('data')/lazy/` on first run.
 - `lua/lazy-plugins.lua` calls `require('lazy').setup({ { import = 'plugins' }, ... })`, so **every file in `lua/plugins/*.lua` is auto-imported** and must return a lazy.nvim spec (or list of specs). Adding a new plugin = drop a new file in that folder; no registration needed elsewhere.
-- `lua/plugins/inactive/` holds disabled specs — it is *not* imported, so files there are inert until moved up one directory.
+- `lua/plugins/inactive/` holds disabled specs — it is _not_ imported, so files there are inert until moved up one directory.
 - Plugin versions pinned by `lazy-lock.json` (gitignored). Use `:Lazy sync` / `:Lazy update` inside Neovim rather than hand-editing specs.
 
 ### Formatting
@@ -68,3 +73,8 @@ The repo-local `.claude/settings.local.json` is gitignored — anything put ther
 ## Install / bootstrap
 
 `installer.sh` is **Arch/pacman-only** despite the README also documenting Debian/Ubuntu/WSL recipes. On non-Arch systems follow the README sections instead of running the script.
+
+## Git Workflow
+
+- Keep git commit messages a concise one-liner
+- don't sign commit messages
