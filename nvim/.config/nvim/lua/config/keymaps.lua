@@ -96,6 +96,14 @@ local function visual_sql(buf)
     return table.concat(vim.api.nvim_buf_get_lines(buf, s - 1, e, false), '\n')
 end
 
+-- The single line under the cursor. For one-liner probes (SELECT count(*) …,
+-- SHOW TABLES) where sending the whole buffer would run every other statement
+-- in it too.
+local function line_sql(buf)
+    local lnum = vim.fn.line '.'
+    return vim.api.nvim_buf_get_lines(buf, lnum - 1, lnum, false)[1] or ''
+end
+
 -- Descriptive basename for query-result scratch files: reuses nvim's
 -- per-session random tempdir (still unique / auto-cleaned) but names the
 -- file after the source .sql file + a timestamp, so it's meaningful if it
@@ -292,8 +300,12 @@ vim.api.nvim_create_autocmd('FileType', {
         end
 
         vim.keymap.set('n', '<leader>rv', function()
+            snow_session_to_visidata(line_sql(args.buf), 'line')
+        end, vim.tbl_extend('force', bufopt, { desc = 'snow session ← line -> visidata (warm)' }))
+
+        vim.keymap.set('n', '<leader>rV', function()
             snow_session_to_visidata(buf_sql(args.buf), 'buffer')
-        end, vim.tbl_extend('force', bufopt, { desc = 'snow session -> visidata (warm)' }))
+        end, vim.tbl_extend('force', bufopt, { desc = 'snow session ← buffer -> visidata (warm)' }))
 
         vim.keymap.set('x', '<leader>rv', function()
             snow_session_to_visidata(visual_sql(args.buf), 'selection')
