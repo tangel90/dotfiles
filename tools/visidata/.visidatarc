@@ -1,5 +1,6 @@
 import os
 import datetime
+import tempfile
 from visidata import vd, BaseSheet, VisiData
 
 ### options
@@ -8,12 +9,29 @@ vd.options.csv_doublequote=True
 vd.option('save_dir', '/home/thomas/data/visidata', 'directory (dated subfolder appended) suggested when saving a sheet', sheettype=None)
 
 ### Default save location: sheets opened from scratch/tmp files (e.g. yazi/nvim
-### previews under ~/.local/tmp) otherwise default their save prompt to that
-### same tmp path — easy to silently overwrite the tmp file instead of keeping
-### the result. Keep the suggested basename but default its directory to
-### options.save_dir/<today's date>, creating that dated folder if needed
-### (VisiData itself only auto-creates a directory when the save path ends
-### in '/', i.e. the "save each row as its own file" case — not here).
+### previews, or the sql runners' query results, all under ~/.local/tmp)
+### otherwise default their save prompt to that same tmp path — easy to silently
+### overwrite the tmp file instead of keeping the result. Keep the suggested
+### basename but default its directory to options.save_dir/<today's date>,
+### creating that dated folder if needed (VisiData itself only auto-creates a
+### directory when the save path ends in '/', i.e. the "save each row as its own
+### file" case — not here).
+###
+### A file opened from a real location is left alone: ^S then offers its own path
+### back, so saving over it works like stock VisiData instead of quietly forking
+### a copy into the data dir. Only tmp paths and sheets with no file source at
+### all (freq tables, joins, transposes, +-derived sheets) get redirected.
+_TMPDIRS = (
+    os.path.realpath(os.path.expanduser('~/.local/tmp')),
+    os.path.realpath(tempfile.gettempdir()),
+    '/tmp',
+    '/dev/shm',
+)
+
+def _under_tmp(path):
+    rp = os.path.realpath(path)
+    return any(rp == d or rp.startswith(d + os.sep) for d in _TMPDIRS)
+
 _orig_getDefaultSaveName = BaseSheet.getDefaultSaveName
 
 @BaseSheet.api
@@ -21,6 +39,11 @@ def getDefaultSaveName(sheet):
     name = _orig_getDefaultSaveName(sheet)
     savedir = sheet.options.save_dir
     if not savedir:
+        return name
+    # An absolute path that exists and isn't scratch: it's a real file the sheet
+    # was loaded from, so keep it. getDefaultSaveName returns str(source) in that
+    # case, and only a bare 'name.filetype' for source-less sheets.
+    if os.path.isabs(name) and os.path.exists(name) and not _under_tmp(name):
         return name
     datedir = os.path.join(savedir, datetime.date.today().isoformat())
     os.makedirs(datedir, exist_ok=True)
@@ -90,11 +113,21 @@ def save_parquet(vd, p, sheet):
     finally:
         pa.date64 = orig_date64
 
-### Don't auto-open the guide sidebar (e.g. on the columns sheet C, or any sheet
-### with a .guide) — it stole half the screen and needed 'b' to dismiss every
-### time. 'b' still toggles it on when wanted; status/error messages continue to
-### use the sidebar area regardless of this option.
+### Don't auto-open the guide sidebar (columns sheet C, frequency table F, and
+### most other sheets carry a .guide) — it stole half the screen.
+###
+### disp_sidebar alone was not enough: 'b' (sidebar-toggle) flips that same
+### global option, so the first 'b' press turned guides back ON, and every sheet
+### pushed afterwards showed one again — which is why it kept coming back on C
+### and F. Dropping 'guides' from disp_help_flags is what actually settles it:
+### drawSidebar requires wantsHelp('guides'), so no guide draws whatever state
+### the toggle is left in. Keep disp_sidebar=False too, since that one also gates
+### the disp_sidebar_fmt default sidebar.
+###
+### Status and error messages keep using the sidebar area regardless — they're
+### unconditional in drawSidebar — and any keystroke clears them.
 vd.options.disp_sidebar = False
+vd.options.disp_help_flags = 'cmdpalette help hints inputfield inputkeys nometacols sidebar'
 
 ### Autotyping by column name. VisiData has NO value-sniffing autotype: text
 ### loaders (csv/tsv/json/jsonl) hand every column back as anytype, so #/%/@ has
@@ -129,9 +162,10 @@ vd_type_by_pattern = [
 ]
 
 
-### Rule tables are bound as default args, not read from globals: the rc is
-### exec'd with locals != globals, so module-level names here are NOT visible
-### inside a function body at call time.
+### Rule tables are bound as default args purely to pin them at definition time.
+### (Top-level rc names *are* reachable from function bodies at call time: the rc
+### is exec'd with locals != globals, but loadConfigFile then feeds those locals
+### to vd.addGlobals, which updates the very dict these functions close over.)
 @Sheet.after
 def afterLoad(sheet, _exact=vd_type_by_name, _patterns=vd_type_by_pattern, _untyped=anytype):
     for col in sheet.columns:
