@@ -20,3 +20,10 @@ __pycache__/
 .conda/
 .build/
 .miniconda
+
+# dbt build output. Used to be filtered for free via the repo .gitignore, but
+# yazi's <C-f> now searches with --no-ignore-vcs (so csv seeds/ show up), which
+# means gitignored artifacts need excluding here instead. In one dbt repo these
+# were 1245 of 1596 files.
+target/
+dbt_packages/
