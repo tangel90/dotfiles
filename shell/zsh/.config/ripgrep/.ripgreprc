@@ -17,6 +17,7 @@ web:*.{html,css,js}*
 --glob=!**/Trash/*
 --glob=!.cache/
 --glob=!.conda/
+--glob=!.claude/
 
 # or
 --glob

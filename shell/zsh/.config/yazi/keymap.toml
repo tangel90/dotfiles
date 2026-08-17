@@ -78,13 +78,6 @@ on = ["g", "D"]
 run = "cd /mnt/c/Users/T2192/dev/"
 desc = "cd into $WIN_HOME/dev"
 
-# --no-ignore-vcs, not plain fd: `~/.gitignore_global` has a blanket `*.csv`
-# rule (kept globally on purpose, to keep data exports out of commits) and fd
-# applies gitignore rules inside any git work tree, so a directory that is
-# entirely csv — dbt seeds/, most data dumps — looked *empty* to this search.
-# The files are even git-tracked; fd hides them anyway because it matches
-# patterns without consulting the index.
-#
 # --no-ignore-vcs drops only the gitignore layer, so ~/.config/fd/ignore still
 # filters the usual noise. Plain --no-ignore would disable that too: searching
 # `ref_` in a dbt repo gave 2 hits by default, 48 with --no-ignore-vcs, and 495
@@ -93,6 +86,16 @@ desc = "cd into $WIN_HOME/dev"
 [[mgr.prepend_keymap]]
 on = "<C-f>"
 run = "search --via=fd --args=--no-ignore-vcs"
+desc = "Search files by name using fd (incl. gitignored)"
+
+[[mgr.prepend_keymap]]
+on = "s"
+run = "search --via=fd --args=--no-ignore-vcs"
+desc = "Search files by name using fd (incl. gitignored)"
+
+[[mgr.prepend_keymap]]
+on = "S"
+run = "search --via=rg --args=--no-ignore-vcs"
 desc = "Search files by name using fd (incl. gitignored)"
 
 [[mgr.prepend_keymap]]
@@ -121,12 +124,12 @@ run = "plugin smart-switch 1"
 desc = "Switch or create tab 2"
 
 [[mgr.prepend_keymap]]
-on   = "t"
-run  = "plugin smart-tab"
+on = "t"
+run = "plugin smart-tab"
 desc = "Create a tab and enter the hovered directory"
 
 [[mgr.prepend_keymap]]
-on   = "!"
-for  = "unix"
-run  = 'shell "$SHELL" --block'
+on = "!"
+for = "unix"
+run = 'shell "$SHELL" --block'
 desc = "Open $SHELL here"
