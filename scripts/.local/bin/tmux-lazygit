@@ -1,0 +1,59 @@
+#!/bin/sh
+# prefix+g: jump to the lazygit pane for *this* repo if one is already open,
+# otherwise start one in a new window.
+#
+# Matching is per repo, not "any lazygit anywhere": with several repos (and
+# .claude/worktrees/ copies of them) open at once, a blind match would teleport
+# you into an unrelated repo's lazygit. Panes are compared by git toplevel, so a
+# worktree counts as its own repo — which is the point of having it checked out
+# separately. Outside a repo, the pane's directory is used as the identity.
+#
+# Only this session's panes are considered; windows belong to sessions, so
+# jumping across them would yank you out of the session you're working in.
+set -eu
+
+# Target the pane the binding fired from, explicitly. tmux only falls back to
+# $TMUX_PANE for the *default* target, and a bare `tmux display -p` otherwise
+# resolves against the most recently active pane — which, since the previous
+# prefix+g may have just created a window elsewhere, is not necessarily this
+# pane. run-shell exports TMUX_PANE for us.
+target=${TMUX_PANE:+-t $TMUX_PANE}
+
+# shellcheck disable=SC2086  # $target is deliberately word-split (or empty)
+here=$(tmux display -p $target '#{pane_current_path}')
+# Only this session's panes: windows belong to sessions.
+session=$(tmux display -p $target '#{session_name}')
+
+root_of() {
+    git -C "$1" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$1"
+}
+
+want=$(root_of "$here")
+
+# A pane started as `lazygit` reports that as pane_current_command, but one
+# started via a wrapper (e.g. the `lg` shell function) reports the wrapper or
+# its shell — so the window name set below is accepted as a second signal.
+panes=$(tmux list-panes -s -t "$session" -F '#{pane_id} #{pane_current_command} #{window_name} #{pane_current_path}')
+
+found=''
+# Fed by here-doc rather than a pipe: a piped `while` runs in a subshell in
+# POSIX sh, so anything assigned inside it would be lost here.
+while read -r id cmd wname path; do
+    [ -n "$id" ] || continue
+    case "$cmd:$wname" in
+        lazygit:* | *:lazygit) ;;
+        *) continue ;;
+    esac
+    [ "$(root_of "$path")" = "$want" ] || continue
+    found=$id
+    break
+done <<EOF
+$panes
+EOF
+
+if [ -n "$found" ]; then
+    tmux select-window -t "$found"
+    tmux select-pane -t "$found"
+else
+    tmux new-window -n lazygit -c "$here" lazygit
+fi
