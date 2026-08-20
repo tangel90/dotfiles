@@ -123,6 +123,36 @@ def save_parquet(vd, p, sheet):
     finally:
         pa.date64 = orig_date64
 
+### Make parquet sheets editable. Edits (e), g= / setcol-expr, fill, negate —
+### anything going through Column.setValue — reported "set N values" on a parquet
+### sheet and changed nothing: Column.putValue is a silent no-op when a column
+### has no setter (column.py), and ParquetColumn defines none, so every write was
+### dropped on the floor while the status line claimed success.
+###
+### The loader already intends this to work — its rowdef comment describes rows
+### as {'__rownum__': int, parquet_col: overridden_value} — but calcValue only
+### ever reads from the arrow array and ignores such an override. So: store
+### writes under the column name, and prefer that over the arrow value on read.
+### Nothing is written back to the .parquet file itself until you save.
+from visidata.loaders.parquet import ParquetColumn
+
+_orig_parquet_calcValue = ParquetColumn.calcValue
+
+def _parquet_calcValue(col, row):
+    if col.name in row:
+        return row[col.name]
+    return _orig_parquet_calcValue(col, row)
+
+def _parquet_putValue(col, row, val):
+    row[col.name] = val
+    # large_string columns are cached (cache=True in the loader), and the cache
+    # is consulted before calcValue — so a stale entry would hide the edit.
+    if col._cachedValues is not None:
+        col._cachedValues.pop(col.sheet.rowid(row), None)
+
+ParquetColumn.calcValue = _parquet_calcValue
+ParquetColumn.putValue = _parquet_putValue
+
 ### Don't auto-open the guide sidebar (columns sheet C, frequency table F, and
 ### most other sheets carry a .guide) — it stole half the screen.
 ###
