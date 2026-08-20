@@ -6,6 +6,16 @@ from visidata import vd, BaseSheet, VisiData
 ### options
 vd.options.csv_doublequote=True
 
+### Write a UTF-8 BOM when saving. VisiData's defaults are asymmetric — it reads
+### as utf-8-sig (path.py) but writes plain utf-8 (save.py) — and Excel, opened
+### by double-clicking a .csv, does not sniff UTF-8: it assumes the Windows ANSI
+### codepage (cp1252 here), so "Wärme" arrived as "WÃ¤rme". The BOM is the signal
+### Excel looks for, and it's what Excel itself emits under "CSV UTF-8".
+### Costless on the read side, since utf-8-sig strips the BOM again.
+### Caveat: consumers reading with plain utf-8 see ﻿ glued to the first
+### header name (duckdb and pandas both handle it; naive split() parsers don't).
+vd.options.save_encoding = 'utf-8-sig'
+
 vd.option('save_dir', '/home/thomas/data/visidata', 'directory (dated subfolder appended) suggested when saving a sheet', sheettype=None)
 
 ### Default save location: sheets opened from scratch/tmp files (e.g. yazi/nvim
