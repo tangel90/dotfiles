@@ -133,3 +133,15 @@ on = "!"
 for = "unix"
 run = 'shell "$SHELL" --block'
 desc = "Open $SHELL here"
+
+# Reveal the browsed directory in Windows Explorer. `.` rather than a wslpath -w
+# conversion because yazi runs shell commands with cwd set to the current
+# directory, and explorer.exe resolves that to its \\wsl.localhost UNC path
+# itself. Absolute interpreter path is required: .zshrc strips /mnt/c from PATH.
+# --orphan detaches it — explorer.exe exits non-zero even on success, which would
+# otherwise surface as a failed task notification.
+[[mgr.prepend_keymap]]
+on = "<A-e>"
+for = "unix"
+run = 'shell "/mnt/c/Windows/explorer.exe ." --orphan'
+desc = "Reveal in Windows Explorer"
