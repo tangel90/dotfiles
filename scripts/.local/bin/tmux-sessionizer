@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [[ $# -ge 1 ]]; then
-    selected=$(fd . $@ --type d -d 4 --hidden --follow \
+    selected=$(fd . "$@" --type d -d 4 --hidden --follow \
         | awk -F/ '{print NF, $0}' | sort -n -k1,1 -k2 | cut -d' ' -f2- \
         | fzf --tiebreak=length,index)
 else
@@ -28,7 +28,7 @@ tmux_running=$(pgrep tmux)
 
 # OK - tmux is not running
 if [[ -z $tmux_running ]]; then
-    tmux new-session -s $selected_name -c "$selected"
+    tmux new-session -s "$selected_name" -c "$selected"
     exit 0
 fi
 
@@ -51,10 +51,10 @@ if ! tmux has-session -t="$selected_name" 2> /dev/null; then
     fi
 
     # Prefer .claude at the repo root (or selected dir if not in a repo).
-    claude_check_dir="${repo_root:-$selected}"
-    if [[ -d "$claude_check_dir/.claude" ]]; then
-        tmux send-keys -t "$selected_name" "claude" C-m
-    elif [[ -n "$repo_root" ]]; then
+    # claude_check_dir="${repo_root:-$selected}"
+    # if [[ -d "$claude_check_dir/.claude" ]]; then
+    #     tmux send-keys -t "$selected_name" "claude" C-m
+    if [[ -n "$repo_root" ]]; then
         # NOTE: do NOT auto `git fetch` here. Over an SSH remote with
         # gpg-agent's ssh-support, a locked key makes gpg spawn pinentry inside
         # this freshly-created detached window *while* the sessionizer is doing
@@ -62,7 +62,7 @@ if ! tmux has-session -t="$selected_name" 2> /dev/null; then
         # crashing the tmux server. Just open nvim; fetch via `lg` (lazygit) or
         # :Git fetch once you're in a stable, attached pane.
         tmux send-keys -t "$selected_name" "nvim" C-m
-    elif [[ "$selected_name" == *data || "$selected_name" == "reports" ]]; then
+    elif [[ "$selected_name" == *data || "$selected_name" == "reports" || "$selected_name" == "*seeds" ]]; then
         tmux send-keys -t "$selected_name" "vd" C-m
     fi
 fi

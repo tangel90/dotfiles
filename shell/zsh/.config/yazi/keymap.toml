@@ -8,10 +8,10 @@ on = ["i"]
 run = "link"
 desc = "symlink yanked files"
 
-[[mgr.prepend_keymap]]
-on = ["-"]
-run = "leave"
-desc = "Go to parent directory"
+# [[mgr.prepend_keymap]]
+# on = ["-"]
+# run = "leave"
+# desc = "Go to parent directory"
 
 [[mgr.prepend_keymap]]
 on = ["g", "T"]

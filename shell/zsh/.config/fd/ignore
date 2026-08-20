@@ -6,7 +6,7 @@ swap/
 undo/
 .password-store
 miniconda3/
-# worktrees/
+worktrees/
 run/
 .venv/
 .git/

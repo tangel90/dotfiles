@@ -5,158 +5,177 @@
 --  Try it with `yap` in normal mode
 --  See `:help vim.hl.on_yank()`
 vim.api.nvim_create_autocmd('TextYankPost', {
-  desc = 'Highlight when yanking (copying) text',
-  group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
-  callback = function()
-    vim.hl.on_yank()
-  end,
+    desc = 'Highlight when yanking (copying) text',
+    group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
+    callback = function()
+        vim.hl.on_yank()
+    end,
 })
 -- treesitter will not automatically start on branch 'main' anymore
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'python', 'markdown', 'go', 'yaml' },
-  callback = function() vim.treesitter.start() end,
+    pattern = { 'python', 'markdown', 'go', 'yaml' },
+    callback = function()
+        vim.treesitter.start()
+    end,
 })
 
 vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
-  pattern = '.chatgpt_history',
-  command = "set filetype=markdown"
+    pattern = '.visidatarc',
+    command = 'set filetype=python',
 })
 
 vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
-  pattern = '*.log',
-  callback = function()
-    vim.opt_local.buftype = 'nofile'
-    vim.opt_local.bufhidden = 'wipe'
-    vim.opt_local.swapfile = false
-    vim.opt_local.modifiable = true
-    vim.opt_local.wrap = false
-    vim.opt_local.number = false
-    vim.opt_local.relativenumber = false
-  end
-})
-
-vim.api.nvim_create_autocmd("FileType", {
-  pattern = 'markdown',
-  callback = function()
-    vim.opt_local.wrap = false
-    vim.opt_local.number = false
-    vim.opt_local.relativenumber = false
-    vim.opt_local.numberwidth = 4
-    vim.opt_local.signcolumn = "yes:2"
-    vim.opt_local.foldcolumn = "0"
-    vim.opt_local.foldmethod = "expr"
-    vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
-    vim.opt_local.foldenable = true
-    vim.opt_local.foldlevel = 99
-    vim.opt_local.textwidth = 120
-    vim.opt.wrapmargin=5
-    vim.opt.sidescrolloff=15
-    vim.opt.scrolloff=5
-    -- vim.opt_local.list = true
-    vim.opt_local.linebreak = true
-    -- vim.opt_local.showbreak = "↪ "
-    -- vim.opt_local.listchars = { tab = "→ ", trail = "·" }
-
-    vim.keymap.set('n', ']]', function() vim.fn.search('^#\\+ ', 'W') end,
-      { buffer = true, desc = 'Next markdown heading' })
-    vim.keymap.set('n', '[[', function() vim.fn.search('^#\\+ ', 'bW') end,
-      { buffer = true, desc = 'Prev markdown heading' })
-
-    -- Follow the link under the cursor. Set here (not in obsidian's enter_note
-    -- callback) so it works in every markdown buffer, not just recognised vault
-    -- notes. obsidian.follow_link handles wikilinks, [md](links), headings, and
-    -- opens http(s) URLs via vim.ui.open (→ xdg-open → browser). Falls back to
-    -- gx for URLs if obsidian isn't available for this buffer.
-    local function follow_link()
-      if not pcall(vim.cmd, 'Obsidian follow_link') then
-        pcall(vim.cmd, 'normal! gx')
-      end
-    end
-    vim.keymap.set('n', 'gf', follow_link, { buffer = true, desc = 'Follow markdown link' })
-    vim.keymap.set('n', '<CR>', follow_link, { buffer = true, desc = 'Follow markdown link' })
-  end
-})
-
-vim.api.nvim_create_autocmd("FileType", {
-  pattern = "python",  -- or your target language
-  callback = function()
-    vim.api.nvim_buf_set_keymap(0, 'n', '<leader>sf', '<cmd>normal! F"if<Esc>', { noremap = true, silent = true })
-    vim.api.nvim_buf_set_keymap(0, 'n', '<leader>li', '<cmd>normal! ologger.info(f"")<Esc>', { noremap = true, silent = true })
-  end,
-})
-
-vim.api.nvim_create_autocmd("FileType", {
-  pattern = "netrw",
-  callback = function()
-    vim.keymap.set('n', '<Esc><Esc>', '<cmd>bd<cr>', { buffer = true, desc = 'Close NetRW' })
-  end,
-})
-
-vim.api.nvim_create_autocmd("FileType", {
-  pattern = "go",  -- or your target language
-  callback = function()
-    -- Map <leader>r to replace '=' with ':=' in the current line
-    vim.api.nvim_buf_set_keymap(0, 'n', '<leader>rd', [[:s/=/:=/g<CR>]], { noremap = true, silent = true })
-  end,
+    pattern = '.chatgpt_history',
+    command = 'set filetype=markdown',
 })
 
 vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
-  pattern = '*/time_tracking/*.md',
-  callback = function()
-    require('config.timetracking').setup_keymaps()
-  end,
+    pattern = '*.log',
+    callback = function()
+        vim.opt_local.buftype = 'nofile'
+        vim.opt_local.bufhidden = 'wipe'
+        vim.opt_local.swapfile = false
+        vim.opt_local.modifiable = true
+        vim.opt_local.wrap = false
+        vim.opt_local.number = false
+        vim.opt_local.relativenumber = false
+    end,
+})
+
+vim.api.nvim_create_autocmd('FileType', {
+    pattern = 'markdown',
+    callback = function()
+        vim.opt_local.wrap = false
+        vim.opt_local.number = false
+        vim.opt_local.relativenumber = false
+        vim.opt_local.numberwidth = 4
+        vim.opt_local.signcolumn = 'yes:2'
+        vim.opt_local.foldcolumn = '0'
+        vim.opt_local.foldmethod = 'expr'
+        vim.opt_local.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+        vim.opt_local.foldenable = true
+        vim.opt_local.foldlevel = 99
+        vim.opt_local.textwidth = 120
+        vim.opt.wrapmargin = 5
+        vim.opt.sidescrolloff = 15
+        vim.opt.scrolloff = 5
+        -- vim.opt_local.list = true
+        vim.opt_local.linebreak = true
+        -- vim.opt_local.showbreak = "↪ "
+        -- vim.opt_local.listchars = { tab = "→ ", trail = "·" }
+
+        vim.keymap.set('n', ']]', function()
+            vim.fn.search('^#\\+ ', 'W')
+        end, { buffer = true, desc = 'Next markdown heading' })
+        vim.keymap.set('n', '[[', function()
+            vim.fn.search('^#\\+ ', 'bW')
+        end, { buffer = true, desc = 'Prev markdown heading' })
+
+        -- Follow the link under the cursor. Set here (not in obsidian's enter_note
+        -- callback) so it works in every markdown buffer, not just recognised vault
+        -- notes. obsidian.follow_link handles wikilinks, [md](links), headings, and
+        -- opens http(s) URLs via vim.ui.open (→ xdg-open → browser). Falls back to
+        -- gx for URLs if obsidian isn't available for this buffer.
+        local function follow_link()
+            if not pcall(vim.cmd, 'Obsidian follow_link') then
+                pcall(vim.cmd, 'normal! gx')
+            end
+        end
+        vim.keymap.set('n', 'gf', follow_link, { buffer = true, desc = 'Follow markdown link' })
+        vim.keymap.set('n', '<CR>', follow_link, { buffer = true, desc = 'Follow markdown link' })
+    end,
+})
+
+vim.api.nvim_create_autocmd('FileType', {
+    pattern = 'python', -- or your target language
+    callback = function()
+        vim.api.nvim_buf_set_keymap(0, 'n', '<leader>sf', '<cmd>normal! F"if<Esc>', { noremap = true, silent = true })
+        vim.api.nvim_buf_set_keymap(
+            0,
+            'n',
+            '<leader>li',
+            '<cmd>normal! ologger.info(f"")<Esc>',
+            { noremap = true, silent = true }
+        )
+    end,
+})
+
+vim.api.nvim_create_autocmd('FileType', {
+    pattern = 'netrw',
+    callback = function()
+        vim.keymap.set('n', '<Esc><Esc>', '<cmd>bd<cr>', { buffer = true, desc = 'Close NetRW' })
+    end,
+})
+
+vim.api.nvim_create_autocmd('FileType', {
+    pattern = 'go', -- or your target language
+    callback = function()
+        -- Map <leader>r to replace '=' with ':=' in the current line
+        vim.api.nvim_buf_set_keymap(0, 'n', '<leader>rd', [[:s/=/:=/g<CR>]], { noremap = true, silent = true })
+    end,
+})
+
+vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
+    pattern = '*/time_tracking/*.md',
+    callback = function()
+        require('config.timetracking').setup_keymaps()
+    end,
 })
 
 -- Anything under ~/.local/tmp (Claude Code prompt edits, other transient
 -- scratch files): assign a non-markdown filetype so obsidian.nvim (ft=markdown)
 -- and markview never attach. Treesitter markdown is started manually for
 -- syntax highlight.
-vim.filetype.add({
-  pattern = {
-    ['.*/%.local/tmp/.*%.md'] = 'mdscratch',
-  },
-})
+vim.filetype.add {
+    pattern = {
+        ['.*/%.local/tmp/.*%.md'] = 'mdscratch',
+    },
+}
 
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = 'mdscratch',
-  callback = function(args)
-    pcall(vim.treesitter.start, args.buf, 'markdown')
-    vim.bo[args.buf].commentstring = '<!-- %s -->'
-  end,
+    pattern = 'mdscratch',
+    callback = function(args)
+        pcall(vim.treesitter.start, args.buf, 'markdown')
+        vim.bo[args.buf].commentstring = '<!-- %s -->'
+    end,
 })
 
 -- Autosave for scratchpad.sql only. noautocmd write avoids triggering
 -- format-on-save / LSP didSave churn while editing.
 vim.api.nvim_create_autocmd({ 'InsertLeave', 'TextChanged' }, {
-  group = vim.api.nvim_create_augroup('scratchpad-autosave', { clear = true }),
-  pattern = { 'scratchpad.sql', '*/scratchpad.sql' },
-  callback = function(args)
-    local bo = vim.bo[args.buf]
-    if bo.modified and bo.modifiable and bo.buftype == '' then
-      vim.cmd('silent! noautocmd write')
-    end
-  end,
+    group = vim.api.nvim_create_augroup('scratchpad-autosave', { clear = true }),
+    pattern = { 'scratchpad.sql', '*/scratchpad.sql' },
+    callback = function(args)
+        local bo = vim.bo[args.buf]
+        if bo.modified and bo.modifiable and bo.buftype == '' then
+            vim.cmd 'silent! noautocmd write'
+        end
+    end,
 })
 
 local function augroup(name)
-  return vim.api.nvim_create_augroup('lazyvim_' .. name, { clear = true })
+    return vim.api.nvim_create_augroup('lazyvim_' .. name, { clear = true })
 end
 
 vim.filetype.add {
-  pattern = {
-    ['.*'] = {
-      function(path, buf)
-        return vim.bo[buf].filetype ~= 'bigfile' and path and vim.fn.getfsize(path) > vim.g.bigfile_size and 'bigfile' or nil
-      end,
+    pattern = {
+        ['.*'] = {
+            function(path, buf)
+                return vim.bo[buf].filetype ~= 'bigfile'
+                        and path
+                        and vim.fn.getfsize(path) > vim.g.bigfile_size
+                        and 'bigfile'
+                    or nil
+            end,
+        },
     },
-  },
 }
 vim.api.nvim_create_autocmd({ 'FileType' }, {
-  group = augroup 'bigfile',
-  pattern = 'bigfile',
-  callback = function(ev)
-    vim.schedule(function()
-      vim.bo[ev.buf].syntax = vim.filetype.match { buf = ev.buf } or ''
-    end)
-  end,
+    group = augroup 'bigfile',
+    pattern = 'bigfile',
+    callback = function(ev)
+        vim.schedule(function()
+            vim.bo[ev.buf].syntax = vim.filetype.match { buf = ev.buf } or ''
+        end)
+    end,
 })
