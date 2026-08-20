@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# prefix+E: fuzzy-pick a directory, then open yazi there in a new window.
+#
+# The search deliberately mirrors tmux-sessionizer's (same fd flags, same
+# exclusions, same shortest-path-first ordering) so the candidate list and
+# muscle memory carry over — only the action differs: a yazi window instead of
+# a session. prefix+e stays the "yazi here" shortcut.
+#
+# Meant to be run from `display-popup -E`, so the picker draws in the popup and
+# the popup closes as soon as this exits.
+set -uo pipefail
+
+if [[ $# -ge 1 ]]; then
+    search_roots=("$@")
+    depth=4
+else
+    search_roots=("$HOME")
+    depth=6
+fi
+
+# awk/sort/cut: order by path depth then alphabetically, so shallow (usually
+# more interesting) directories come first — same trick as tmux-sessionizer.
+selected=$(fd . "${search_roots[@]}" --type d -d "$depth" --hidden --follow \
+    -E "notes/" -E "tmp/" -E ".password-store" -E "queries/" \
+    | awk -F/ '{print NF, $0}' | sort -n -k1,1 -k2 | cut -d' ' -f2- \
+    | fzf --tiebreak=length,index)
+
+[[ -z ${selected:-} ]] && exit 0
+
+# Window name from the directory, dots swapped for underscores: tmux treats a
+# leading dot fine but dots read badly in the status line.
+window_name=$(basename "$selected" | tr . _)
+
+tmux new-window -n "${window_name:-yazi}" -c "$selected" yazi
