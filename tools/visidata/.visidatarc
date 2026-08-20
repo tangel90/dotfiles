@@ -202,6 +202,32 @@ BERLIN = ZoneInfo('Europe/Berlin')
 Sheet.unbindkey(':')
 Sheet.bindkey(':', 'split-col')
 
+### Copy the current sheet's file path to the system clipboard. VisiData ships
+### syscopy-* for rows/cells/column names but nothing for sheet.source, and the
+### only built-in route is S -> move to the `source` column -> zY -> q.
+### Alt+ is the prefix VisiData reserves for user bindings (Alt+p is taken by
+### menu-plot, and plain ^Y is pyobj-row).
+###
+### Walks up the source chain rather than using sheet.source directly: on a
+### derived sheet the source is another sheet (freq table) or a list of them
+### (columns sheet), so the naive version copied "[<JsonSheet: tz>]". This way
+### Alt+y from C or F still yields the underlying file.
+@BaseSheet.api
+def sourcePath(sheet):
+    node = sheet
+    for _ in range(10):  # cycle guard; nesting is never this deep
+        src = getattr(node, 'source', None)
+        if isinstance(src, visidata.Path):
+            return str(src)
+        if isinstance(src, list) and src:
+            src = src[0]
+        if not isinstance(src, BaseSheet):
+            return ''
+        node = src
+    return ''
+
+BaseSheet.addCommand('Alt+y', 'syscopy-path', 'syscopyValue(sourcePath() or fail("sheet has no file path"))', "copy this sheet's source path to system clipboard")
+
 ### Themes
 vd.themes["rosepine_ascii"] = dict(
     disp_date_fmt="%Y-%m-%dT%H:%M",
