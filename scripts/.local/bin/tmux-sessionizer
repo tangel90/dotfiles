@@ -98,20 +98,35 @@ if ! tmux has-session -t="$selected_name" 2> /dev/null; then
         fi
     fi
 
-    # Prefer .claude at the repo root (or selected dir if not in a repo).
-    # claude_check_dir="${repo_root:-$selected}"
-    # if [[ -d "$claude_check_dir/.claude" ]]; then
-    #     tmux send-keys -t "$selected_name" "claude" C-m
-    if [[ -n "$repo_root" ]]; then
-        # NOTE: do NOT auto `git fetch` here. Over an SSH remote with
-        # gpg-agent's ssh-support, a locked key makes gpg spawn pinentry inside
-        # this freshly-created detached window *while* the sessionizer is doing
-        # switch-client — the two race for the pty, corrupting the terminal and
-        # crashing the tmux server. Just open nvim; fetch via `lg` (lazygit) or
-        # :Git fetch once you're in a stable, attached pane.
-        tmux send-keys -t "$selected_name" "nvim" C-m
-    elif [[ "$selected_name" == *data || "$selected_name" == "reports" || "$selected_name" == "*seeds" ]]; then
-        tmux send-keys -t "$selected_name" "vd" C-m
+    # What to start in the fresh session. Default is nvim; a .tmux-start file
+    # overrides it with whatever command it names, and `none` (or an empty file)
+    # leaves a bare shell:
+    #
+    #     echo claude > ~/dev/gonzo/.tmux-start
+    #     echo vd     > ~/data/reports/.tmux-start
+    #     echo none   > ~/scratch/.tmux-start
+    #
+    # This replaces the old "git repo -> nvim, *data|reports -> vd" guessing,
+    # which couldn't express per-directory intent (and whose "*seeds" arm was
+    # quoted, so it only ever matched a directory literally named *seeds).
+    #
+    # The selected directory wins over the repo root, so a subdir can differ
+    # from its repo's default. First non-blank, non-# line is the command.
+    start_cmd="nvim"
+    for marker in "$selected/.tmux-start" "${repo_root:+$repo_root/.tmux-start}"; do
+        [[ -n $marker && -r $marker ]] || continue
+        start_cmd=$(sed -e 's/[[:space:]]*$//' -e 's/^[[:space:]]*//' "$marker" \
+            | grep -v -e '^#' -e '^$' | head -1)
+        break
+    done
+
+    # NOTE: do NOT auto `git fetch` here. Over an SSH remote with gpg-agent's
+    # ssh-support, a locked key makes gpg spawn pinentry inside this freshly
+    # created detached window *while* the sessionizer is doing switch-client —
+    # the two race for the pty, corrupting the terminal and crashing the tmux
+    # server. Fetch via `lg` (lazygit) or :Git fetch from a stable, attached pane.
+    if [[ -n $start_cmd && $start_cmd != "none" ]]; then
+        tmux send-keys -t "$selected_name" "$start_cmd" C-m
     fi
 fi
 
