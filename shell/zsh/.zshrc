@@ -88,6 +88,9 @@ alias lg=gpg-unlock-lazygit
 alias lt="exa --tree --level=2"
 alias ll="exa --long --header --sort=type --icons --no-permissions --no-user"
 alias la="exa --long --header --all --sort=type --icons --no-permissions --no-user" 
+# Google throttles translate-shell by IP ("Rate limiting"); bing has no such
+# limit here. Override per call with `trans -e google ...` when needed.
+alias trans="trans -e bing"
 alias grep="rg"
 alias cat="bat"
 alias vim="nvim"
