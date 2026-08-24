@@ -154,6 +154,57 @@ return { -- LSP Configuration & Plugins
         -- automatically on load, so a manual require + extend is no longer needed.mason
         local capabilities = vim.lsp.protocol.make_client_capabilities()
 
+        -- sqls talks to whatever connection its config lists first, so with a
+        -- static ~/.config/sqls/config.yml the completion always came from one
+        -- fixed database. The per-directory .envrc files already declare the
+        -- right one via PGSERVICE (direnv exports it, and nvim inherits it when
+        -- the sessionizer starts nvim in that directory), so derive the
+        -- connection from that instead.
+        --
+        -- Fallbacks, in order:
+        --   * PGSERVICE unset            -> no `settings` sent, so sqls keeps
+        --                                   reading ~/.config/sqls/config.yml
+        --                                   exactly as before.
+        --   * PGSERVICE not in the       -> same fallback, plus a warning. A
+        --     service file                  name with no [section] can never
+        --                                   connect, so it is not worth sending.
+        --   * service exists but the     -> sent anyway; sqls starts fine and
+        --     database is unreachable       keyword completion still works, only
+        --                                   schema completion is missing. Cannot
+        --                                   be detected without connecting.
+        local function sqls_settings()
+            local service = vim.env.PGSERVICE
+            if not service or service == '' then
+                return nil
+            end
+
+            -- readfile + filereadable rather than io.lines: a missing service
+            -- file makes io.lines raise, and this runs inside the plugin spec,
+            -- so it would take the whole LSP setup down with it.
+            local service_file = vim.env.PGSERVICEFILE or (vim.env.HOME .. '/.pg_service.conf')
+            local defined = false
+            if vim.fn.filereadable(service_file) == 1 then
+                for _, line in ipairs(vim.fn.readfile(service_file)) do
+                    if line:match('^%s*%[' .. vim.pesc(service) .. '%]') then
+                        defined = true
+                        break
+                    end
+                end
+            end
+            if not defined then
+                vim.notify(("sqls: PGSERVICE=%s is not defined in %s; using config.yml"):format(service, service_file), vim.log.levels.WARN)
+                return nil
+            end
+
+            return {
+                sqls = {
+                    connections = {
+                        { driver = 'postgresql', dataSourceName = 'service=' .. service },
+                    },
+                },
+            }
+        end
+
         --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
         local servers = {
             -- clangd = {},
@@ -202,7 +253,7 @@ return { -- LSP Configuration & Plugins
                     },
                 },
             },
-            sqls = {},
+            sqls = { settings = sqls_settings() },
             rust_analyzer = {},
             -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
             --
