@@ -1,21 +1,63 @@
 #!/usr/bin/env zsh
+# prefix+r: run this project's command in a dedicated "run" window; press again
+# from that window to toggle back.
+#
+# The command is resolved fresh on every press, from the *pane's* directory, in
+# this order:
+#
+#   1. .tmux-run          — one line, the command (mirrors .tmux-start)
+#   2. RUN_COMMAND        — from .envrc, read via `direnv exec`
+#   3. justfile / Makefile — `just` or `make run`, if the project has one
+#
+# Previously RUN_COMMAND was sourced once by tmux-sessionizer and stashed in the
+# tmux session environment. Three things were wrong with that: the value went
+# stale (editing .envrc had no effect until the session was killed), it
+# `source`d .envrc directly and so ran repo code that direnv itself would refuse
+# as un-allowed, and it was session-wide — cd'ing a pane into another project
+# still ran the first project's command. Resolving here fixes all three, and
+# `direnv exec` honours `direnv allow` instead of side-stepping it.
 readonly RUN_WINDOW="run"
 
-current_window=$(tmux display-message -p '#W')
+# Target the pane the binding fired from explicitly: tmux only uses $TMUX_PANE
+# for the *default* target, and a bare `display-message -p` otherwise resolves
+# against the most recently active pane — which is not necessarily this one.
+# Built as two array elements: zsh's ${VAR:+...} does not word-split, so
+# target=(${TMUX_PANE:+-t $TMUX_PANE}) would pass "-t %1" as a single argument.
+target=()
+[[ -n "$TMUX_PANE" ]] && target=(-t "$TMUX_PANE")
 
-if [[ "$current_window" == "$RUN_WINDOW" ]]; then
-  tmux last-window
-  exit 0
+if [[ "$(tmux display-message -p "${target[@]}" '#W')" == "$RUN_WINDOW" ]]; then
+    tmux last-window
+    exit 0
 fi
 
-if [[ -z $RUN_COMMAND ]]; then
-  echo "RUN_COMMAND not exported."
-  exit 0
+dir=$(tmux display-message -p "${target[@]}" '#{pane_current_path}')
+
+cmd=""
+args=""
+if [[ -r "$dir/.tmux-run" ]]; then
+    cmd=$(grep -v -e '^[[:space:]]*#' -e '^[[:space:]]*$' "$dir/.tmux-run" | head -1)
+elif [[ -f "$dir/.envrc" ]] && (( $+commands[direnv] )); then
+    cmd=$(direnv exec "$dir" printenv RUN_COMMAND 2>/dev/null)
+    args=$(direnv exec "$dir" printenv RUN_DEFAULT_ARGS 2>/dev/null)
+elif [[ -f "$dir/justfile" || -f "$dir/Justfile" ]] && (( $+commands[just] )); then
+    cmd="just"
+elif [[ -f "$dir/Makefile" ]] && grep -qE '^run:' "$dir/Makefile"; then
+    cmd="make run"
+fi
+
+if [[ -z "$cmd" ]]; then
+    tmux display-message "prefix+r: no .tmux-run, RUN_COMMAND, justfile or make run in ${dir:t}"
+    exit 0
 fi
 
 if ! tmux select-window -Tt "$RUN_WINDOW" &>/dev/null; then
-  tmux new-window -n "$RUN_WINDOW"
+    tmux new-window -n "$RUN_WINDOW" -c "$dir"
+else
+    # The window persists across projects, so make sure it's actually sitting in
+    # the directory the command was resolved from.
+    run_dir=$(tmux display-message -p -t "$RUN_WINDOW" '#{pane_current_path}')
+    [[ "$run_dir" == "$dir" ]] || tmux send-keys -t "$RUN_WINDOW" "cd ${dir:q}" C-m
 fi
 
-tmux send-keys -t "$RUN_WINDOW" "$RUN_COMMAND $RUN_DEFAULT_ARGS" C-m
-
+tmux send-keys -t "$RUN_WINDOW" "${cmd} ${args}" C-m

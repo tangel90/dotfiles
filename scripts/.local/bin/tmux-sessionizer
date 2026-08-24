@@ -83,20 +83,11 @@ done
 if ! tmux has-session -t="$selected_name" 2> /dev/null; then
 
     tmux new-session -ds "$selected_name" -c "$selected"
-    run_cmd=""
-    if [[ -f "$selected/.envrc" ]]; then
-        run_cmd=$( (source "$selected/.envrc"; printf '%s\n' "${RUN_COMMAND:-}") )
-        if [[ -n $run_cmd ]]; then
-          tmux set-environment -t "$selected_name" RUN_COMMAND "$run_cmd"
 
-          run_default_args=$( (source "$selected/.envrc"; printf '%s\n' "${RUN_DEFAULT_ARGS:-}") )
-          if [[ -n $run_default_args ]]; then
-            tmux set-environment -t "$selected_name" RUN_DEFAULT_ARGS "$run_default_args"
-          fi
-        else
-          echo "No RUN_COMMAND exported."
-        fi
-    fi
+    # No RUN_COMMAND plumbing here any more: tmux-run-command resolves it from
+    # the pane's directory on every prefix+r, via `direnv exec`. Copying it into
+    # the session environment here meant a stale value after editing .envrc, and
+    # sourcing .envrc directly ran repo code outside direnv's allow mechanism.
 
     # What to start in the fresh session. Default is nvim; a .tmux-start file
     # overrides it with whatever command it names, and `none` (or an empty file)
