@@ -1,0 +1,24 @@
+#!/bin/sh
+# Open a directory (default: cwd) in Windows Explorer, from WSL.
+#
+# The path must be passed as an *argument*, converted with wslpath -w. Windows
+# cannot use a WSL path as a working directory — cmd.exe says so out loud
+# ("UNC paths are not supported.  Defaulting to Windows directory.") — so the
+# obvious `explorer.exe .` resolves relative to the Windows directory instead of
+# where you actually are, which looks exactly like "nothing happened". Explorer
+# does accept a UNC path as an argument, which is what the pdf opener in
+# yazi.toml already relies on.
+#
+# Absolute interpreter path because .zshrc strips /mnt/c from PATH. explorer.exe
+# exits 1 even when it succeeds, hence the || true.
+set -eu
+
+dir=${1:-.}
+explorer=/mnt/c/Windows/explorer.exe
+
+if [ ! -d "$dir" ]; then
+    printf 'wsl-reveal: not a directory: %s\n' "$dir" >&2
+    exit 1
+fi
+
+"$explorer" "$(wslpath -w "$dir")" || true
