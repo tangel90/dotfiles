@@ -1,0 +1,35 @@
+#!/bin/sh
+# prefix+e: jump to the yazi window in this session if there is one, otherwise
+# open yazi in a new window at the current pane's directory.
+#
+# Unlike tmux-lazygit, this does NOT match per directory. yazi chdirs as you
+# browse, so a pane's path is wherever you last navigated to rather than where
+# it was opened — matching on it would spawn a second yazi as soon as you moved
+# around. One file browser per session is the useful behaviour; prefix+E (the
+# directory picker) is still there when a second one at a specific path is what
+# you want.
+#
+# Only this session's panes are considered; windows belong to sessions.
+set -eu
+
+# Target the pane the binding fired from explicitly: tmux only falls back to
+# $TMUX_PANE for the *default* target, and a bare `display -p` otherwise
+# resolves against the most recently active pane, which need not be this one.
+target=${TMUX_PANE:+-t $TMUX_PANE}
+
+# shellcheck disable=SC2086  # deliberately word-split (or empty)
+here=$(tmux display -p $target '#{pane_current_path}')
+session=$(tmux display -p $target '#{session_name}')
+
+# A pane started as `yazi` reports that as pane_current_command; one started via
+# a wrapper reports the wrapper, so the window name counts as a second signal.
+found=$(tmux list-panes -s -t "$session" \
+    -F '#{pane_id} #{pane_current_command} #{window_name}' |
+    awk '$2 == "yazi" || $3 == "yazi" { print $1; exit }')
+
+if [ -n "$found" ]; then
+    tmux select-window -t "$found"
+    tmux select-pane -t "$found"
+else
+    tmux new-window -n yazi -c "$here" yazi
+fi
