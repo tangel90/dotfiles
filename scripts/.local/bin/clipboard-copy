@@ -1,0 +1,39 @@
+#!/bin/sh
+# Copy stdin to the system clipboard, whatever this machine is.
+#
+# Exists because tmux-yank picks `cat | clip.exe` on WSL (helpers.sh), and
+# clip.exe decodes stdin with the OEM console codepage — so every non-ASCII
+# character came back mangled: an em dash (UTF-8 E2 80 94) pasted as "ÔÇö",
+# which is those three bytes read as CP850. win32yank round-trips UTF-8 intact.
+#
+# Hardcoding win32yank in tmux.conf would break the native Linux machines that
+# share these dotfiles, hence the detection. Wire it up with:
+#
+#     set -g @override_copy_command 'clipboard-copy'
+#
+# which tmux-yank consults before its own platform guesses.
+set -eu
+
+if [ -n "${WSL_DISTRO_NAME:-}" ] && command -v win32yank.exe >/dev/null 2>&1; then
+    # Not wl-copy on WSL: win32yank talks to the real Windows clipboard, which
+    # is what Windows apps (and pastes back into the terminal) actually read.
+    exec win32yank.exe -i
+elif [ -n "${WAYLAND_DISPLAY:-}" ] && command -v wl-copy >/dev/null 2>&1; then
+    exec wl-copy
+elif [ -n "${DISPLAY:-}" ] && command -v xclip >/dev/null 2>&1; then
+    exec xclip -selection clipboard
+elif [ -n "${DISPLAY:-}" ] && command -v xsel >/dev/null 2>&1; then
+    exec xsel --clipboard --input
+elif command -v pbcopy >/dev/null 2>&1; then
+    exec pbcopy
+fi
+
+# No local clipboard tool (a bare server, or an ssh session): hand the bytes to
+# the *terminal* with OSC 52 and let it do the copying. Inside tmux the escape
+# needs the DCS passthrough wrapper, or tmux would swallow it.
+payload=$(base64 | tr -d '\n')
+if [ -n "${TMUX:-}" ]; then
+    printf '\033Ptmux;\033\033]52;c;%s\007\033\\' "$payload" > /dev/tty
+else
+    printf '\033]52;c;%s\007' "$payload" > /dev/tty
+fi
