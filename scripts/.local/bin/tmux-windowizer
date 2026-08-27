@@ -21,7 +21,7 @@ second_parent=$(basename "$grandparent_dir" | tr -d .)
 file_name=$(basename  "$selected")
 
 if [[ "$file_name" == .* && "$file_name" != *.*.* ]]; then
-    # dotfile with no other dots ÔåÆ keep it as-is
+    # dotfile with no other dots → keep it as-is
     window_name="${file_name//./}"
 else
     window_name="${file_name%.*}"

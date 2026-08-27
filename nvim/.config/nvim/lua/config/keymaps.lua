@@ -349,7 +349,7 @@ vim.api.nvim_create_autocmd('FileType', {
                 vim.fn.shellescape(out)
             )
             run_to_visidata_tmux(cmd, out, 'psql query (json)', vim.fn.expand '~/data/postgres/')
-        end, vim.tbl_extend('force', bufopt, { desc = 'psql ÔåÆ JSONL ÔåÆ visidata (tmux)' }))
+        end, vim.tbl_extend('force', bufopt, { desc = 'psql → JSONL → visidata (tmux)' }))
 
         -- Same queries, but results land in a new vim buffer (CSV) instead of visidata.
         vim.keymap.set('n', '<leader>rS', function()
