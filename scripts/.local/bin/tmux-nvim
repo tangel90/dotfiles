@@ -23,7 +23,11 @@ fi
 
 if command -v direnv >/dev/null 2>&1; then
     # Non-fatal: a broken or unauthorised .envrc must not stop nvim opening.
-    direnv exec . true || printf '%s\n' 'direnv: .envrc did not load; opening nvim anyway' >&2
+    # stderr is dropped so this warm-up doesn't print a second "direnv: loading"
+    # banner on top of the one from the real launch below. Silencing it is safe:
+    # pinentry draws its prompt on the tty directly, not through stderr, so the
+    # mitigation above still happens where it should.
+    direnv exec . true 2>/dev/null || printf '%s\n' 'direnv: .envrc did not load; opening nvim anyway' >&2
     exec direnv exec . nvim "$@"
 fi
 
