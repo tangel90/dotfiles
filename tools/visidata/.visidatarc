@@ -371,17 +371,35 @@ def _vd_lineplot(rows, xcols, ycols):
     plt.figure(figsize=(12, 6)); plt.xticks(rotation=15)
     catcols = [c for c in xcols if not vd.isNumeric(c)]
     numcols = vd.numericCols(xcols)
+    # Build all three values before appending any of them. Appending as we went
+    # meant one unconvertible cell (a single 'NA' in a 26k-row float column) left
+    # X one longer than Y and C, and seaborn/pandas then failed the whole plot
+    # with "All arrays must be of the same length" — a confusing way to hear
+    # about one bad value.
     X, Y, C = [], [], []
+    skipped = 0
     for rn, row in enumerate(rows):
         for ycol in ycols:
             try:
+                x = numcols[0].type(numcols[0].getValue(row)) if numcols else rn
+                y = ycol.type(ycol.getValue(row))
                 k = tuple(c.getValue(row) for c in catcols)
                 k = (k[0] if len(catcols) == 1 else k) if catcols else ycol.name
-                X.append(numcols[0].type(numcols[0].getValue(row)) if numcols else rn)
-                Y.append(ycol.type(ycol.getValue(row))); C.append(k)
             except Exception:
-                pass
+                skipped += 1
+                continue
+            X.append(x)
+            Y.append(y)
+            C.append(k)
+
+    if not X:
+        # A plot of nothing is a blank window; say why instead.
+        plt.title('nothing plottable: %d value(s) could not be converted' % skipped)
     sns.lineplot(x=X, y=Y, hue=C if catcols else None, sort=True, linewidth=1)
+    # Skipped rows are silent data loss otherwise: this runs in a separate
+    # process, so vd.warning() would never reach the sheet.
+    if skipped and X:
+        plt.title('%d of %d point(s) skipped (unconvertible values)' % (skipped, skipped + len(X)))
     plt.show()
 
 Sheet.addCommand(None, 'plot-column-line', 'plot_seaborn_line(rows, keyCols, numericCols([cursorCol]))',
