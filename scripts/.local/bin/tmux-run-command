@@ -2,8 +2,15 @@
 # prefix+r: run this project's command in a dedicated "run" window; press again
 # from that window to toggle back.
 #
-# The command is resolved fresh on every press, from the *pane's* directory, in
-# this order:
+# With a FILE argument (nvim's <leader>rr passes the current buffer) the command
+# is resolved from that file's directory and the file is handed to it: `{}` in
+# the command is replaced by the path, otherwise the path is appended. So
+#
+#     echo 'uv run python'        > .tmux-run   ->  uv run python path/to/buf.py
+#     echo 'uv run pytest {} -x'  > .tmux-run   ->  uv run pytest path/to/buf.py -x
+#
+# The command is resolved fresh on every press, from the *pane's* directory (or
+# the file's), in this order:
 #
 #   1. .tmux-run          — one line, the command (mirrors .tmux-start)
 #   2. RUN_COMMAND        — from .envrc, read via `direnv exec`
@@ -31,7 +38,14 @@ if [[ "$(tmux display-message -p "${target[@]}" '#W')" == "$RUN_WINDOW" ]]; then
     exit 0
 fi
 
-dir=$(tmux display-message -p "${target[@]}" '#{pane_current_path}')
+file=${1:-}
+if [[ -n "$file" ]]; then
+    [[ -e "$file" ]] || { tmux display-message "prefix+r: no such file: $file"; exit 1; }
+    file=${file:A}          # absolute, symlinks resolved
+    dir=${file:h}
+else
+    dir=$(tmux display-message -p "${target[@]}" '#{pane_current_path}')
+fi
 
 cmd=""
 args=""
@@ -46,9 +60,28 @@ elif [[ -f "$dir/Makefile" ]] && grep -qE '^run:' "$dir/Makefile"; then
     cmd="make run"
 fi
 
+# Running a single file is meaningful even in a project with no runner
+# configured, so fall back to the obvious interpreter for its extension.
+if [[ -z "$cmd" && -n "$file" ]]; then
+    case ${file:e} in
+        py) cmd="python3" ;;
+        sh) cmd="sh" ;;
+        lua) cmd="lua" ;;
+        js) cmd="node" ;;
+    esac
+fi
+
 if [[ -z "$cmd" ]]; then
     tmux display-message "prefix+r: no .tmux-run, RUN_COMMAND, justfile or make run in ${dir:t}"
     exit 0
+fi
+
+if [[ -n "$file" ]]; then
+    if [[ "$cmd" == *'{}'* ]]; then
+        cmd=${cmd//\{\}/${file:q}}
+    else
+        cmd="$cmd ${file:q}"
+    fi
 fi
 
 if ! tmux select-window -Tt "$RUN_WINDOW" &>/dev/null; then

@@ -381,6 +381,33 @@ map('n', '<leader>T', function()
 end, { desc = 'Open time tracker' })
 
 map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python3 %<CR>', { desc = 'python main.py' })
+
+-- Run the current buffer in tmux's "run" window, reusing the same resolution as
+-- prefix+r: .tmux-run, then RUN_COMMAND from .envrc via direnv, then
+-- just/make, then the interpreter for the file's extension. The buffer path is
+-- substituted for `{}` in the command, or appended if there is no placeholder.
+--
+-- Beats `:!python3 %` for anything long-running: output stays in a real pane you
+-- can scroll and keep, and nvim is not blocked while it runs.
+map('n', '<leader>rr', function()
+    if vim.bo.buftype ~= '' or vim.api.nvim_buf_get_name(0) == '' then
+        vim.notify('no file in this buffer', vim.log.levels.WARN)
+        return
+    end
+    if not vim.env.TMUX then
+        vim.notify('not inside tmux', vim.log.levels.ERROR)
+        return
+    end
+    vim.cmd 'silent write'
+    local file = vim.api.nvim_buf_get_name(0)
+    vim.system({ 'tmux-run-command', file }, { text = true }, function(res)
+        if res.code ~= 0 then
+            vim.schedule(function()
+                vim.notify('tmux-run-command failed: ' .. ((res.stderr ~= '' and res.stderr) or ('exit ' .. res.code)), vim.log.levels.ERROR)
+            end)
+        end
+    end)
+end, { desc = 'run current buffer in tmux run window' })
 map('n', '<leader>e', function()
     if vim.bo.filetype == 'netrw' then
         vim.cmd 'bd'
