@@ -3,7 +3,7 @@ return {
     name = 'rose-pine',
     config = function()
         require('rose-pine').setup {
-            variant = 'auto', -- auto, main, moon, or dawn
+            variant = 'dawn', -- auto, main, moon, or dawn
             dark_variant = 'main', -- main, moon, or dawn
             dim_inactive_windows = false,
             extend_background_behind_borders = true,
@@ -96,9 +96,14 @@ return {
             end,
         }
 
-        vim.cmd 'colorscheme rose-pine'
+        -- Light theme for the scratchpad, so it reads differently from the main
+        -- config at a glance. `background = light` matters as well as the dawn
+        -- variant: rose-pine keys some highlights off it, and nvim inherits
+        -- 'dark' from the terminal otherwise.
+        vim.o.background = 'light'
+        vim.cmd 'colorscheme rose-pine-dawn'
+        -- vim.cmd("colorscheme rose-pine")       -- follows variant/background
         -- vim.cmd("colorscheme rose-pine-main")
         -- vim.cmd("colorscheme rose-pine-moon")
-        -- vim.cmd("colorscheme rose-pine-dawn")
     end,
 }
