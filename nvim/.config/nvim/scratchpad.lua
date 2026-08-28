@@ -4,12 +4,18 @@ vim.opt.runtimepath:append(vim.fn.expand('~/.local/share/nvim/lazy/csvview.nvim'
 
 require('config.keymaps')
 
+-- Light theme here on purpose, so a scratchpad is unmistakable next to the
+-- main config. `background = light` matters as well as the variant: rose-pine
+-- keys some highlights off it, and nvim otherwise inherits 'dark' from the
+-- terminal. config.palette only overrides the main/moon variants, so dawn uses
+-- rose-pine's own light colours.
 require('rose-pine').setup({
   palette = require('config.palette'),
-  variant = 'auto',
+  variant = 'dawn',
   dark_variant = 'main',
 })
-vim.cmd.colorscheme('rose-pine')
+vim.o.background = 'light'
+vim.cmd.colorscheme('rose-pine-dawn')
 require('csvview').setup({})
 
 vim.api.nvim_create_autocmd('TextYankPost', {
