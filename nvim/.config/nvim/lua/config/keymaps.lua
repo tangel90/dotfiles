@@ -380,7 +380,15 @@ map('n', '<leader>T', function()
     require('config.timetracking').open_week()
 end, { desc = 'Open time tracker' })
 
-map({ 'n' }, '<leader>xx', ':noautocmd w<bar>:!python3 %<CR>', { desc = 'python main.py' })
+-- Code runner: write the buffer and run it in a tmux pane beside nvim. Replaces
+-- the old `:!python3 %`, which blocked nvim and threw the output away on the
+-- next keypress. See config/coderunner.lua for the interpreter table.
+map('n', '<leader>xx', function()
+    require('config.coderunner').run()
+end, { desc = 'run this file in a tmux pane' })
+map('n', '<leader>xv', function()
+    require('config.coderunner').run { split = 'v' }
+end, { desc = 'run this file in a tmux pane (vertical split)' })
 
 -- Run the current buffer in tmux's "run" window, reusing the same resolution as
 -- prefix+r: .tmux-run, then RUN_COMMAND from .envrc via direnv, then
