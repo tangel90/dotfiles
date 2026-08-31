@@ -11,18 +11,12 @@
 # ordered them by path depth rather than by how often they are actually used.
 # fd is kept only as a fallback for machines without zoxide.
 #
+# No --preview on purpose: the popup is only 60% wide, and a preview pane took
+# half of that, truncating the very paths you are trying to read.
+#
 # Meant to be run from `display-popup -E`, so the picker draws in the popup and
 # the popup closes as soon as this exits.
 set -uo pipefail
-
-# Directory contents make a far more useful preview than the path alone.
-if command -v eza >/dev/null 2>&1; then
-    preview='eza -a --icons --color=always {}'
-elif command -v exa >/dev/null 2>&1; then
-    preview='exa -a --icons --color=always {}'
-else
-    preview='ls -A --color=always {}'
-fi
 
 if command -v zoxide >/dev/null 2>&1; then
     # --tiebreak=index keeps zoxide's frecency order when fzf scores are equal.
@@ -31,7 +25,7 @@ if command -v zoxide >/dev/null 2>&1; then
     selected=$(
         zoxide query -l -- "$@" 2>/dev/null |
             while IFS= read -r dir; do [[ -d $dir ]] && printf '%s\n' "$dir"; done |
-            fzf --tiebreak=index --preview "$preview" --preview-window 'right,50%,border-left'
+            fzf --tiebreak=index
     )
 else
     search_roots=("$HOME")
@@ -45,7 +39,7 @@ else
     selected=$(fd . "${search_roots[@]}" --type d -d "$depth" --hidden --follow \
         -E "notes/" -E "tmp/" -E ".password-store" -E "queries/" |
         awk -F/ '{print NF, $0}' | sort -n -k1,1 -k2 | cut -d' ' -f2- |
-        fzf --tiebreak=length,index --preview "$preview")
+        fzf --tiebreak=length,index)
 fi
 
 [[ -z ${selected:-} ]] && exit 0
