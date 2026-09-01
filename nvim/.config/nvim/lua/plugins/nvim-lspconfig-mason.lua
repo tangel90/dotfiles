@@ -109,31 +109,32 @@ return { -- LSP Configuration & Plugins
                 --  See `:help K` for why this keymap.
                 map('<leader>h', vim.lsp.buf.hover, '[H]over Documentation')
 
-                -- The following two autocommands are used to highlight references of the
-                -- word under your cursor when your cursor rests there for a little while.
-                --    See `:help CursorHold` for information about when this is executed
+                -- Reference highlighting is on <leader>lh rather than on CursorHold.
                 --
-                -- When you move your cursor, the highlights will be cleared (the second autocommand).
+                -- Kickstart wires document_highlight to CursorHold and
+                -- clear_references to CursorMoved. With updatetime=250 that
+                -- repainted the word under the cursor a quarter second after
+                -- every pause, which reads as the cursor flickering while you
+                -- sit still. It only showed up in repos whose server advertises
+                -- documentHighlightProvider — noisy in python (pyright), absent
+                -- in the dbt/iac repos, where sqls does not offer it.
                 local client = vim.lsp.get_client_by_id(event.data.client_id)
                 if client and client.server_capabilities.documentHighlightProvider then
-                    local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
-                    vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
-                        buffer = event.buf,
-                        group = highlight_augroup,
-                        callback = vim.lsp.buf.document_highlight,
-                    })
-
-                    vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
-                        buffer = event.buf,
-                        group = highlight_augroup,
-                        callback = vim.lsp.buf.clear_references,
-                    })
+                    map('<leader>lh', function()
+                        -- Toggle: highlight on first press, clear on the next.
+                        if vim.b.lsp_refs_shown then
+                            vim.lsp.buf.clear_references()
+                            vim.b.lsp_refs_shown = false
+                        else
+                            vim.lsp.buf.document_highlight()
+                            vim.b.lsp_refs_shown = true
+                        end
+                    end, '[L]sp [H]ighlight references')
 
                     vim.api.nvim_create_autocmd('LspDetach', {
                         group = vim.api.nvim_create_augroup('kickstart-lsp-detach', { clear = true }),
-                        callback = function(event2)
+                        callback = function()
                             vim.lsp.buf.clear_references()
-                            vim.api.nvim_clear_autocmds { group = 'kickstart-lsp-highlight', buffer = event2.buf }
                         end,
                     })
                 end
