@@ -427,18 +427,26 @@ map('n', '<leader>"', '<cmd>registers<cr>', { desc = 'List registers' })
 map('n', '<leader>tw', '<cmd>set wrap!<cr>', { desc = 'Toggle word wrap' })
 -- map({ 'n', 'v' }, 'p', ']p')
 
-map('i', 'ue', function()
-    return 'ü'
-end, { expr = true })
-map('i', 'oe', function()
-    return 'ö'
-end, { expr = true })
-map('i', 'ae', function()
-    return 'ä'
-end, { expr = true })
-map('i', 'sz', function()
-    return 'ß'
-end, { expr = true })
+-- German umlaut shortcuts, buffer-local to ~/notes. They used to be global,
+-- which mangled ordinary typing everywhere else: "queue" became "qü"+"ue",
+-- "value" -> "valü", and `sz` hit variable names. Prose in ~/notes is where the
+-- trade is worth it.
+--
+-- BufNewFile as well as BufReadPost, so a brand new note gets them too. The
+-- pattern is an absolute path, and `*` in an autocmd pattern spans `/`, so
+-- subdirectories of ~/notes are covered.
+local umlauts = { ue = 'ü', oe = 'ö', ae = 'ä', sz = 'ß' }
+
+vim.api.nvim_create_autocmd({ 'BufReadPost', 'BufNewFile' }, {
+    group = vim.api.nvim_create_augroup('notes-umlauts', { clear = true }),
+    pattern = vim.fn.expand '~/notes' .. '/*',
+    desc = 'umlaut digraphs for notes',
+    callback = function(args)
+        for lhs, rhs in pairs(umlauts) do
+            vim.keymap.set('i', lhs, rhs, { buffer = args.buf, desc = 'insert ' .. rhs })
+        end
+    end,
+})
 
 -- Vim motion keymaps
 map({ 'n', 'i' }, '<C-k>', '<C-a>', { noremap = true })
