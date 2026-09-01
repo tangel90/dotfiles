@@ -99,6 +99,46 @@ def write_parquet(batches, out, decimal_mode, pa, pq):
     return rows, schema
 
 
+def pick_cursor(cursors):
+    """The statement whose result set is worth writing.
+
+    Snowflake only returns Arrow for real query results; USE / SET / DDL / SHOW
+    come back as JSON, and their cursors still carry a description (a `status`
+    column), so "last cursor with a description" happily picked one of those and
+    fetch_arrow_batches() then raised NotSupportedError. Prefer the last Arrow
+    result, and fall back to the last cursor that returned anything at all.
+    """
+    arrow = [c for c in cursors if c.description and getattr(c, '_query_result_format', None) == 'arrow']
+    if arrow:
+        return arrow[-1], True
+    described = [c for c in cursors if c.description]
+    if described:
+        return described[-1], False
+    return cursors[-1], False
+
+
+def write_rows(cursor, out, pa, pq):
+    """Write a non-Arrow (JSON) result set: SHOW/DESCRIBE output, DDL status …
+
+    Types come from whatever the connector already parsed, so pyarrow infers
+    them; that is good enough for the metadata-shaped results that land here.
+    """
+    names = [d[0] if isinstance(d, (list, tuple)) else d.name for d in (cursor.description or [])]
+    rows = cursor.fetchall()
+
+    data = {}
+    for i, name in enumerate(names):
+        values = [r[i] for r in rows]
+        try:
+            data[name] = pa.array(values)
+        except pa.ArrowInvalid:
+            # Mixed types in one column (SHOW output does this); strings always work.
+            data[name] = pa.array([None if v is None else str(v) for v in values])
+
+    pq.write_table(pa.table(data), out)
+    return len(rows), names
+
+
 def empty_parquet(cursor, out, pa, pq):
     '''No batches at all: still produce a readable file rather than nothing.
 
@@ -162,14 +202,20 @@ def main():
         cursors = conn.execute_string(sql)
         if not cursors:
             sys.exit('snow-parquet: no statements executed')
-        cursor = next((c for c in reversed(cursors) if c.description), cursors[-1])
+        cursor, is_arrow = pick_cursor(cursors)
         t_exec = time.perf_counter() - t0
 
         t0 = time.perf_counter()
-        rows, schema = write_parquet(cursor.fetch_arrow_batches(), out, args.decimal, pa, pq)
-        if schema is None:
-            cols = empty_parquet(cursor, out, pa, pq)
-            log(f'snow-parquet: 0 rows, columns {cols}')
+        if is_arrow:
+            rows, schema = write_parquet(cursor.fetch_arrow_batches(), out, args.decimal, pa, pq)
+            if schema is None:
+                cols = empty_parquet(cursor, out, pa, pq)
+                log(f'snow-parquet: 0 rows, columns {cols}')
+        else:
+            # No Arrow result in the script: the last statement was DDL, USE,
+            # SHOW or similar. Write what it did return rather than failing.
+            rows, cols = write_rows(cursor, out, pa, pq)
+            log(f'snow-parquet: non-query result ({", ".join(cols) or "no columns"}); wrote it as-is')
         t_fetch = time.perf_counter() - t0
     finally:
         conn.close()
