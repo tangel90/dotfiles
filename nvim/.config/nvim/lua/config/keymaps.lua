@@ -385,10 +385,10 @@ end, { desc = 'Open time tracker' })
 -- next keypress. See config/coderunner.lua for the interpreter table.
 map('n', '<leader>xx', function()
     require('config.coderunner').run()
-end, { desc = 'run this file in a tmux pane' })
+end, { desc = 'run this file in the tmux run window' })
 map('n', '<leader>xv', function()
-    require('config.coderunner').run { split = 'v' }
-end, { desc = 'run this file in a tmux pane (vertical split)' })
+    require('config.coderunner').run { split = 'h' }
+end, { desc = 'run this file in a side pane instead of the run window' })
 
 -- Run the current buffer in tmux's "run" window, reusing the same resolution as
 -- prefix+r: .tmux-run, then RUN_COMMAND from .envrc via direnv, then

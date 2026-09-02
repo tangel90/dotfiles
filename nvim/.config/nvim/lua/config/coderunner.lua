@@ -5,9 +5,10 @@
 -- <leader>rr is the other half of this: that one runs the *project's* command
 -- (.tmux-run / RUN_COMMAND / just / make) in the shared "run" window.
 --
--- The pane is replaced on each run rather than stacking splits, and it drops
--- into a shell afterwards so the output stays readable and you can re-run with
--- `!!` or poke around in the same directory.
+-- Output goes to tmux's shared "run" window (the same one prefix+r uses), so
+-- prefix+r toggles back to your editor and repeated runs reuse one window
+-- instead of stacking panes. `run { split = 'h' }` still opens a side pane for
+-- the times you want the output next to the code.
 
 local M = {}
 
@@ -73,8 +74,8 @@ local function pane_alive(id)
     return false
 end
 
---- Save the buffer and run it in a fresh tmux pane.
---- @param opts table|nil { split = 'h'|'v', size = string }
+--- Save the buffer and run it.
+--- @param opts table|nil { split = 'h'|'v' } to use a side pane instead of the run window
 function M.run(opts)
     opts = opts or {}
     local buf = vim.api.nvim_buf_get_name(0)
@@ -95,11 +96,27 @@ function M.run(opts)
         return
     end
 
+    local dir = vim.fs.dirname(buf)
+
+    if not opts.split then
+        -- Hand it to tmux-run-command, which owns the run window: reuse, cd,
+        -- and the prefix+r toggle. --exec skips its own command resolution, so
+        -- a project .tmux-run or RUN_COMMAND does not hijack the interpreter.
+        vim.system({ 'tmux-run-command', '--exec', cmd, '--dir', dir }, { text = true }, function(res)
+            if res.code ~= 0 then
+                vim.schedule(function()
+                    vim.notify('code runner: ' .. ((res.stderr ~= '' and res.stderr) or ('exit ' .. res.code)), vim.log.levels.ERROR)
+                end)
+            end
+        end)
+        return
+    end
+
+    -- Side-pane mode: replace the previous runner pane rather than stacking.
     if pane_alive(pane) then
         vim.system({ 'tmux', 'kill-pane', '-t', pane }):wait()
     end
 
-    -- Report the exit status, then hand the pane to a shell so it stays open.
     local shell_cmd = ('%s; printf "\\n[exit %%s] %s\\n" $?; exec $SHELL'):format(cmd, vim.fs.basename(buf))
     local res = vim.system({
         'tmux',
@@ -111,7 +128,7 @@ function M.run(opts)
         '-F',
         '#{pane_id}',
         '-c',
-        vim.fs.dirname(buf),
+        dir,
         shell_cmd,
     }, { text = true }):wait()
 

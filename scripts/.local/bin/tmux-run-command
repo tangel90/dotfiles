@@ -2,6 +2,11 @@
 # prefix+r: run this project's command in a dedicated "run" window; press again
 # from that window to toggle back.
 #
+# With `--exec CMD [--dir DIR]` the resolution is skipped entirely and CMD is run
+# as given. That is how nvim's code runner (<leader>xx) reuses this window
+# instead of managing its own pane — it decides the interpreter itself and only
+# wants the "run window" behaviour: reuse, cd, and prefix+r to toggle back.
+#
 # With a FILE argument (nvim's <leader>rr passes the current buffer) the command
 # is resolved from that file's directory and the file is handed to it: `{}` in
 # the command is replaced by the path, otherwise the path is appended. So
@@ -25,6 +30,16 @@
 # `direnv exec` honours `direnv allow` instead of side-stepping it.
 readonly RUN_WINDOW="run"
 
+exec_cmd=""
+exec_dir=""
+while [[ ${1:-} == --* ]]; do
+    case $1 in
+        --exec) exec_cmd=$2; shift 2 ;;
+        --dir)  exec_dir=$2; shift 2 ;;
+        *) print -u2 "tmux-run-command: unknown option $1"; exit 2 ;;
+    esac
+done
+
 # Target the pane the binding fired from explicitly: tmux only uses $TMUX_PANE
 # for the *default* target, and a bare `display-message -p` otherwise resolves
 # against the most recently active pane — which is not necessarily this one.
@@ -33,13 +48,18 @@ readonly RUN_WINDOW="run"
 target=()
 [[ -n "$TMUX_PANE" ]] && target=(-t "$TMUX_PANE")
 
-if [[ "$(tmux display-message -p "${target[@]}" '#W')" == "$RUN_WINDOW" ]]; then
+# prefix+r from inside the run window means "go back"; an explicit --exec is a
+# request to run something, so it must not toggle.
+if [[ -z "$exec_cmd" && "$(tmux display-message -p "${target[@]}" '#W')" == "$RUN_WINDOW" ]]; then
     tmux last-window
     exit 0
 fi
 
 file=${1:-}
-if [[ -n "$file" ]]; then
+if [[ -n "$exec_cmd" ]]; then
+    file=""
+    dir=${exec_dir:-$(tmux display-message -p "${target[@]}" '#{pane_current_path}')}
+elif [[ -n "$file" ]]; then
     [[ -e "$file" ]] || { tmux display-message "prefix+r: no such file: $file"; exit 1; }
     file=${file:A}          # absolute, symlinks resolved
     dir=${file:h}
@@ -47,9 +67,11 @@ else
     dir=$(tmux display-message -p "${target[@]}" '#{pane_current_path}')
 fi
 
-cmd=""
+cmd="$exec_cmd"
 args=""
-if [[ -r "$dir/.tmux-run" ]]; then
+if [[ -n "$cmd" ]]; then
+    : # given explicitly, nothing to resolve
+elif [[ -r "$dir/.tmux-run" ]]; then
     cmd=$(grep -v -e '^[[:space:]]*#' -e '^[[:space:]]*$' "$dir/.tmux-run" | head -1)
 elif [[ -f "$dir/.envrc" ]] && (( $+commands[direnv] )); then
     cmd=$(direnv exec "$dir" printenv RUN_COMMAND 2>/dev/null)
