@@ -1,10 +1,21 @@
-import os
 import datetime
+import os
 import tempfile
-from visidata import vd, BaseSheet, VisiData
+
+from visidata import BaseSheet, VisiData, vd
 
 ### options
-vd.options.csv_doublequote=True
+vd.options.csv_doublequote = True
+
+### Route yank/paste through the portable clipboard helpers. VisiData detects
+### WSL from the kernel release and hardcodes `clip.exe` for copy and
+### `powershell.exe -command Get-Clipboard` for paste (clipboard.py); both go
+### through the Windows console codepage, so a yanked "Tarifvertraege" arrived as
+### "Tarifvertr" + CP850 garbage — UTF-8 bytes C3 A4 read as two OEM glyphs. The
+### helpers use win32yank on WSL and wl-copy/xclip/xsel/pbcopy elsewhere, so this
+### stays correct on the native Linux machines that share these dotfiles.
+vd.options.clipboard_copy_cmd = "clipboard-copy"
+vd.options.clipboard_paste_cmd = "clipboard-paste"
 
 ### Write a UTF-8 BOM when saving. VisiData's defaults are asymmetric — it reads
 ### as utf-8-sig (path.py) but writes plain utf-8 (save.py) — and Excel, opened
@@ -14,9 +25,14 @@ vd.options.csv_doublequote=True
 ### Costless on the read side, since utf-8-sig strips the BOM again.
 ### Caveat: consumers reading with plain utf-8 see ﻿ glued to the first
 ### header name (duckdb and pandas both handle it; naive split() parsers don't).
-vd.options.save_encoding = 'utf-8-sig'
+vd.options.save_encoding = "utf-8-sig"
 
-vd.option('save_dir', '/home/thomas/data/visidata', 'directory (dated subfolder appended) suggested when saving a sheet', sheettype=None)
+vd.option(
+    "save_dir",
+    "/home/thomas/data/visidata",
+    "directory (dated subfolder appended) suggested when saving a sheet",
+    sheettype=None,
+)
 
 ### Default save location: sheets opened from scratch/tmp files (e.g. yazi/nvim
 ### previews, or the sql runners' query results, all under ~/.local/tmp)
@@ -32,17 +48,20 @@ vd.option('save_dir', '/home/thomas/data/visidata', 'directory (dated subfolder 
 ### a copy into the data dir. Only tmp paths and sheets with no file source at
 ### all (freq tables, joins, transposes, +-derived sheets) get redirected.
 _TMPDIRS = (
-    os.path.realpath(os.path.expanduser('~/.local/tmp')),
+    os.path.realpath(os.path.expanduser("~/.local/tmp")),
     os.path.realpath(tempfile.gettempdir()),
-    '/tmp',
-    '/dev/shm',
+    "/tmp",
+    "/dev/shm",
 )
+
 
 def _under_tmp(path):
     rp = os.path.realpath(path)
     return any(rp == d or rp.startswith(d + os.sep) for d in _TMPDIRS)
 
+
 _orig_getDefaultSaveName = BaseSheet.getDefaultSaveName
+
 
 @BaseSheet.api
 def getDefaultSaveName(sheet):
@@ -58,6 +77,7 @@ def getDefaultSaveName(sheet):
     datedir = os.path.join(savedir, datetime.date.today().isoformat())
     os.makedirs(datedir, exist_ok=True)
     return os.path.join(datedir, os.path.basename(name))
+
 
 ### Path prompts (save-sheet ^S, save-all g^S, save-selected, open-file, …) all
 ### funnel through inputFilename, which defaults its cursor to position 0. With
@@ -75,12 +95,14 @@ def getDefaultSaveName(sheet):
 ### saved result back in — no config needed, it's a built-in VisiData keybinding.
 _orig_inputFilename = VisiData.inputFilename
 
+
 @VisiData.api
 def inputFilename(vd, prompt, *args, **kwargs):
-    value = kwargs.get('value', '')
-    if value and 'i' not in kwargs:
-        kwargs['i'] = len(str(value))
+    value = kwargs.get("value", "")
+    if value and "i" not in kwargs:
+        kwargs["i"] = len(str(value))
     return _orig_inputFilename(vd, prompt, *args, **kwargs)
+
 
 ### System-clipboard yank (Y / gY / gzY) prompts "copy N rows as filetype:"
 ### defaulted to 'tsv'. Default it to 'csv' instead, still editable inline.
@@ -89,11 +111,15 @@ def inputFilename(vd, prompt, *args, **kwargs):
 ### extension) and changing it globally would affect that too.
 _orig_syscopyCells = Sheet.syscopyCells
 
+
 @Sheet.api
 def syscopyCells(sheet, cols, rows, filetype=None):
     if filetype is None:
-        filetype = vd.input('copy %d %s as filetype: ' % (len(rows), sheet.rowtype), value='csv')
+        filetype = vd.input(
+            "copy %d %s as filetype: " % (len(rows), sheet.rowtype), value="csv"
+        )
     sheet.syscopyCells_async(cols, rows, filetype)
+
 
 ### Saving parquet (^S foo.parquet) silently threw away the time of day: a date
 ### column holding 2024-12-31T23:00 came back as 2024-12-31T00:00 on reopen.
@@ -113,15 +139,17 @@ def syscopyCells(sheet, cols, rows, filetype=None):
 ### practice, and the window is a single write.
 _orig_save_parquet = VisiData.save_parquet
 
+
 @VisiData.api
 def save_parquet(vd, p, sheet):
-    pa = vd.importExternal('pyarrow')
+    pa = vd.importExternal("pyarrow")
     orig_date64 = pa.date64
-    pa.date64 = lambda: pa.timestamp('us')
+    pa.date64 = lambda: pa.timestamp("us")
     try:
         return _orig_save_parquet(vd, p, sheet)
     finally:
         pa.date64 = orig_date64
+
 
 ### Make parquet sheets editable. Edits (e), g= / setcol-expr, fill, negate —
 ### anything going through Column.setValue — reported "set N values" on a parquet
@@ -138,10 +166,12 @@ from visidata.loaders.parquet import ParquetColumn
 
 _orig_parquet_calcValue = ParquetColumn.calcValue
 
+
 def _parquet_calcValue(col, row):
     if col.name in row:
         return row[col.name]
     return _orig_parquet_calcValue(col, row)
+
 
 def _parquet_putValue(col, row, val):
     row[col.name] = val
@@ -149,6 +179,7 @@ def _parquet_putValue(col, row, val):
     # is consulted before calcValue — so a stale entry would hide the edit.
     if col._cachedValues is not None:
         col._cachedValues.pop(col.sheet.rowid(row), None)
+
 
 ParquetColumn.calcValue = _parquet_calcValue
 ParquetColumn.putValue = _parquet_putValue
@@ -167,7 +198,9 @@ ParquetColumn.putValue = _parquet_putValue
 ### Status and error messages keep using the sidebar area regardless — they're
 ### unconditional in drawSidebar — and any keystroke clears them.
 vd.options.disp_sidebar = False
-vd.options.disp_help_flags = 'cmdpalette help hints inputfield inputkeys nometacols sidebar'
+vd.options.disp_help_flags = (
+    "cmdpalette help hints inputfield inputkeys nometacols sidebar"
+)
 
 ### Autotyping by column name. VisiData has NO value-sniffing autotype: text
 ### loaders (csv/tsv/json/jsonl) hand every column back as anytype, so #/%/@ has
@@ -184,21 +217,24 @@ vd.options.disp_help_flags = 'cmdpalette help hints inputfield inputkeys nometac
 ###
 ### Built-in alternative for one-offs, exact names only:  Sheet.knownCols.volume.type = float
 import re
+
 from visidata import Sheet, anytype, date
 
 vd_type_by_name = {
-    'volume': float,
-    'quantity': float,
-    'qty': float,
-    'amount': float,
-    'price': float,
+    "volume": float,
+    "quantity": float,
+    "qty": float,
+    "amount": float,
+    "price": float,
+    "power": float,
+    "timestamp": date,
 }
 ### NB: don't add generic names like 'value' here — VisiData's own metasheets
 ### (options, memory, pyobj) have a 'value' column full of strings.
 
 vd_type_by_pattern = [
-    (re.compile(r'_(start|end|date|ts|time|datetime)$'), date),
-    (re.compile(r'_(num|qty|amt|vol|volume|price|amount|value)$'), float),
+    (re.compile(r"_(start|end|date|ts|time|datetime)$"), date),
+    (re.compile(r"_(num|qty|amt|vol|volume|price|amount|value)$"), float),
 ]
 
 
@@ -207,7 +243,9 @@ vd_type_by_pattern = [
 ### is exec'd with locals != globals, but loadConfigFile then feeds those locals
 ### to vd.addGlobals, which updates the very dict these functions close over.)
 @Sheet.after
-def afterLoad(sheet, _exact=vd_type_by_name, _patterns=vd_type_by_pattern, _untyped=anytype):
+def afterLoad(
+    sheet, _exact=vd_type_by_name, _patterns=vd_type_by_pattern, _untyped=anytype
+):
     for col in sheet.columns:
         if col.type is not _untyped:
             continue
@@ -235,12 +273,13 @@ def afterLoad(sheet, _exact=vd_type_by_name, _patterns=vd_type_by_pattern, _unty
 ### still a str and .replace() silently takes the str.replace() path.
 from zoneinfo import ZoneInfo
 
-UTC = ZoneInfo('UTC')
-BERLIN = ZoneInfo('Europe/Berlin')
+UTC = ZoneInfo("UTC")
+BERLIN = ZoneInfo("Europe/Berlin")
 
 ### Keybindings
-Sheet.unbindkey(':')
-Sheet.bindkey(':', 'split-col')
+Sheet.unbindkey(":")
+Sheet.bindkey(":", "split-col")
+
 
 ### Copy the current sheet's file path to the system clipboard. VisiData ships
 ### syscopy-* for rows/cells/column names but nothing for sheet.source, and the
@@ -256,17 +295,23 @@ Sheet.bindkey(':', 'split-col')
 def sourcePath(sheet):
     node = sheet
     for _ in range(10):  # cycle guard; nesting is never this deep
-        src = getattr(node, 'source', None)
+        src = getattr(node, "source", None)
         if isinstance(src, visidata.Path):
             return str(src)
         if isinstance(src, list) and src:
             src = src[0]
         if not isinstance(src, BaseSheet):
-            return ''
+            return ""
         node = src
-    return ''
+    return ""
 
-BaseSheet.addCommand('Alt+y', 'syscopy-path', 'syscopyValue(sourcePath() or fail("sheet has no file path"))', "copy this sheet's source path to system clipboard")
+
+BaseSheet.addCommand(
+    "Alt+y",
+    "syscopy-path",
+    'syscopyValue(sourcePath() or fail("sheet has no file path"))',
+    "copy this sheet's source path to system clipboard",
+)
 
 ### Themes
 vd.themes["rosepine_ascii"] = dict(
@@ -278,18 +323,14 @@ vd.themes["rosepine_ascii"] = dict(
     disp_more_right=">",
     disp_error_val="",
     disp_ambig_width=1,
-
     disp_pending="",
     disp_note_pending=":",
     disp_note_fmtexc="?",
     disp_note_getexc="!",
     disp_note_typeexc="!",
-
     color_note_pending="bold magenta",
     color_note_type="yellow",
     color_note_row="bold yellow",
-
-
     disp_column_sep="|",
     disp_keycol_sep="|",
     disp_rowtop_sep="|",
@@ -319,7 +360,6 @@ vd.themes["rosepine_ascii"] = dict(
     color_graph_hidden="238",
     color_graph_selected="bold",
     color_status_replay="green",
-
     color_sidebar="253 on 238",
     color_add_pending="green on 238",
     color_change_pending="reverse yellow",
@@ -337,7 +377,6 @@ vd.themes["rosepine_ascii"] = dict(
     color_inactive_status="8 on black",
     color_working="bold 255 on 238",
     color_longname_status="black on cyan",
-
     color_menu="black on green",
     color_menu_active="yellow on black",
     color_menu_spec="black on green",
@@ -348,7 +387,7 @@ vd.themes["rosepine_ascii"] = dict(
     disp_menu_input="_",
     disp_menu_fmt="Rosepine ASCII palette",
     plot_colors="228 117 213 156 215 231",
-    color_graph_axis="245",   # light grey axis labels, readable but not shouting
+    color_graph_axis="245",  # light grey axis labels, readable but not shouting
     disp_histogram="■",
     disp_graph_reflines_x_charset="▏││▕",
     disp_graph_reflines_y_charset="▔──▁",
@@ -356,19 +395,23 @@ vd.themes["rosepine_ascii"] = dict(
 
 vd.options.theme = "rosepine_ascii"
 
-from visidata import vd, VisiData, Sheet, asyncthread
+from visidata import Sheet, VisiData, asyncthread, vd
+
 
 @VisiData.api
 @asyncthread
 def plot_seaborn_line(vd, rows, xcols, ycols):
     import multiprocessing
+
     multiprocessing.Process(target=_vd_lineplot, args=(rows, xcols, ycols)).start()
 
+
 def _vd_lineplot(rows, xcols, ycols):
-    plt = vd.importExternal('matplotlib.pyplot', 'matplotlib')
-    sns = vd.importExternal('seaborn')
+    plt = vd.importExternal("matplotlib.pyplot", "matplotlib")
+    sns = vd.importExternal("seaborn")
     sns.set()
-    plt.figure(figsize=(12, 6)); plt.xticks(rotation=15)
+    plt.figure(figsize=(12, 6))
+    plt.xticks(rotation=15)
     catcols = [c for c in xcols if not vd.isNumeric(c)]
     numcols = vd.numericCols(xcols)
     # Build all three values before appending any of them. Appending as we went
@@ -402,15 +445,24 @@ def _vd_lineplot(rows, xcols, ycols):
         plt.title('%d of %d point(s) skipped (unconvertible values)' % (skipped, skipped + len(X)))
     plt.show()
 
-Sheet.addCommand(None, 'plot-column-line', 'plot_seaborn_line(rows, keyCols, numericCols([cursorCol]))',
-                 'line plot of current numeric column vs key columns using seaborn')
-Sheet.addCommand(None, 'plot-numerics-line', 'plot_seaborn_line(rows, keyCols, numericCols(nonKeyVisibleCols))',
-                 'line plot of all visible numeric columns vs key columns using seaborn')
+
+Sheet.addCommand(
+    None,
+    "plot-column-line",
+    "plot_seaborn_line(rows, keyCols, numericCols([cursorCol]))",
+    "line plot of current numeric column vs key columns using seaborn",
+)
+Sheet.addCommand(
+    None,
+    "plot-numerics-line",
+    "plot_seaborn_line(rows, keyCols, numericCols(nonKeyVisibleCols))",
+    "line plot of all visible numeric columns vs key columns using seaborn",
+)
 
 ### Make seaborn line plot the default (. / g.), move terminal scatter to z. / gz.
-Sheet.unbindkey('.')
-Sheet.unbindkey('g.')
-Sheet.bindkey('.',   'plot-column-line')
-Sheet.bindkey('g.',  'plot-numerics-line')
-Sheet.bindkey('z.',  'plot-column')      # original terminal scatter (single column)
-Sheet.bindkey('gz.', 'plot-numerics')    # original terminal scatter (all numerics)
+Sheet.unbindkey(".")
+Sheet.unbindkey("g.")
+Sheet.bindkey(".", "plot-column-line")
+Sheet.bindkey("g.", "plot-numerics-line")
+Sheet.bindkey("z.", "plot-column")  # original terminal scatter (single column)
+Sheet.bindkey("gz.", "plot-numerics")  # original terminal scatter (all numerics)

@@ -1,0 +1,27 @@
+#!/bin/sh
+# Print the system clipboard on stdout, whatever this machine is.
+#
+# The counterpart to clipboard-copy, and needed for the same reason: on WSL,
+# tools default to Windows console helpers that mangle non-ASCII. VisiData's
+# default paste command is `powershell.exe -noprofile -command Get-Clipboard`,
+# which round-trips through the console codepage; win32yank hands over UTF-8
+# untouched.
+#
+# --lf normalises the CRLF the Windows clipboard stores, so pasted lines don't
+# arrive with a trailing ^M.
+set -eu
+
+if [ -n "${WSL_DISTRO_NAME:-}" ] && command -v win32yank.exe >/dev/null 2>&1; then
+    exec win32yank.exe -o --lf
+elif [ -n "${WAYLAND_DISPLAY:-}" ] && command -v wl-paste >/dev/null 2>&1; then
+    exec wl-paste --no-newline
+elif [ -n "${DISPLAY:-}" ] && command -v xclip >/dev/null 2>&1; then
+    exec xclip -selection clipboard -o
+elif [ -n "${DISPLAY:-}" ] && command -v xsel >/dev/null 2>&1; then
+    exec xsel --clipboard --output
+elif command -v pbpaste >/dev/null 2>&1; then
+    exec pbpaste
+fi
+
+printf 'clipboard-paste: no clipboard tool for this environment\n' >&2
+exit 1
