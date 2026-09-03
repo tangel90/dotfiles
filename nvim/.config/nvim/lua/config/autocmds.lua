@@ -144,7 +144,7 @@ vim.api.nvim_create_autocmd('FileType', {
 -- format-on-save / LSP didSave churn while editing.
 vim.api.nvim_create_autocmd({ 'InsertLeave', 'TextChanged' }, {
     group = vim.api.nvim_create_augroup('scratchpad-autosave', { clear = true }),
-    pattern = { 'scratchpad.sql', '*/scratchpad.sql' },
+    pattern = { 'scratchpad.sql', '*/*scratchpad.sql' },
     callback = function(args)
         local bo = vim.bo[args.buf]
         if bo.modified and bo.modifiable and bo.buftype == '' then
