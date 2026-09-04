@@ -75,10 +75,15 @@ return { -- Collection of various small independent plugins/modules
             mappings = {
                 -- close = '<ESC><ESC>',
                 close = '<ESC><ESC>',
-                go_in = 'l',
+                -- h/l stay free for cursor motion: renaming in mini.files means
+                -- editing the entry text in place, and with h/l bound to
+                -- navigation you cannot walk into a filename to change part of
+                -- it (mini-files.txt:283 calls this out). <CR> descends or opens,
+                -- `-` goes to the parent, oil-style.
+                go_in = 'L',
                 go_in_plus = '<CR>',
-                go_out = 'H',
-                go_out_plus = 'h',
+                go_out = '',
+                go_out_plus = '-',
                 mark_goto = "'",
                 mark_set = 'm',
                 reset = '<BS>',
@@ -124,7 +129,8 @@ return { -- Collection of various small independent plugins/modules
             pattern = 'MiniFilesBufferCreate',
             callback = function(args)
                 vim.keymap.set('n', 'q', function() require('mini.files').close() end, { buffer = args.data.buf_id, desc = 'mini.files: close' })
-                vim.keymap.set('n', '-', function() require('mini.files').go_out() end, { buffer = args.data.buf_id, desc = 'mini.files: go to parent (oil-style)' })
+                -- `-` is go_out_plus in the mappings above now, so no buffer-local
+                -- override here: this one would shadow it with the non-trimming variant.
             end,
         })
     end,
