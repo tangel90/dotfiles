@@ -151,6 +151,14 @@ def save_parquet(vd, p, sheet):
         pa.date64 = orig_date64
 
 
+@vd.numericType("%")
+def floatde(s=None):
+    "German decimal comma: 1.234,56 -> 1234.56"
+    if s is None:
+        return 0.0
+    return float(str(s).strip().replace(".", "").replace(",", "."))
+
+
 ### Make parquet sheets editable. Edits (e), g= / setcol-expr, fill, negate —
 ### anything going through Column.setValue — reported "set N values" on a parquet
 ### sheet and changed nothing: Column.putValue is a silent no-op when a column
@@ -220,12 +228,41 @@ import re
 
 from visidata import Sheet, anytype, date
 
+### German number notation: 523,992 and 1.234,56. VisiData ships `floatlocale`
+### (locale.atof), but that needs a de_DE locale generated system-wide (this box
+### has only C and en_US) and then changes float *formatting* process-wide too.
+### Parsing both separators directly avoids either problem.
+###
+### Only safe on genuinely German data: it would read the US thousands "1.234"
+### as 1234. Hence applied by column name below, never by sniffing values.
+@vd.numericType("%")
+def floatde(*args):
+    "float() for German notation: '1.234,56' -> 1234.56"
+    if not args or args[0] is None or args[0] == "":
+        return 0.0
+    return float(str(args[0]).strip().replace(".", "").replace(",", "."))
+
+
+Sheet.addCommand("z^F", "type-floatde", "cursorCol.type = floatde", "set type of current column to German float")
+ColumnsSheet.addCommand(
+    "gz^F", "type-floatde-selected", "onlySelectedRows.type = floatde", "set type of selected source columns to German float"
+)
+
 vd_type_by_name = {
     "volume": float,
     "quantity": float,
     "qty": float,
     "amount": float,
+    # Lowercase keys only: the lookup does col.name.lower(), so "Menge" and
+    # "Preis" sat here unreachable. And German columns need floatde, not float —
+    # float("523,992") raises, which is why % looked broken on them.
+    "menge": floatde,
+    "wert": floatde,
+    "betrag": floatde,
+    "summe": floatde,
+    "leistung": floatde,
     "price": float,
+    "preis": floatde,
     "power": float,
     "timestamp": date,
 }
@@ -235,6 +272,7 @@ vd_type_by_name = {
 vd_type_by_pattern = [
     (re.compile(r"_(start|end|date|ts|time|datetime)$"), date),
     (re.compile(r"_(num|qty|amt|vol|volume|price|amount|value)$"), float),
+    (re.compile(r"_(preis|menge|wert|betrag|summe|leistung)$"), floatde),
 ]
 
 
@@ -437,12 +475,15 @@ def _vd_lineplot(rows, xcols, ycols):
 
     if not X:
         # A plot of nothing is a blank window; say why instead.
-        plt.title('nothing plottable: %d value(s) could not be converted' % skipped)
+        plt.title("nothing plottable: %d value(s) could not be converted" % skipped)
     sns.lineplot(x=X, y=Y, hue=C if catcols else None, sort=True, linewidth=1)
     # Skipped rows are silent data loss otherwise: this runs in a separate
     # process, so vd.warning() would never reach the sheet.
     if skipped and X:
-        plt.title('%d of %d point(s) skipped (unconvertible values)' % (skipped, skipped + len(X)))
+        plt.title(
+            "%d of %d point(s) skipped (unconvertible values)"
+            % (skipped, skipped + len(X))
+        )
     plt.show()
 
 
