@@ -76,6 +76,28 @@ def connection_params(name=None):
     return name, {KEY_ALIASES.get(k, k): v for k, v in conns[name].items()}
 
 
+def dedupe_names(names):
+    """Make column names unique, appending _2, _3 … to later repeats.
+
+    `select *` over a join happily returns the same column twice (FACT_RISK
+    yielded REPORTING_COUNTERPARTY_ID and PORTFOLIO_GROUP_ID twice), and a
+    parquet file with duplicate field names is unreadable: pyarrow's read_table
+    fails outright with "Can't unify schema with duplicate field names", so
+    VisiData, pandas and duckdb all bounce off it. Better to rename here than to
+    write a file nothing can open.
+    """
+    seen = {}
+    out = []
+    for name in names:
+        if name in seen:
+            seen[name] += 1
+            out.append(f'{name}_{seen[name]}')
+        else:
+            seen[name] = 1
+            out.append(name)
+    return out
+
+
 def float_schema(schema, pa):
     'Same schema with decimal columns widened to float64; None if nothing to change.'
     fields = []
@@ -102,8 +124,17 @@ def write_parquet(batches, out, decimal_mode, pa, pq):
     schema = None
     rows = 0
     try:
+        names = None
         for batch in batches:
             tbl = batch if isinstance(batch, pa.Table) else pa.Table.from_batches([batch])
+            if names is None:
+                names = dedupe_names(tbl.schema.names)
+                renamed = [(a, b) for a, b in zip(tbl.schema.names, names) if a != b]
+                if renamed:
+                    log('snow-parquet: duplicate column(s) renamed: '
+                        + ', '.join(f'{a} -> {b}' for a, b in renamed))
+            if names != tbl.schema.names:
+                tbl = tbl.rename_columns(names)
             if writer is None:
                 schema = tbl.schema
                 if decimal_mode == 'float':
@@ -141,7 +172,7 @@ def write_rows(cursor, out, pa, pq):
     Types come from whatever the connector already parsed, so pyarrow infers
     them; that is good enough for the metadata-shaped results that land here.
     """
-    names = [d[0] if isinstance(d, (list, tuple)) else d.name for d in (cursor.description or [])]
+    names = dedupe_names([d[0] if isinstance(d, (list, tuple)) else d.name for d in (cursor.description or [])])
     rows = cursor.fetchall()
 
     data = {}
