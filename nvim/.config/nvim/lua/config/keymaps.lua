@@ -124,12 +124,35 @@ local function snow_fifo()
     return vim.g.snow_session_fifo or '/tmp/snow_session_tst.fifo'
 end
 
+-- Queries under ~/data/snowflake/database_explorer are env-neutral: they write
+-- {{ENV}}_RV.CORE.X so one tree serves dev/tst/prd, with direnv supplying ENV
+-- per directory. snow-parquet does this substitution itself for `-f` runs, but
+-- the FIFO session receives raw buffer text, so it has to happen here too.
+-- Returns nil (and notifies) when ENV is missing rather than sending SQL that
+-- would query `_RV.CORE.X` or, worse, the wrong environment.
+local function expand_env(sql)
+    if not sql:find('{{ENV}}', 1, true) then
+        return sql
+    end
+    local env = vim.env.ENV
+    if not env or env == '' then
+        vim.notify('SQL contains {{ENV}} but $ENV is unset — open nvim from an env dir so direnv exports it', vim.log.levels.ERROR)
+        return nil
+    end
+    -- braces are not magic in lua patterns, so a plain gsub is fine here
+    return (sql:gsub('{{ENV}}', env:upper()))
+end
+
 -- Writing to a FIFO blocks until a reader shows up, so this must never run on
 -- nvim's main loop: vim.system pipes the SQL in via stdin asynchronously.
 local function snow_session_send(sql, label)
     local fifo = snow_fifo()
     if vim.fn.getftype(fifo) ~= 'fifo' then
         vim.notify('no snow session FIFO at ' .. fifo .. ' — start one with <leader>rQ', vim.log.levels.ERROR)
+        return
+    end
+    sql = expand_env(sql)
+    if not sql then
         return
     end
     if not sql:match '\n$' then

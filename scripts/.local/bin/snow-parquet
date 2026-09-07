@@ -59,8 +59,18 @@ def connection_params(name=None):
     'Read ~/.snowflake/*.toml the same way the CLI does, and return connect() kwargs.'
     conns = tomllib.loads(CONNECTIONS.read_text()) if CONNECTIONS.exists() else {}
     if not name:
+        # Same precedence as the CLI: -c wins, then the env var direnv exports
+        # per environment directory, then config.toml. Reading only config.toml
+        # sent every run to whatever it names (dev) no matter which env dir the
+        # query came from — harmless while queries were env-prefixed by hand,
+        # wrong once {{ENV}} makes the directory decide the database.
+        name = os.environ.get('SNOWFLAKE_DEFAULT_CONNECTION_NAME', '').strip()
+    if not name:
         cfg = tomllib.loads(CONFIG.read_text()) if CONFIG.exists() else {}
         name = cfg.get('default_connection_name', 'default')
+    # connections.toml sections are lower-case; the env var is often set to TST/DEV
+    if name not in conns and name.lower() in conns:
+        name = name.lower()
     if name not in conns:
         sys.exit(f'snow-parquet: unknown connection {name!r}; have {sorted(conns)}')
     return name, {KEY_ALIASES.get(k, k): v for k, v in conns[name].items()}
@@ -161,6 +171,29 @@ def empty_parquet(cursor, out, pa, pq):
     return names
 
 
+ENV_PLACEHOLDER = '{{ENV}}'
+
+
+def expand_env(sql):
+    """Substitute {{ENV}} with $ENV, so one query tree serves dev/tst/prd.
+
+    The database prefix is the only thing that differs between environments
+    (TST_RV vs DEV_RV), which otherwise forces a copy of every query per env.
+    Queries under ~/data/snowflake/database_explorer write {{ENV}}_RV.CORE.X
+    and direnv supplies ENV per directory.
+
+    Failing loudly matters: an empty substitution would silently query
+    `_RV.CORE.X`, and a wrong one would hit the wrong environment.
+    """
+    if ENV_PLACEHOLDER not in sql:
+        return sql
+    env = os.environ.get('ENV', '').strip()
+    if not env:
+        sys.exit(f'snow-parquet: SQL contains {ENV_PLACEHOLDER} but $ENV is unset (direnv not allowed in this directory?)')
+    log(f'snow-parquet: {ENV_PLACEHOLDER} -> {env.upper()}')
+    return sql.replace(ENV_PLACEHOLDER, env.upper())
+
+
 def main():
     ap = argparse.ArgumentParser(add_help=True, description='run SQL on Snowflake, write parquet')
     src = ap.add_mutually_exclusive_group()
@@ -184,6 +217,8 @@ def main():
         sql = sys.stdin.read()
     if not sql.strip():
         sys.exit('snow-parquet: no SQL given')
+
+    sql = expand_env(sql)
 
     if args.out:
         out = args.out
