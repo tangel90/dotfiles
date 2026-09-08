@@ -47,7 +47,15 @@ return {
         'toml',
         'typescript',
         'python',
-        'go'
+        'go',
+        -- terraform/dbt repos had no parser at all, so nvim-treesitter-context
+        -- silently showed nothing there: it bails out early when
+        -- vim.treesitter.get_parser() fails for the buffer.
+        'hcl',
+        'terraform',
+        'sql',
+        'jinja',
+        'jinja_inline',
       }
 
       -- make sure nvim-treesitter can load
