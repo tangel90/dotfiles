@@ -137,18 +137,59 @@ def syscopyCells(sheet, cols, rows, filetype=None):
 ### Caveat: the patch is process-global while the save runs, so two parquet
 ### saves racing in different threads could see it. Saves are one-at-a-time in
 ### practice, and the window is a single write.
+### Saving parquet also died outright on any column VisiData had not typed:
+### "ArrowTypeError: Expected bytes, got a 'bool' object". save_parquet declares
+### anytype columns as pa.string() in its schema, but feeds pa.array the raw
+### Python objects from iterdispvals(format=False) — so a bool, an int, a dict
+### or a list in an untyped column cannot be written at all. Only str survives;
+### this hits JSON-sourced sheets hardest, where untyped columns are the norm.
+###
+### Coerce to the declared type rather than crashing: for string-typed arrays,
+### render anything non-str as text. bool becomes true/false and dict/list
+### become JSON rather than Python repr, so the values re-read cleanly in other
+### tools. Columns that *are* typed (# % @ and friends) map to real int, float
+### and timestamp arrays upstream and never reach this path — so type a column
+### first if you want it stored as a number or a date rather than as text.
+import json
+
 _orig_save_parquet = VisiData.save_parquet
+
+
+def _parquet_text(val):
+    "Render val for a parquet string column the way another tool can read back."
+    if isinstance(val, (str, bytes)):
+        return val
+    if isinstance(val, bool):
+        return "true" if val else "false"
+    if isinstance(val, (dict, list, tuple)):
+        try:
+            return json.dumps(val, default=str, ensure_ascii=False)
+        except (TypeError, ValueError):
+            return str(val)
+    return str(val)
 
 
 @VisiData.api
 def save_parquet(vd, p, sheet):
     pa = vd.importExternal("pyarrow")
     orig_date64 = pa.date64
+    orig_array = pa.array
+
+    def _array(obj, type=None, *args, **kwargs):
+        if type is not None and (pa.types.is_string(type) or pa.types.is_large_string(type)):
+            try:
+                obj = [v if v is None else _parquet_text(v) for v in obj]
+            except TypeError:  # not a sequence (an ndarray, a scalar); leave it
+                pass
+        return orig_array(obj, type, *args, **kwargs)
+
     pa.date64 = lambda: pa.timestamp("us")
+    pa.array = _array
     try:
         return _orig_save_parquet(vd, p, sheet)
     finally:
         pa.date64 = orig_date64
+        pa.array = orig_array
 
 
 @vd.numericType("%")
