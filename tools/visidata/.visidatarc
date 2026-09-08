@@ -26,6 +26,12 @@ vd.options.clipboard_paste_cmd = "clipboard-paste"
 ### Caveat: consumers reading with plain utf-8 see ﻿ glued to the first
 ### header name (duckdb and pandas both handle it; naive split() parsers don't).
 vd.options.save_encoding = "utf-8-sig"
+### Read with utf-8-sig too, or vd cannot cleanly reopen what it just wrote: the
+### BOM lands in the first column's NAME ("\ufeffLiefertag"), which silently
+### defeats the name-based autotyping below for that one column. The codec
+### strips a leading BOM when present and is plain utf-8 otherwise, so this is
+### safe for BOM-less files — and it also fixes CSVs exported from Excel.
+vd.options.encoding = "utf-8-sig"
 
 vd.option(
     "save_dir",
@@ -192,14 +198,6 @@ def save_parquet(vd, p, sheet):
         pa.array = orig_array
 
 
-@vd.numericType("%")
-def floatde(s=None):
-    "German decimal comma: 1.234,56 -> 1234.56"
-    if s is None:
-        return 0.0
-    return float(str(s).strip().replace(".", "").replace(",", "."))
-
-
 ### Make parquet sheets editable. Edits (e), g= / setcol-expr, fill, negate —
 ### anything going through Column.setValue — reported "set N values" on a parquet
 ### sheet and changed nothing: Column.putValue is a silent no-op when a column
@@ -277,12 +275,38 @@ from visidata import Sheet, anytype, date
 ###
 ### Only safe on genuinely German data: it would read the US thousands "1.234"
 ### as 1234. Hence applied by column name below, never by sniffing values.
+### floatde parses German notation but VisiData *formats* it with disp_float_fmt
+### ("{:.02f}", a plain dot decimal), and save_csv writes the formatted display
+### string (iterdispvals(format=True)). So a floatde column did not survive a
+### round trip through vd's own csv save: 1.233,40 displayed as 1233.40, was
+### written as "1233.40", and on reopen the old parser stripped every dot and
+### returned 123340.0 — inflated by 100x or 1000x depending on the decimals.
+###
+### Hence: decide per value instead of assuming German. A comma always means
+### decimal comma. Without one, dots are thousands separators only when they
+### group the digits in exact threes (1.234, 1.234.567); anything else is read
+### as a plain float, which is what vd itself writes.
+###
+### "123.336" stays genuinely ambiguous — it matches the thousands shape, so it
+### reads as 123336. That only bites a dot-decimal file with 3 decimals, which
+### vd never writes at the default 2dp, and such a column would not be named
+### Menge/Preis anyway. Values with a comma are never ambiguous.
+_DE_THOUSANDS = re.compile(r"^[-+]?\d{1,3}(?:\.\d{3})+$")
+
+
 @vd.numericType("%")
 def floatde(*args):
-    "float() for German notation: '1.234,56' -> 1234.56"
+    "float() for German notation: '1.234,56' -> 1234.56, tolerating '1234.56' too"
     if not args or args[0] is None or args[0] == "":
         return 0.0
-    return float(str(args[0]).strip().replace(".", "").replace(",", "."))
+    s = str(args[0]).strip()
+    if not s:
+        return 0.0
+    if "," in s:
+        return float(s.replace(".", "").replace(",", "."))
+    if _DE_THOUSANDS.match(s):
+        return float(s.replace(".", ""))
+    return float(s)
 
 
 Sheet.addCommand("z^F", "type-floatde", "cursorCol.type = floatde", "set type of current column to German float")
