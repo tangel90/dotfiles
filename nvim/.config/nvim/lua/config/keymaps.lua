@@ -130,13 +130,62 @@ end
 -- the FIFO session receives raw buffer text, so it has to happen here too.
 -- Returns nil (and notifies) when ENV is missing rather than sending SQL that
 -- would query `_RV.CORE.X` or, worse, the wrong environment.
+-- Where ENV comes from, in order: the environment nvim inherited (direnv, when
+-- nvim was launched from inside an env dir), an explicit :SnowEnv override, then
+-- the nearest .envrc above cwd.
+--
+-- The buffer path is deliberately not a source. The explorer tree is one shared
+-- directory symlinked into dev/tst/prd, and nvim resolves the symlink when
+-- opening a file, so a buffer opened via tst/ reports the shared path and never
+-- names an environment.
+local function envrc_env()
+    local found = vim.fs.find('.envrc', { upward = true, path = vim.fn.getcwd(), type = 'file' })[1]
+    if not found then
+        return nil
+    end
+    for line in io.lines(found) do
+        local v = line:match '^%s*export%s+ENV=([%w_]+)'
+        if v then
+            return v
+        end
+    end
+    return nil
+end
+
+local function snow_env()
+    if vim.env.ENV and vim.env.ENV ~= '' then
+        return vim.env.ENV
+    end
+    if vim.g.snow_env and vim.g.snow_env ~= '' then
+        return vim.g.snow_env
+    end
+    return envrc_env()
+end
+
+vim.api.nvim_create_user_command('SnowEnv', function(o)
+    if o.args == '' then
+        vim.notify('snow env: ' .. tostring(snow_env()), vim.log.levels.INFO)
+        return
+    end
+    vim.g.snow_env = o.args:upper()
+    -- A running FIFO session keeps whatever connection it was started with, so
+    -- switching env here only redirects one-shot runs unless it is restarted.
+    vim.notify(('snow env set to %s (restart the FIFO session to move it too)'):format(vim.g.snow_env), vim.log.levels.INFO)
+end, {
+    nargs = '?',
+    complete = function()
+        return { 'dev', 'tst', 'prd' }
+    end,
+    desc = 'show or override the environment {{ENV}} expands to',
+})
+
 local function expand_env(sql)
     if not sql:find('{{ENV}}', 1, true) then
         return sql
     end
-    local env = vim.env.ENV
+    local env = snow_env()
     if not env or env == '' then
-        vim.notify('SQL contains {{ENV}} but $ENV is unset — open nvim from an env dir so direnv exports it', vim.log.levels.ERROR)
+        vim.notify('SQL contains {{ENV}} but no environment is known — run :SnowEnv tst, or start nvim from an env dir', vim.log.levels.ERROR)
         return nil
     end
     -- braces are not magic in lua patterns, so a plain gsub is fine here
@@ -297,7 +346,23 @@ vim.api.nvim_create_autocmd('FileType', {
             -- parquet — no text hop, and warehouse types (TIMESTAMP, NUMBER)
             -- reach visidata intact. No duckdb pass needed here.
             local out = query_out_path(path, 'parquet')
-            local cmd = string.format('snow-parquet -f %s -o %s', vim.fn.shellescape(path), vim.fn.shellescape(out))
+            -- snow-parquet expands {{ENV}} itself, but it only sees the
+            -- environment nvim hands it — which is empty unless nvim happened to
+            -- be started inside an env dir. Pass the env this buffer resolved to,
+            -- and the matching connection, so the database and the credentials
+            -- agree instead of silently falling back to config.toml's default.
+            local env = snow_env()
+            if not env then
+                vim.notify('no environment known for {{ENV}} — run :SnowEnv tst, or start nvim from an env dir', vim.log.levels.ERROR)
+                return
+            end
+            local cmd = string.format(
+                'ENV=%s SNOWFLAKE_DEFAULT_CONNECTION_NAME=%s snow-parquet -f %s -o %s',
+                vim.fn.shellescape(env:upper()),
+                vim.fn.shellescape(env:lower()),
+                vim.fn.shellescape(path),
+                vim.fn.shellescape(out)
+            )
             run_to_visidata_tmux(cmd, out, 'snow query', vim.fn.expand '~/data/snowflake/')
         end, vim.tbl_extend('force', bufopt, { desc = 'snow → arrow → parquet → visidata (tmux)' }))
 
