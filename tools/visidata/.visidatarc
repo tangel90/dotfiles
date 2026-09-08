@@ -246,10 +246,11 @@ ParquetColumn.putValue = _parquet_putValue
 ###
 ### Status and error messages keep using the sidebar area regardless — they're
 ### unconditional in drawSidebar — and any keystroke clears them.
-vd.options.disp_sidebar = False
-vd.options.disp_help_flags = (
-    "cmdpalette help hints inputfield inputkeys nometacols sidebar"
-)
+### Both options live in the rosepine_ascii theme dict below, NOT here:
+### vd.set_theme() runs from @VisiData.before run, i.e. after this file is read,
+### and it unsets every option starting with disp_/color_/note_ before applying
+### the theme. Assigning them at top level here looked right but was silently
+### reverted to the defaults (disp_sidebar back to True) on every startup.
 
 ### Autotyping by column name. VisiData has NO value-sniffing autotype: text
 ### loaders (csv/tsv/json/jsonl) hand every column back as anytype, so #/%/@ has
@@ -394,6 +395,9 @@ BaseSheet.addCommand(
 
 ### Themes
 vd.themes["rosepine_ascii"] = dict(
+    # not colours, but set_theme() clears all disp_* so they have to be here
+    disp_sidebar=False,
+    disp_help_flags="cmdpalette help hints inputfield inputkeys nometacols sidebar",
     disp_date_fmt="%Y-%m-%dT%H:%M",
     disp_note_none="",
     disp_truncator=">",
