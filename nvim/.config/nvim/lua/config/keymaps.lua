@@ -591,8 +591,11 @@ map(
     '<cmd>noautocmd w<cr>',
     { noremap = true, desc = 'Save current buffer (without formatting)' }
 )
-map({ 'n', 'i' }, '<C-W><C-Q>', '<cmd>qa<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
-map({ 'n', 'i' }, '<C-W><C-X>', '<cmd>q!<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
+-- Normal mode only: in insert mode these made <C-w> an ambiguous prefix, so
+-- deleting the previous word waited out timeoutlen (500ms) before falling back
+-- to the built-in i_CTRL-W.
+map('n', '<C-W><C-Q>', '<cmd>qa<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
+map('n', '<C-W><C-X>', '<cmd>q!<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
 map({ 'n', 'i' }, '<C-S><C-S>', '<cmd>wq<cr>', { noremap = true, desc = 'Quit all windows', silent = true })
 map('n', '<leader>q', ':bdelete<CR>', { noremap = true, desc = 'Close current buffer' })
 map({ 'n', 'v' }, '<Leader>v', ':vsplit<CR>', { noremap = true, silent = true, desc = 'New vertical split' })
