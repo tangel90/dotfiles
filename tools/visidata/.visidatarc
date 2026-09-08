@@ -552,3 +552,38 @@ Sheet.bindkey(".", "plot-column-line")
 Sheet.bindkey("g.", "plot-numerics-line")
 Sheet.bindkey("z.", "plot-column")  # original terminal scatter (single column)
 Sheet.bindkey("gz.", "plot-numerics")  # original terminal scatter (all numerics)
+
+
+### Ctrl+D / Ctrl+U scroll half a page, as in vim. VisiData has no half-page
+### command of its own — only go-pagedown / go-pageup on Ctrl+F / Ctrl+B — so
+### define the pair here rather than aliasing the full-page ones.
+###
+### Ctrl+D was save-cmdlog on BaseSheet; that is what is being displaced. The
+### command itself is still reachable as Space save-cmdlog (exec-longname).
+###
+### Scoped to Sheet, not BaseSheet: Canvas/Plotter (graphs) are BaseSheets that
+### define their own go-pagedown, and would raise on a longname they don't have.
+### There they keep Ctrl+D as save-cmdlog.
+###
+### Ctrl+D and Ctrl+U while typing at a prompt are unaffected — the line editor
+### in _input.py handles those itself (delete-char and clear-to-start) and never
+### consults sheet bindings.
+###
+### topRowIndex is clamped by checkCursor() on every draw, so overshooting at
+### either end just lands on the first/last row.
+Sheet.addCommand(
+    None,
+    "go-halfpagedown",
+    "n=max(1, nScreenRows//2); cursorDown(n); sheet.topRowIndex = sheet.topRowIndex+n",
+    "scroll half page forward",
+    replay=False,
+)
+Sheet.addCommand(
+    None,
+    "go-halfpageup",
+    "n=max(1, nScreenRows//2); cursorDown(-n); sheet.topRowIndex = sheet.topRowIndex-n",
+    "scroll half page backward",
+    replay=False,
+)
+Sheet.bindkey("^D", "go-halfpagedown")
+Sheet.bindkey("^U", "go-halfpageup")
