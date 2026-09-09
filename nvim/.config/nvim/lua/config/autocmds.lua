@@ -175,6 +175,25 @@ vim.api.nvim_create_autocmd({ 'FileType' }, {
     pattern = 'bigfile',
     callback = function(ev)
         vim.schedule(function()
+            if not vim.api.nvim_buf_is_valid(ev.buf) then
+                return
+            end
+            -- Minified files (a whole document on one enormous line) must NOT get
+            -- vim syntax back: syntax/json.vim's regexes exceed 'maxmempattern'
+            -- on a 76 MB line and spam "E363: Pattern uses more memory than
+            -- 'maxmempattern'" forever. Reproducible with plugins off, via
+            -- `nvim -u NONE -c 'syntax on' file -c 'set ft=json'`.
+            -- 'synmaxcol' does not save us: it caps how far highlighting is
+            -- applied, not how far the regex engine scans.
+            local lines = vim.api.nvim_buf_line_count(ev.buf)
+            local bytes = vim.api.nvim_buf_get_offset(ev.buf, lines)
+            if lines > 0 and bytes / lines > 2048 then
+                -- one wrapped mega-line is unreadable; let it scroll sideways
+                vim.api.nvim_buf_call(ev.buf, function()
+                    vim.wo.wrap = false
+                end)
+                return
+            end
             vim.bo[ev.buf].syntax = vim.filetype.match { buf = ev.buf } or ''
         end)
     end,
