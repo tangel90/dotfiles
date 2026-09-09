@@ -1,7 +1,7 @@
 return {
     'nvim-treesitter/nvim-treesitter-context',
     opts = {
-        enable = true, -- Enable this plugin (Can be enabled/disabled later via commands)
+        enable = false, -- Enable this plugin (Can be enabled/disabled later via commands)
         multiwindow = false, -- Enable multiwindow support.
         min_window_height = 0, -- Minimum editor window height to enable context. Values <= 0 mean no limit.
         line_numbers = true,
@@ -19,7 +19,9 @@ return {
         max_lines = 4, -- 2 could not fit class + def together with any nesting
     },
     config = function(_, opts)
-      require('treesitter-context').setup(opts)
-      vim.keymap.set('n', '[c',function() require('treesitter-context').go_to_context(vim.v.count1) end)
+        require('treesitter-context').setup(opts)
+        vim.keymap.set('n', '[c', function()
+            require('treesitter-context').go_to_context(vim.v.count1)
+        end)
     end,
 }
