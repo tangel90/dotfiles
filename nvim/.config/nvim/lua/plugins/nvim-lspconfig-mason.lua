@@ -234,20 +234,27 @@ return { -- LSP Configuration & Plugins
             jqls = {
                 filetypes = { 'json', 'jq' },
             },
-            python = {
-                analysis = {
-                    -- Ignore all files for analysis to exclusively use Ruff for linting
-                    ignore = { '*' },
-                },
-            },
+            -- 'python' was its own entry here, but it is not a server name: the
+            -- settings never reached anything, and mason tried to install a
+            -- package called "python". pyright reads nearly everything under
+            -- `python.analysis`; only disableOrganizeImports/disableTaggedHints
+            -- live under `pyright`. The old block nested analysis under
+            -- `pyright.analysis`, which pyright ignores entirely.
             pyright = {
                 settings = {
                     pyright = {
+                        disableOrganizeImports = true,
+                    },
+                    python = {
                         analysis = {
-                            disableOrganizeImports = true,
+                            -- ignore all files for diagnostics; ruff lints instead
+                            ignore = { '*' },
                             autoSearchPaths = true,
                             diagnosticMode = 'openFilesOnly',
-                            useLibraryCodeForTypes = true,
+                            -- the expensive one: indexing types out of library
+                            -- code costs real time in big envs (the rmq project's
+                            -- conda env is 1.4G, 431M of site-packages alone)
+                            useLibraryCodeForTypes = false,
                             reportMissingTypeStubs = false,
                             typeCheckingMode = 'basic',
                         },
@@ -343,17 +350,17 @@ return { -- LSP Configuration & Plugins
         })
         require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
-        require('mason-lspconfig').setup {
-            handlers = {
-                function(server_name)
-                    local server = servers[server_name] or {}
-                    -- This handles overriding only values explicitly passed
-                    -- by the server configuration above. Useful when disabling
-                    -- certain features of an LSP (for example, turning off formatting for tsserver)
-                    server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-                    require('lspconfig')[server_name].setup(server)
-                end,
-            },
-        }
+        require('mason-lspconfig').setup {}
+
+        -- mason-lspconfig 2.x removed setup{handlers=...} entirely, so the old
+        -- per-server handler here never ran: every entry in `servers` above was
+        -- dead code apart from seeding ensure_installed, and each server came up
+        -- on lspconfig's defaults. Verified by dumping client.config.settings.
+        -- v2 enables installed servers automatically; feed our overrides through
+        -- vim.lsp.config, the same 0.11 API used for lua_ls and ruff above.
+        for server_name, server in pairs(servers) do
+            server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
+            vim.lsp.config(server_name, server)
+        end
     end,
 }
