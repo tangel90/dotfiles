@@ -96,8 +96,6 @@ require 'config.todo_tasks'
 
 require 'config.highlights'
 
-require 'config.winbar'
-
 require 'lazy-bootstrap'
 
 require 'lazy-plugins'
