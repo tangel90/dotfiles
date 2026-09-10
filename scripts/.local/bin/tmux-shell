@@ -1,0 +1,42 @@
+#!/bin/sh
+# prefix+c: jump to a *free* shell window in this session, otherwise open one.
+#
+# Reuse hinges on tmux's automatic-rename: a window sitting at a prompt is named
+# after the shell ("zsh"), a window running something is named after that command
+# ("sleep", "python"). So matching on the name alone gives the wanted behaviour —
+# a busy shell is never stolen, you get a new window instead.
+#
+# Which is also why these windows must NOT be created with `new-window -n zsh`:
+# naming a window explicitly turns automatic-rename off for it (that is why the
+# nvim windows report automatic-rename=0), and a busy window would then keep the
+# name "zsh" and be reused while a command was running in it.
+#
+# Not done as a plain `if-shell ... "select-window -t :=zsh"` binding because
+# that breaks with more than one idle shell: tmux calls the target ambiguous
+# ("can't find window: zsh") and the binding silently does nothing at all.
+# Resolve to the first matching window index instead.
+#
+# Only this session's windows are considered — windows belong to sessions, so
+# matching across them would yank you out of the session you are working in.
+
+# $TMUX_PANE must be explicit: a bare `display-message -p` resolves against the
+# most recently active pane, not the one the key was pressed in.
+if [ -n "${TMUX_PANE:-}" ]; then
+    session=$(tmux display-message -p -t "$TMUX_PANE" '#{session_name}')
+else
+    session=$(tmux display-message -p '#{session_name}')
+fi
+
+idx=$(tmux list-windows -t "$session" -F '#{window_index} #{window_name}' |
+    awk '$2 == "zsh" { print $1; exit }')
+
+if [ -n "$idx" ]; then
+    exec tmux select-window -t "$session:$idx"
+fi
+
+# #{session_path} comes back empty through `display-message -t '=name'`, but is
+# populated in list-sessions' format — hence reading it this way.
+path=$(tmux list-sessions -F '#{session_name} #{session_path}' |
+    awk -v s="$session" '$1 == s { print $2; exit }')
+
+exec tmux new-window -t "$session:" -c "${path:-$HOME}"
