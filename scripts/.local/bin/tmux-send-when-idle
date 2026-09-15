@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# tmux-send-when-idle SESSION COMMAND
+#
+# send-keys COMMAND to SESSION, but only once its active pane is sitting at a
+# shell prompt. Used by tmux-sessionizer: a fresh session whose directory has an
+# .envrc that unlocks a secret (~/data/snowflake/admin runs `pass show`) makes
+# direnv spawn pinentry *in that window* before the shell ever prompts, so a
+# blind send-keys typed the start command into the passphrase field and the
+# trailing Enter submitted it as a failed attempt.
+#
+# "Idle" is judged by #{pane_current_command} matching the login shell: while
+# direnv is working that reads pinentry-curses / gpg / pass / direnv instead.
+# Not a fixed sleep, because the wait is bounded by how long a human takes to
+# type a passphrase, not by anything predictable.
+#
+# On timeout the keystrokes are dropped on purpose — firing them at whatever is
+# still on screen is what this exists to prevent.
+
+set -uo pipefail
+
+session=${1:-}
+command=${2:-}
+[[ -n $session && -n $command ]] || exit 0
+
+shell_name=$(basename "${SHELL:-/bin/zsh}")
+
+# 0.25s * 1200 = 5 minutes
+for _ in $(seq 1 1200); do
+    # Session gone (closed while we waited) — nothing to send to.
+    current=$(tmux display-message -p -t "$session" '#{pane_current_command}' 2>/dev/null) || exit 0
+    [[ -n $current ]] || exit 0
+
+    if [[ $current == "$shell_name" ]]; then
+        tmux send-keys -t "$session" "$command" C-m
+        exit 0
+    fi
+    sleep 0.25
+done
+
+exit 0

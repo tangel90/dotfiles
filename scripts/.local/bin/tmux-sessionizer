@@ -116,8 +116,19 @@ if ! tmux has-session -t="$selected_name" 2> /dev/null; then
     # created detached window *while* the sessionizer is doing switch-client —
     # the two race for the pty, corrupting the terminal and crashing the tmux
     # server. Fetch via `lg` (lazygit) or :Git fetch from a stable, attached pane.
+    # Typing this blindly landed it in a pinentry prompt: ~/data/snowflake/admin
+    # has an .envrc doing `pass show`, so direnv makes gpg spawn pinentry in this
+    # brand-new window before the shell reaches a prompt, and the keystrokes went
+    # into the passphrase field — with C-m submitting a failed attempt. Same race
+    # as the NOTE above, just reached through .envrc rather than git.
+    #
+    # So wait for the pane to be idle at the shell before sending. Detached, since
+    # a human typing a passphrase outlasts anything switch-client should wait for,
+    # and run-shell -b parents the waiter to the tmux server so it survives this
+    # script's own window closing. If the pane never settles (passphrase aborted)
+    # the keystrokes are dropped rather than fired at whatever is on screen.
     if [[ -n $start_cmd && $start_cmd != "none" ]]; then
-        tmux send-keys -t "$selected_name" "$start_cmd" C-m
+        tmux run-shell -b "$HOME/.local/bin/tmux-send-when-idle $(printf '%q %q' "$selected_name" "$start_cmd")"
     fi
 fi
 
