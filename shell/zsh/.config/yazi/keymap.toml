@@ -146,3 +146,12 @@ on = "<A-e>"
 for = "unix"
 run = 'shell "wsl-reveal" --orphan'
 desc = "Reveal in Windows Explorer"
+
+# `open` acts on the selection whenever one exists, so a file marked earlier in
+# another directory kept being opened instead of the hovered one — silently,
+# since marks are invisible from elsewhere. --hovered ignores the selection
+# without clearing it; `O` (open --interactive) still honours it.
+[[mgr.prepend_keymap]]
+on = ["o"]
+run = "open --hovered"
+desc = "Open the hovered file, ignoring any selection"
