@@ -6,6 +6,12 @@ tmpdir="${TMPDIR:-/tmp}"
 tmpfile=$(mktemp "$tmpdir/tmp.XXXXXX.$ext")
 w_name=$(basename "$tmpfile" | tr '.' '_')
 
-nvim "$tmpfile" && rm -- "$tmpfile"
+# Remove the scratch file however this exits. `nvim … && rm` only fired on a
+# zero exit, so the file survived `:cq`, a crash, and — the common one — closing
+# the tmux window while nvim was still running, which SIGHUPs this script before
+# it reaches the rm. Leftovers were piling up in $TMPDIR.
+trap 'rm -f -- "$tmpfile"' EXIT HUP INT TERM
+
+nvim "$tmpfile"
 
 
