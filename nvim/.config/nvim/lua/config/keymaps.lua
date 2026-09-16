@@ -138,18 +138,24 @@ end
 -- directory symlinked into dev/tst/prd, and nvim resolves the symlink when
 -- opening a file, so a buffer opened via tst/ reports the shared path and never
 -- names an environment.
-local function envrc_env()
+local function envrc_var(name)
     local found = vim.fs.find('.envrc', { upward = true, path = vim.fn.getcwd(), type = 'file' })[1]
     if not found then
         return nil
     end
+    -- name is always UPPER_SNAKE here, so it carries no lua pattern magic
+    local pat = '^%s*export%s+' .. name .. '=([%w_]+)'
     for line in io.lines(found) do
-        local v = line:match '^%s*export%s+ENV=([%w_]+)'
+        local v = line:match(pat)
         if v then
             return v
         end
     end
     return nil
+end
+
+local function envrc_env()
+    return envrc_var 'ENV'
 end
 
 local function snow_env()
@@ -161,6 +167,45 @@ local function snow_env()
     end
     return envrc_env()
 end
+
+-- The connection is NOT the environment. ~/data/snowflake/admin/.envrc aims ENV
+-- at DEV, so {{ENV}} resolves to the dev database, but authenticates with the
+-- `admin` connection — the one that actually holds ACCOUNTADMIN. Deriving the
+-- connection from ENV therefore ran those queries as `dev`, and Snowflake
+-- refused with "Requested role 'ACCOUNTADMIN' is not assigned to the executing
+-- user". connections.toml defines dev, tst and admin; only two of them are envs.
+--
+-- Precedence mirrors snow_env(): what nvim inherited (direnv), an explicit
+-- override, the nearest .envrc, and only then the environment name as a guess.
+-- Lowercased throughout: the connector's lookup into connections.toml is exact,
+-- and dev/.envrc spells the name `DEV` while the file defines `[dev]`, so
+-- passing it through verbatim would fail to find the connection at all. The old
+-- env:lower() hid that by construction.
+local function snow_connection(env)
+    local name = vim.env.SNOWFLAKE_DEFAULT_CONNECTION_NAME
+    if not name or name == '' then
+        name = vim.g.snow_connection
+    end
+    if not name or name == '' then
+        name = envrc_var 'SNOWFLAKE_DEFAULT_CONNECTION_NAME'
+    end
+    return (name or env):lower()
+end
+
+vim.api.nvim_create_user_command('SnowConn', function(o)
+    if o.args == '' then
+        vim.notify('snow connection: ' .. tostring(snow_connection(snow_env() or '')), vim.log.levels.INFO)
+        return
+    end
+    vim.g.snow_connection = o.args
+    vim.notify(('snow connection set to %s'):format(o.args), vim.log.levels.INFO)
+end, {
+    nargs = '?',
+    complete = function()
+        return { 'dev', 'tst', 'admin' }
+    end,
+    desc = 'show or override the snowflake connection (independent of {{ENV}})',
+})
 
 vim.api.nvim_create_user_command('SnowEnv', function(o)
     if o.args == '' then
@@ -359,7 +404,7 @@ vim.api.nvim_create_autocmd('FileType', {
             local cmd = string.format(
                 'ENV=%s SNOWFLAKE_DEFAULT_CONNECTION_NAME=%s snow-parquet -f %s -o %s',
                 vim.fn.shellescape(env:upper()),
-                vim.fn.shellescape(env:lower()),
+                vim.fn.shellescape(snow_connection(env)),
                 vim.fn.shellescape(path),
                 vim.fn.shellescape(out)
             )
