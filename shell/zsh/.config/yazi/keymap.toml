@@ -155,3 +155,17 @@ desc = "Reveal in Windows Explorer"
 on = ["o"]
 run = "open --hovered"
 desc = "Open the hovered file, ignoring any selection"
+
+# Maximise the middle pane when long filenames get truncated; press again to
+# restore. `max-current` is itself a toggle — the plugin stashes the previous
+# ratio and puts 9999 on the pane you name.
+#
+# Needs yazi >= 26.8.15: toggle-pane sets rt.mgr.ratio at runtime, which older
+# versions had no API for.
+#
+# <A-m> rather than a bare letter: every plain key here is either taken by the
+# binds above or by a yazi default, and Alt-chords are untouched by the presets.
+[[mgr.prepend_keymap]]
+on = "<A-m>"
+run = "plugin toggle-pane max-current"
+desc = "Maximise/restore the file pane"
