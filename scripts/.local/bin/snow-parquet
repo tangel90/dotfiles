@@ -47,8 +47,21 @@ CONFIG = pathlib.Path.home() / '.snowflake' / 'config.toml'
 CONNECTIONS = pathlib.Path.home() / '.snowflake' / 'connections.toml'
 
 # Snowflake CLI accepts private_key_path; the connector only knows
-# private_key_file. Connections written for the CLI can carry either.
-KEY_ALIASES = {'private_key_path': 'private_key_file'}
+# private_key_file. Connections written for the CLI can carry either. Same story
+# for the passphrase: the CLI spells it private_key_passphrase, the connector
+# takes private_key_file_pwd.
+KEY_ALIASES = {
+    'private_key_path': 'private_key_file',
+    'private_key_passphrase': 'private_key_file_pwd',
+}
+
+# Where to find the passphrase for an encrypted key when connections.toml does
+# not carry one. The connector reads NO environment variable for this — it only
+# takes the private_key_file_pwd connect() kwarg — so an encrypted key failed
+# with "TypeError: Password was not given but private key is encrypted" even
+# though direnv had exported the passphrase for the `snow` CLI's benefit.
+# Keeping it out of connections.toml is the point: .envrc pulls it from `pass`.
+PASSPHRASE_VARS = ('PRIVATE_KEY_PASSPHRASE', 'SNOWFLAKE_PRIVATE_KEY_PASSPHRASE')
 
 
 def log(msg):
@@ -73,7 +86,21 @@ def connection_params(name=None):
         name = name.lower()
     if name not in conns:
         sys.exit(f'snow-parquet: unknown connection {name!r}; have {sorted(conns)}')
-    return name, {KEY_ALIASES.get(k, k): v for k, v in conns[name].items()}
+    params = {KEY_ALIASES.get(k, k): v for k, v in conns[name].items()}
+    if params.get('private_key_file') and not params.get('private_key_file_pwd'):
+        for var in PASSPHRASE_VARS:
+            pwd = os.environ.get(var, '')
+            if pwd:
+                params['private_key_file_pwd'] = pwd
+                log(f'snow-parquet: key passphrase from ${var}')
+                break
+        else:
+            log(
+                'snow-parquet: no key passphrase in '
+                f'{" / ".join("$" + v for v in PASSPHRASE_VARS)} — an encrypted key will '
+                'fail with "Password was not given" (direnv not allowed here, or gpg locked?)'
+            )
+    return name, params
 
 
 def dedupe_names(names):
