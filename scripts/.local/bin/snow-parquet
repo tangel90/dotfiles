@@ -205,22 +205,39 @@ def empty_parquet(cursor, out, pa, pq):
 ENV_PLACEHOLDER = '{{ENV}}'
 
 
+ENV_VARS = ('SNOWFLAKE_ENV', 'ENV')
+
+
 def expand_env(sql):
-    """Substitute {{ENV}} with $ENV, so one query tree serves dev/tst/prd.
+    """Substitute {{ENV}} with $SNOWFLAKE_ENV, so one query tree serves dev/tst/prd.
 
     The database prefix is the only thing that differs between environments
     (TST_RV vs DEV_RV), which otherwise forces a copy of every query per env.
     Queries under ~/data/snowflake/database_explorer write {{ENV}}_RV.CORE.X
-    and direnv supplies ENV per directory.
+    and direnv supplies the environment per directory.
+
+    $ENV is still honoured as a fallback, and deliberately not dropped: the bare
+    name is shared with scripts outside this repo (~/data/snowflake/scripts/
+    load_samples.sh, load_mds_samples.sh both read $ENV), so the .envrc files
+    have to keep exporting it. SNOWFLAKE_ENV is preferred because `ENV` is far
+    too generic a name to own.
 
     Failing loudly matters: an empty substitution would silently query
     `_RV.CORE.X`, and a wrong one would hit the wrong environment.
     """
     if ENV_PLACEHOLDER not in sql:
         return sql
-    env = os.environ.get('ENV', '').strip()
+    env = ''
+    for var in ENV_VARS:
+        env = os.environ.get(var, '').strip()
+        if env:
+            break
     if not env:
-        sys.exit(f'snow-parquet: SQL contains {ENV_PLACEHOLDER} but $ENV is unset (direnv not allowed in this directory?)')
+        sys.exit(
+            f'snow-parquet: SQL contains {ENV_PLACEHOLDER} but none of '
+            f'{" / ".join("$" + v for v in ENV_VARS)} is set '
+            '(direnv not allowed in this directory?)'
+        )
     log(f'snow-parquet: {ENV_PLACEHOLDER} -> {env.upper()}')
     return sql.replace(ENV_PLACEHOLDER, env.upper())
 

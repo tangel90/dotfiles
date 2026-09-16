@@ -154,13 +154,28 @@ local function envrc_var(name)
     return nil
 end
 
+-- SNOWFLAKE_ENV is the real name; plain ENV stays as a fallback because it is
+-- shared with scripts outside this repo (~/data/snowflake/scripts/load_samples.sh
+-- and load_mds_samples.sh both read $ENV), so the .envrc files cannot stop
+-- exporting it. Preferring the prefixed name keeps `ENV` from being owned here.
+local ENV_VARS = { 'SNOWFLAKE_ENV', 'ENV' }
+
 local function envrc_env()
-    return envrc_var 'ENV'
+    for _, name in ipairs(ENV_VARS) do
+        local v = envrc_var(name)
+        if v and v ~= '' then
+            return v
+        end
+    end
+    return nil
 end
 
 local function snow_env()
-    if vim.env.ENV and vim.env.ENV ~= '' then
-        return vim.env.ENV
+    for _, name in ipairs(ENV_VARS) do
+        local v = vim.env[name]
+        if v and v ~= '' then
+            return v
+        end
     end
     if vim.g.snow_env and vim.g.snow_env ~= '' then
         return vim.g.snow_env
@@ -401,8 +416,21 @@ vim.api.nvim_create_autocmd('FileType', {
                 vim.notify('no environment known for {{ENV}} — run :SnowEnv tst, or start nvim from an env dir', vim.log.levels.ERROR)
                 return
             end
+            -- Through `direnv exec`, because run_to_visidata_tmux runs this with
+            -- vim.system({'sh','-c',…}) — a plain child of nvim that inherits
+            -- only nvim's own environment, with no shell and no direnv hook. The
+            -- admin connection uses an encrypted private key whose
+            -- PRIVATE_KEY_PASSPHRASE comes from `pass` in .envrc, so it never
+            -- reached snow-parquet unless nvim itself was launched inside that
+            -- directory. direnv exec is harmless where no .envrc exists, and the
+            -- explicit `env` assignments after it still win over the .envrc.
+            --
+            -- getcwd(), not the buffer's directory: the explorer tree is one
+            -- shared directory symlinked into dev/tst/prd and nvim resolves the
+            -- symlink, so the buffer path names no environment (see envrc_env).
             local cmd = string.format(
-                'ENV=%s SNOWFLAKE_DEFAULT_CONNECTION_NAME=%s snow-parquet -f %s -o %s',
+                'direnv exec %s env SNOWFLAKE_ENV=%s SNOWFLAKE_DEFAULT_CONNECTION_NAME=%s snow-parquet -f %s -o %s',
+                vim.fn.shellescape(vim.fn.getcwd()),
                 vim.fn.shellescape(env:upper()),
                 vim.fn.shellescape(snow_connection(env)),
                 vim.fn.shellescape(path),
