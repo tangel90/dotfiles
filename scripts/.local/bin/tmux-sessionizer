@@ -89,13 +89,17 @@ if ! tmux has-session -t="$selected_name" 2> /dev/null; then
     # the session environment here meant a stale value after editing .envrc, and
     # sourcing .envrc directly ran repo code outside direnv's allow mechanism.
 
-    # What to start in the fresh session. Default is nvim; a .tmux-start file
-    # overrides it with whatever command it names, and `none` (or an empty file)
-    # leaves a bare shell:
+    # What to start in the fresh session: nothing, unless a .tmux-start file
+    # names a command.
     #
-    #     echo claude > ~/dev/gonzo/.tmux-start
+    #     echo nvim   > ~/dev/gonzo/.tmux-start
+    #     echo claude > ~/dev/snowflake/.tmux-start
     #     echo vd     > ~/data/reports/.tmux-start
-    #     echo none   > ~/scratch/.tmux-start
+    #
+    # The default used to be nvim, so every session opened an editor that then
+    # had to be quit wherever that was not wanted. `none` and an empty file stay
+    # accepted — they were how a bare shell was requested — and now simply agree
+    # with the default.
     #
     # This replaces the old "git repo -> nvim, *data|reports -> vd" guessing,
     # which couldn't express per-directory intent (and whose "*seeds" arm was
@@ -103,7 +107,7 @@ if ! tmux has-session -t="$selected_name" 2> /dev/null; then
     #
     # The selected directory wins over the repo root, so a subdir can differ
     # from its repo's default. First non-blank, non-# line is the command.
-    start_cmd="nvim"
+    start_cmd=""
     for marker in "$selected/.tmux-start" "${repo_root:+$repo_root/.tmux-start}"; do
         [[ -n $marker && -r $marker ]] || continue
         start_cmd=$(sed -e 's/[[:space:]]*$//' -e 's/^[[:space:]]*//' "$marker" \
