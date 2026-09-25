@@ -33,6 +33,30 @@ vd.options.save_encoding = "utf-8-sig"
 ### safe for BOM-less files — and it also fixes CSVs exported from Excel.
 vd.options.encoding = "utf-8-sig"
 
+### Safety net against loading an unbounded result set. An unLIMITed Snowflake
+### query (millions of rows) once grew until WSL had taken the whole machine's
+### memory, and the time_series blobs are the same shape of risk.
+###
+### checkMemoryUsage (threads.py) runs from the draw loop while any load thread
+### is unfinished: it shells out to `free --total --mega` and, below this
+### threshold, warns and cancels every unfinished thread. So the load stops with
+### the rows it already has and the sheet stays usable — nothing is lost that
+### wasn't going to fit anyway. It also puts the free-MB figure in the status
+### bar during a load, which is the early warning.
+###
+### Two caveats. It reads the `Total:` line, i.e. RAM *plus* swap (8GB here), so
+### the trip point is later than it looks. And it only guards ASYNC loads — a
+### synchronous loader never yields to the draw loop and is unprotected.
+vd.options.min_memory_mb = 2000
+
+### The blunter cap is options.max_rows (sheets.py:315), which stops the loader
+### at N rows. Deliberately NOT set: it truncates SILENTLY — a plain `break`,
+### no warning, no note on the sheet — so a capped sheet is indistinguishable
+### from a complete one and any aggregate read off it is quietly wrong. Prefer
+### LIMIT in the query, where the truncation is visible. Uncomment to trade that
+### correctness risk for a hard ceiling:
+# vd.options.max_rows = 5_000_000
+
 vd.option(
     "save_dir",
     "/home/thomas/data/visidata",
