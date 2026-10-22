@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# dclaude [--rebuild] [claude args...]: run Claude Code inside this project's
+# devcontainer, still reporting to the herdr pane it was started from.
+#
+# herdr learns about a Claude session through the SessionStart hook in
+# ~/.claude (installed by `herdr integration install claude`), which writes to
+# $HERDR_SOCKET_PATH tagged with $HERDR_PANE_ID. So the container needs:
+#   - the socket's directory mounted (the dir, not the socket: herdr recreates
+#     the socket on server restart and a file mount would keep the dead one)
+#   - ~/.claude at the SAME path, because settings.json calls the hook by its
+#     absolute host path; CLAUDE_CONFIG_DIR points the container's claude at it
+#   - the HERDR_* vars, passed per exec since the pane id differs per pane
+#   - python3 and the host uid inside the container (socket is mode 0600)
+#
+# Mounts are only applied when the container is created — use --rebuild once
+# on a project whose container already existed before dclaude.
+
+set -euo pipefail
+
+up_args=()
+if [ "${1:-}" = --rebuild ]; then
+    up_args+=(--remove-existing-container)
+    shift
+fi
+
+ws=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+
+sock=${HERDR_SOCKET_PATH:-${XDG_CONFIG_HOME:-$HOME/.config}/herdr/herdr.sock}
+
+# Mount the whole versions dir rather than the resolved binary, so a host-side
+# `claude update` doesn't leave the container pinned to a deleted file.
+host_claude=$(readlink -f "$(command -v claude)")
+host_claude_share=$(dirname "$(dirname "$host_claude")")
+container_claude=/opt/host-claude/versions/$(basename "$host_claude")
+
+devcontainer up --workspace-folder "$ws" "${up_args[@]}" \
+    --mount "type=bind,source=$HOME/.claude,target=$HOME/.claude" \
+    --mount "type=bind,source=$(dirname "$sock"),target=/herdr" \
+    --mount "type=bind,source=$host_claude_share,target=/opt/host-claude" \
+    >/dev/null
+
+# The herdr hook silently no-ops on either of these, so say it up front.
+devcontainer exec --workspace-folder "$ws" sh -c '
+    command -v python3 >/dev/null || echo "dclaude: no python3 in container, herdr will not see this session" >&2
+    [ "$(id -u)" = "$1" ] || echo "dclaude: container uid $(id -u) != host uid $1, herdr socket is unreachable" >&2
+' sh "$(id -u)"
+
+env_args=(--remote-env "CLAUDE_CONFIG_DIR=$HOME/.claude")
+if [ "${HERDR_ENV:-}" = 1 ]; then
+    env_args+=(
+        --remote-env HERDR_ENV=1
+        --remote-env "HERDR_SOCKET_PATH=/herdr/$(basename "$sock")"
+        --remote-env "HERDR_PANE_ID=$HERDR_PANE_ID"
+        --remote-env "HERDR_TAB_ID=${HERDR_TAB_ID:-}"
+        --remote-env "HERDR_WORKSPACE_ID=${HERDR_WORKSPACE_ID:-}"
+    )
+fi
+
+# Prefer the image's own claude; the host binary needs glibc (no alpine).
+exec devcontainer exec --workspace-folder "$ws" "${env_args[@]}" sh -c '
+    host=$1; shift
+    if command -v claude >/dev/null; then exec claude "$@"; fi
+    exec "$host" "$@"
+' sh "$container_claude" "$@"
