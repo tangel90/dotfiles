@@ -48,11 +48,45 @@ host_claude=$(readlink -f "$(command -v claude)")
 host_claude_share=$(dirname "$(dirname "$host_claude")")
 container_claude=/opt/host-claude/versions/$(basename "$host_claude")
 
-devcontainer up "${dc_args[@]}" "${up_args[@]}" \
-    --mount "type=bind,source=$HOME/.claude,target=$HOME/.claude" \
-    --mount "type=bind,source=$(dirname "$sock"),target=/herdr" \
-    --mount "type=bind,source=$host_claude_share,target=/opt/host-claude" \
-    >/dev/null
+# Files in ~/.claude symlink into the dotfiles repo (statusline-command.sh), so
+# it has to exist at the same path — read-only, this is not the workspace.
+mounts=(
+    --mount "type=bind,source=$HOME/.claude,target=$HOME/.claude"
+    --mount "type=bind,source=$(dirname "$sock"),target=/herdr"
+    --mount "type=bind,source=$host_claude_share,target=/opt/host-claude"
+)
+if [ -d "$HOME/dotfiles" ]; then
+    mounts+=(--mount "type=bind,source=$HOME/dotfiles,target=$HOME/dotfiles,readonly")
+fi
+
+devcontainer up "${dc_args[@]}" "${up_args[@]}" "${mounts[@]}" >/dev/null
+
+# With CLAUDE_CONFIG_DIR set, claude keeps its global state (account, theme,
+# onboarding, trusted folders) in $CLAUDE_CONFIG_DIR/.claude.json instead of
+# ~/.claude.json — without this it starts as a fresh install. Seed it from the
+# host file each run; a copy rather than a mount, so the container never writes
+# the host's file. Folders trusted inside the container (/workspaces/...) are
+# kept across runs.
+if [ -f "$HOME/.claude.json" ]; then
+    python3 - "$HOME/.claude.json" "$HOME/.claude/.claude.json" <<'PY'
+import json, os, sys
+
+host, seeded = sys.argv[1:]
+with open(host) as f:
+    cfg = json.load(f)
+try:
+    with open(seeded) as f:
+        projects = json.load(f).get("projects", {})
+except (OSError, ValueError):
+    projects = {}
+cfg["projects"] = {**cfg.get("projects", {}), **projects}
+
+tmp = seeded + ".dclaude-tmp"
+with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
+    json.dump(cfg, f, indent=2)
+os.replace(tmp, seeded)
+PY
+fi
 
 # The herdr hook silently no-ops on either of these, so say it up front.
 devcontainer exec "${dc_args[@]}" sh -c '
