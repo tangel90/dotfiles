@@ -12,8 +12,16 @@
 #   - the HERDR_* vars, passed per exec since the pane id differs per pane
 #   - python3 and the host uid inside the container (socket is mode 0600)
 #
-# Mounts are only applied when the container is created — use --rebuild once
-# on a project whose container already existed before dclaude.
+# The container's ~/.claude is its own (~/.local/share/dclaude/claude), with
+# only config and the login mounted in from the host. Sharing the whole dir
+# mixed both sides' session registries, daemon and jobs — the container listed
+# host agents it could not reach. Agents talk across that boundary through
+# herdr instead: its binary and skill are provided, and the socket is mounted
+# anyway. Note the socket can also run commands in host panes, so this is
+# isolation of files, not a security boundary.
+#
+# Mounts are only applied when the container is created — use --rebuild after
+# changing them, or on a project whose container predates dclaude.
 #
 # Projects without their own devcontainer config use $DCLAUDE_CONFIG, default
 # ~/.config/devcontainer/default/devcontainer.json (stowed from tools/devcontainer).
@@ -41,6 +49,8 @@ if [ ! -f "$ws/.devcontainer/devcontainer.json" ] && [ ! -f "$ws/.devcontainer.j
 fi
 
 sock=${HERDR_SOCKET_PATH:-${XDG_CONFIG_HOME:-$HOME/.config}/herdr/herdr.sock}
+state=${XDG_DATA_HOME:-$HOME/.local/share}/dclaude/claude
+mkdir -p "$state/skills"
 
 # Mount the whole versions dir rather than the resolved binary, so a host-side
 # `claude update` doesn't leave the container pinned to a deleted file.
@@ -48,27 +58,47 @@ host_claude=$(readlink -f "$(command -v claude)")
 host_claude_share=$(dirname "$(dirname "$host_claude")")
 container_claude=/opt/host-claude/versions/$(basename "$host_claude")
 
-# Files in ~/.claude symlink into the dotfiles repo (statusline-command.sh), so
-# it has to exist at the same path — read-only, this is not the workspace.
 mounts=(
-    --mount "type=bind,source=$HOME/.claude,target=$HOME/.claude"
+    --mount "type=bind,source=$state,target=$HOME/.claude"
     --mount "type=bind,source=$(dirname "$sock"),target=/herdr"
     --mount "type=bind,source=$host_claude_share,target=/opt/host-claude"
 )
-if [ -d "$HOME/dotfiles" ]; then
-    mounts+=(--mount "type=bind,source=$HOME/dotfiles,target=$HOME/dotfiles,readonly")
+
+# Host config, read-only over the container's own dir. readlink -f because some
+# of these are stow symlinks into the dotfiles repo, which isn't mounted.
+for name in settings.json CLAUDE.md keybindings.json hooks statusline-command.sh; do
+    src=$HOME/.claude/$name
+    [ -e "$src" ] || continue
+    src=$(readlink -f "$src")
+    # Mount targets inside a bind mount get created on the host side; make them
+    # with the right type up front.
+    if [ -d "$src" ]; then mkdir -p "$state/$name"; else touch "$state/$name"; fi
+    mounts+=(--mount "type=bind,source=$src,target=$HOME/.claude/$name,readonly")
+done
+
+# Writable, so a token refresh inside the container reaches the host too.
+if [ -f "$HOME/.claude/.credentials.json" ]; then
+    touch "$state/.credentials.json"
+    mounts+=(--mount "type=bind,source=$HOME/.claude/.credentials.json,target=$HOME/.claude/.credentials.json")
+fi
+
+if command -v herdr >/dev/null; then
+    # Static binary, runs in any image.
+    mounts+=(--mount "type=bind,source=$(readlink -f "$(command -v herdr)"),target=/usr/local/bin/herdr,readonly")
+    # Regenerated each run so it matches the installed herdr.
+    mkdir -p "$state/skills/herdr"
+    herdr --skill >"$state/skills/herdr/SKILL.md"
 fi
 
 devcontainer up "${dc_args[@]}" "${up_args[@]}" "${mounts[@]}" >/dev/null
 
-# With CLAUDE_CONFIG_DIR set, claude keeps its global state (account, theme,
-# onboarding, trusted folders) in $CLAUDE_CONFIG_DIR/.claude.json instead of
-# ~/.claude.json — without this it starts as a fresh install. Seed it from the
-# host file each run; a copy rather than a mount, so the container never writes
-# the host's file. Folders trusted inside the container (/workspaces/...) are
-# kept across runs.
+# claude keeps its global state (account, theme, onboarding, trusted folders)
+# in $CLAUDE_CONFIG_DIR/.claude.json, not ~/.claude.json — without this it
+# starts as a fresh install. Seed it from the host file each run; a copy rather
+# than a mount, so the container never writes the host's file. Folders trusted
+# inside the container (/workspaces/...) are kept across runs.
 if [ -f "$HOME/.claude.json" ]; then
-    python3 - "$HOME/.claude.json" "$HOME/.claude/.claude.json" <<'PY'
+    python3 - "$HOME/.claude.json" "$state/.claude.json" <<'PY'
 import json, os, sys
 
 host, seeded = sys.argv[1:]
