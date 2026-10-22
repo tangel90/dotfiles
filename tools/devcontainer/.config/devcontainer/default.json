@@ -1,0 +1,22 @@
+// Fallback devcontainer for projects without their own .devcontainer/ —
+// picked up by `dclaude`. Keep it generic; project-specific toolchains belong
+// in that project's own devcontainer.json.
+{
+  "name": "default",
+  // Debian-family with git/curl/zsh and a uid-1000 "vscode" user. glibc
+  // matters: dclaude falls back to the host claude binary, which won't run on
+  // alpine.
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "remoteUser": "vscode",
+  // Remap vscode to the host uid, so bind-mounted files stay yours and the
+  // 0600 herdr socket is reachable.
+  "updateRemoteUserUID": true,
+  "features": {
+    // The herdr SessionStart hook is a python3 script. os-provided = apt
+    // package, no build from source.
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "os-provided",
+      "installTools": false
+    }
+  }
+}
