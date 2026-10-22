@@ -13,7 +13,7 @@
 #   - python3 and the host uid inside the container (socket is mode 0600)
 #
 # The container's ~/.claude is its own (~/.local/share/dclaude/claude), with
-# only config and the login mounted in from the host. Sharing the whole dir
+# host config copied in and only the login mounted through. Sharing the whole dir
 # mixed both sides' session registries, daemon and jobs — the container listed
 # host agents it could not reach. Agents talk across that boundary through
 # herdr instead: its binary and skill are provided, and the socket is mounted
@@ -49,45 +49,50 @@ if [ ! -f "$ws/.devcontainer/devcontainer.json" ] && [ ! -f "$ws/.devcontainer.j
 fi
 
 sock=${HERDR_SOCKET_PATH:-${XDG_CONFIG_HOME:-$HOME/.config}/herdr/herdr.sock}
-state=${XDG_DATA_HOME:-$HOME/.local/share}/dclaude/claude
-mkdir -p "$state/skills"
+data=${XDG_DATA_HOME:-$HOME/.local/share}/dclaude
+state=$data/claude
+bin=$data/bin
+mkdir -p "$state/skills" "$bin"
 
-# Mount the whole versions dir rather than the resolved binary, so a host-side
-# `claude update` doesn't leave the container pinned to a deleted file.
-host_claude=$(readlink -f "$(command -v claude)")
-host_claude_share=$(dirname "$(dirname "$host_claude")")
-container_claude=/opt/host-claude/versions/$(basename "$host_claude")
+# The devcontainer CLI's --mount has no readonly option, and anything mounted
+# writable from the host is a way back out: an edited hook or a swapped binary
+# runs on the host next time. So host config and binaries are copied in fresh
+# each run instead, and the container only ever changes its copies.
 
-mounts=(
-    --mount "type=bind,source=$state,target=$HOME/.claude"
-    --mount "type=bind,source=$(dirname "$sock"),target=/herdr"
-    --mount "type=bind,source=$host_claude_share,target=/opt/host-claude"
-)
-
-# Host config, read-only over the container's own dir. readlink -f because some
-# of these are stow symlinks into the dotfiles repo, which isn't mounted.
+# Host config. -L because some of these are stow symlinks into the dotfiles
+# repo, which isn't mounted.
 for name in settings.json CLAUDE.md keybindings.json hooks statusline-command.sh; do
-    src=$HOME/.claude/$name
-    [ -e "$src" ] || continue
-    src=$(readlink -f "$src")
-    # Mount targets inside a bind mount get created on the host side; make them
-    # with the right type up front.
-    if [ -d "$src" ]; then mkdir -p "$state/$name"; else touch "$state/$name"; fi
-    mounts+=(--mount "type=bind,source=$src,target=$HOME/.claude/$name,readonly")
+    rm -rf "${state:?}/$name"
+    if [ -e "$HOME/.claude/$name" ]; then cp -RL "$HOME/.claude/$name" "$state/$name"; fi
 done
 
-# Writable, so a token refresh inside the container reaches the host too.
-if [ -f "$HOME/.claude/.credentials.json" ]; then
-    touch "$state/.credentials.json"
-    mounts+=(--mount "type=bind,source=$HOME/.claude/.credentials.json,target=$HOME/.claude/.credentials.json")
+# Versions are immutable, so copy (~200MB) only when it changes.
+host_claude=$(readlink -f "$(command -v claude)")
+claude_bin=claude-$(basename "$host_claude")
+if [ ! -x "$bin/$claude_bin" ]; then
+    find "$bin" -maxdepth 1 -name 'claude-*' -delete
+    cp "$host_claude" "$bin/$claude_bin.tmp" && mv "$bin/$claude_bin.tmp" "$bin/$claude_bin"
 fi
 
 if command -v herdr >/dev/null; then
     # Static binary, runs in any image.
-    mounts+=(--mount "type=bind,source=$(readlink -f "$(command -v herdr)"),target=/usr/local/bin/herdr,readonly")
+    cmp -s "$(command -v herdr)" "$bin/herdr" || cp -L "$(command -v herdr)" "$bin/herdr"
     # Regenerated each run so it matches the installed herdr.
     mkdir -p "$state/skills/herdr"
     herdr --skill >"$state/skills/herdr/SKILL.md"
+fi
+
+mounts=(
+    --mount "type=bind,source=$state,target=$HOME/.claude"
+    --mount "type=bind,source=$bin,target=/opt/dclaude/bin"
+    --mount "type=bind,source=$(dirname "$sock"),target=/herdr"
+)
+
+# The one deliberate write-through: a token refresh inside the container must
+# reach the host, or the next refresh on either side fails.
+if [ -f "$HOME/.claude/.credentials.json" ]; then
+    touch "$state/.credentials.json"
+    mounts+=(--mount "type=bind,source=$HOME/.claude/.credentials.json,target=$HOME/.claude/.credentials.json")
 fi
 
 devcontainer up "${dc_args[@]}" "${up_args[@]}" "${mounts[@]}" >/dev/null
@@ -136,8 +141,11 @@ if [ "${HERDR_ENV:-}" = 1 ]; then
 fi
 
 # Prefer the image's own claude; the host binary needs glibc (no alpine).
+# /opt/dclaude/bin goes on PATH for herdr; claude there is versioned, so it
+# never shadows the image's own.
 exec devcontainer exec "${dc_args[@]}" "${env_args[@]}" sh -c '
     host=$1; shift
+    PATH=/opt/dclaude/bin:$PATH; export PATH
     if command -v claude >/dev/null; then exec claude "$@"; fi
     exec "$host" "$@"
-' sh "$container_claude" "$@"
+' sh "/opt/dclaude/bin/$claude_bin" "$@"
