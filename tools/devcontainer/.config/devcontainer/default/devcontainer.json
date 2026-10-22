@@ -18,5 +18,7 @@
       "version": "os-provided",
       "installTools": false
     }
-  }
+  },
+  // The host statusline script parses claude's JSON with jq.
+  "postCreateCommand": "command -v jq >/dev/null || (sudo apt-get update && sudo apt-get install -y jq)"
 }
