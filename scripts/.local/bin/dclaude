@@ -16,7 +16,7 @@
 # on a project whose container already existed before dclaude.
 #
 # Projects without their own devcontainer config use $DCLAUDE_CONFIG, default
-# ~/.config/devcontainer/default.json (stowed from tools/devcontainer).
+# ~/.config/devcontainer/default/devcontainer.json (stowed from tools/devcontainer).
 
 set -euo pipefail
 
@@ -32,7 +32,7 @@ ws=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 # container by workspace folder *and* config path.
 dc_args=(--workspace-folder "$ws")
 if [ ! -f "$ws/.devcontainer/devcontainer.json" ] && [ ! -f "$ws/.devcontainer.json" ]; then
-    default=${DCLAUDE_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/devcontainer/default.json}
+    default=${DCLAUDE_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/devcontainer/default/devcontainer.json}
     if [ ! -f "$default" ]; then
         echo "dclaude: $ws has no devcontainer config and $default is missing (stow -d tools -t ~ devcontainer)" >&2
         exit 1
