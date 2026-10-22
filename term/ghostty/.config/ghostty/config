@@ -1,0 +1,12 @@
+# Carried over from the old config.ghostty, which Ghostty never read.
+confirm-close-surface = false
+
+font-size = 16
+
+# Startup window size, in character cells (not pixels).
+# ~160x45 at font-size 14 lands near 1450x950 px on the 2560x1440 display.
+# window-width = 140
+# window-height = 45
+
+# Always open at the size above instead of restoring the last window's size.
+window-save-state = never
