@@ -2,7 +2,7 @@
 if command -v tmux &> /dev/null && [ "$PS1" != "" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ "$TMUX" = "" ] && [ "$KUBECONFIG" = "" ] && [ "$HERDR_ENV" != "1" ]; then
     sessions=$(tmux list-sessions 2>/dev/null)
     if [ "$sessions" = "" ]; then
-        tmux new-session -A -s "workspace0" -c "$HOME/dotfiles" claude
+        tmux new-session -A
     else
         tmux attach
     fi
