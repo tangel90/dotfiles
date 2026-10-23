@@ -140,6 +140,32 @@ fi
 eval "$(fzf --zsh)"
 eval "$(zoxide init zsh --cmd cd)"
 eval "$(direnv hook zsh)"
+
+# Replace direnv's precmd hook with one that drops its $ZSH_EVAL_CONTEXT guard.
+#
+# direnv's own _direnv_hook starts with:
+#
+#   [[ ! -o interactive || $ZSH_SUBSHELL -ne 0 || \
+#      ( -n $ZSH_EVAL_CONTEXT && $ZSH_EVAL_CONTEXT != toplevel(:[a-z]#func|)# ) ]] && return
+#
+# In this shell $ZSH_EVAL_CONTEXT is plain "shfunc" at precmd time, not
+# "toplevel:shfunc" — something in the startup chain (p10k's instant prompt,
+# zinit or zsh-vi-mode, all of which sit in precmd_functions) runs the prompt
+# cycle below top level. So the third clause matches, the hook returns
+# immediately, and direnv never loads. It is registered and invoked every
+# prompt, and silently does nothing — no load line, no error, nothing.
+#
+# Only the precmd path is affected; chpwd still gets a passing context, which
+# is why `cd` into a directory worked while a shell STARTED there (what
+# tmux-sessionizer does, `new-session -c "$selected"`) never loaded at all.
+#
+# The interactive and subshell checks are kept — those are the meaningful ones.
+# chpwd_functions is left on direnv's own hook since it works there.
+_direnv_precmd_hook() {
+    [[ -o interactive && $ZSH_SUBSHELL -eq 0 ]] || return
+    eval "$(direnv export zsh)"
+}
+precmd_functions=(_direnv_precmd_hook ${precmd_functions:#_direnv_hook})
 # <<< Shell hooks <<<
 
 # >>> Personal (untracked) interactive config >>>

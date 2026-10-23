@@ -1,0 +1,33 @@
+# Sourced by direnv before every .envrc, in bash (see `direnv status`:
+# bash_path). Functions defined here are available to all .envrc files;
+# functions defined in .zshrc are NOT, since direnv never runs in the
+# interactive shell.
+
+# Export $1 from the pass entry $2, failing loudly if the secret can't be read.
+#
+# Why this exists: `export RG=$(pass show ...)` silently exports an EMPTY
+# string when pass fails. The exit status that `set -e` inspects is export's,
+# which is 0 — the command substitution's failure never reaches errexit. So
+# even with strict_env=true in direnv.toml (which is set), a locked gpg key
+# produced four empty vars, a clean exit, and a CACHED empty result. The
+# symptom is an .envrc that "doesn't get picked up": $RG is empty and direnv
+# sees no reason to re-evaluate.
+#
+# It bites intermittently because direnv.toml also sets disable_stdin=true:
+# .envrc runs with stdin closed, so when gpg-agent's cache has expired
+# pinentry cannot prompt and pass returns nothing. With the key still cached,
+# the same .envrc works fine.
+#
+# Splitting the assignment from the export is what makes the status visible.
+pass_export() {
+    local var=$1 entry=$2 val
+    val=$(pass show "$entry") || {
+        log_error "pass show $entry failed (gpg locked? try: pass show $entry)"
+        return 1
+    }
+    [[ -n $val ]] || {
+        log_error "pass show $entry returned empty"
+        return 1
+    }
+    export "$var=$val"
+}
