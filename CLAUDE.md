@@ -15,7 +15,7 @@ Personal dotfiles managed with **GNU Stow**. No build, no tests, no CI. Changes 
 
 Each top-level directory is a **stow package**: its subtree mirrors what should appear under `$HOME`. For example, `nvim/.config/nvim/init.lua` becomes `~/.config/nvim/init.lua` when `nvim` is stowed.
 
-Packages: `nvim`, `shell` (contains `zsh` and `PowerShell` sub-packages), `term` (per-terminal sub-packages: `alacritty`, `kitty`, `wezterm`, `windows_terminal`), `tools` (`claude`, `devcontainer`, `visidata` sub-packages), `scripts` (`~/.local/bin`), `arch` (Hyprland / waybar / greetd / qutebrowser), `gnupg`.
+Packages: `nvim`, `shell` (contains `zsh` and `PowerShell` sub-packages), `term` (per-terminal sub-packages: `alacritty`, `kitty`, `wezterm`, `windows_terminal`), `tools` (`claude`, `herdr`, `visidata` sub-packages), `scripts` (`~/.local/bin`), `arch` (Hyprland / waybar / greetd / qutebrowser), `gnupg`.
 
 ```sh
 # from repo root

@@ -1,0 +1,36 @@
+onboarding = false
+
+[ui.toast]
+delivery = "system"
+
+[ui]
+status_indicators = "dots"
+
+[theme]
+name = "rose-pine"
+auto_switch = false
+
+# Mirrors nvim/.config/nvim/lua/config/palette.lua (main)
+[theme.custom]
+panel_bg = "#282C34"       # base
+sidebar_bg = "#282C34"     # base
+surface_dim = "#2C313A"    # surface
+active_row_bg = "#353B45"  # overlay
+selection_bg = "#403d52"   # highlight_med
+text = "#e0def4"
+surface0 = "#2C313A"       # surface
+surface1 = "#353B45"       # overlay
+overlay0 = "#c8c6dc"       # dim labels ("agents", "new", "menu")
+overlay1 = "#d4d2e6"
+subtext0 = "#dcdaec"
+accent = "#fbbcba"         # rose
+mauve = "#a4a7e7"          # iris
+green = "#95b1ac"          # leaf
+yellow = "#f6c177"         # gold
+red = "#eb6f92"            # love
+peach = "#ffaa88"
+
+[keys]
+prefix = "ctrl+k"
+close_pane = "prefix+q"     # match tmux kill-pane
+detach = "prefix+d"         # match tmux; default was prefix+q

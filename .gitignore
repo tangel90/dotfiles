@@ -5,3 +5,5 @@ shell/zsh/.config/tmux/plugins/*
 vfs.toml
 settings.local.json
 snowflake_catalog.lua
+tools/herdr/.config/herdr/*
+!tools/herdr/.config/herdr/config.toml
