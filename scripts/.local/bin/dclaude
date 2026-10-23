@@ -140,6 +140,12 @@ if [ "${HERDR_ENV:-}" = 1 ]; then
     )
 fi
 
+# The pane's foreground process is devcontainer (node), which hides claude from
+# herdr's process detection. HERDR_AGENT on that host-side wrapper tells herdr
+# to apply claude's screen manifest to it anyway — setting it inside the
+# container would not be visible to herdr.
+export HERDR_AGENT=claude
+
 # Prefer the image's own claude; the host binary needs glibc (no alpine).
 # /opt/dclaude/bin goes on PATH for herdr; claude there is versioned, so it
 # never shadows the image's own.
