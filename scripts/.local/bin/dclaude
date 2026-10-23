@@ -61,7 +61,7 @@ mkdir -p "$state/skills" "$bin"
 
 # Host config. -L because some of these are stow symlinks into the dotfiles
 # repo, which isn't mounted.
-for name in settings.json CLAUDE.md keybindings.json hooks statusline-command.sh; do
+for name in settings.json CLAUDE.md keybindings.json hooks output-styles statusline-command.sh; do
     rm -rf "${state:?}/$name"
     if [ -e "$HOME/.claude/$name" ]; then cp -RL "$HOME/.claude/$name" "$state/$name"; fi
 done
