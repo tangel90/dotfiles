@@ -66,6 +66,23 @@ for name in settings.json CLAUDE.md keybindings.json hooks statusline-command.sh
     if [ -e "$HOME/.claude/$name" ]; then cp -RL "$HOME/.claude/$name" "$state/$name"; fi
 done
 
+# Default to the flicker-free fullscreen renderer unless the host settings pick
+# one. claude would persist the choice itself, but into this copy, which the
+# next run overwrites — so it would ask again every time.
+python3 - "$state/settings.json" <<'PY'
+import json, sys
+
+path = sys.argv[1]
+try:
+    with open(path) as f:
+        settings = json.load(f)
+except OSError:
+    settings = {}
+settings.setdefault("tui", "fullscreen")
+with open(path, "w") as f:
+    json.dump(settings, f, indent=2)
+PY
+
 # Versions are immutable, so copy (~200MB) only when it changes.
 host_claude=$(readlink -f "$(command -v claude)")
 claude_bin=claude-$(basename "$host_claude")
@@ -100,8 +117,9 @@ devcontainer up "${dc_args[@]}" "${up_args[@]}" "${mounts[@]}" >/dev/null
 # claude keeps its global state (account, theme, onboarding, trusted folders)
 # in $CLAUDE_CONFIG_DIR/.claude.json, not ~/.claude.json — without this it
 # starts as a fresh install. Seed it from the host file each run; a copy rather
-# than a mount, so the container never writes the host's file. Folders trusted
-# inside the container (/workspaces/...) are kept across runs.
+# than a mount, so the container never writes the host's file. Host keys win;
+# keys only the container has (prompt counters, folders trusted under
+# /workspaces/...) are kept, or every one-time prompt comes back each run.
 if [ -f "$HOME/.claude.json" ]; then
     python3 - "$HOME/.claude.json" "$state/.claude.json" <<'PY'
 import json, os, sys
@@ -111,10 +129,11 @@ with open(host) as f:
     cfg = json.load(f)
 try:
     with open(seeded) as f:
-        projects = json.load(f).get("projects", {})
+        prev = json.load(f)
 except (OSError, ValueError):
-    projects = {}
-cfg["projects"] = {**cfg.get("projects", {}), **projects}
+    prev = {}
+projects = {**prev.get("projects", {}), **cfg.get("projects", {})}
+cfg = {**prev, **cfg, "projects": projects}
 
 tmp = seeded + ".dclaude-tmp"
 with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
