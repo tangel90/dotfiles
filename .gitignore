@@ -7,3 +7,5 @@ settings.local.json
 snowflake_catalog.lua
 tools/herdr/.config/herdr/*
 !tools/herdr/.config/herdr/config.toml
+# generated per machine by `herdr integration install claude`
+tools/claude/.claude/hooks/herdr-agent-state.sh

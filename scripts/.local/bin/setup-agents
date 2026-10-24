@@ -55,7 +55,10 @@ stow_pkg() {
             echo "backed up $target"
         fi
     done < <(cd "$dir/$pkg" && find . \( -type f -o -type l \) ! -name .stow-local-ignore)
-    stow -d "$dir" -t "$HOME" -R "$pkg"
+    # --no-folding: real directories, links only for files. A folded
+    # ~/.claude/hooks would be a link into the repo, and herdr would then write
+    # its generated hook script into the repo.
+    stow --no-folding -d "$dir" -t "$HOME" -R "$pkg"
 }
 
 say "stow"
@@ -64,8 +67,14 @@ for pkg in claude herdr devcontainer; do stow_pkg "$repo/tools" "$pkg"; done
 
 say "herdr integration"
 # Writes ~/.claude/hooks/herdr-agent-state.sh and its SessionStart entry in
-# settings.json (already in the stowed copy, so normally a no-op there).
+# settings.json. herdr recognizes its entry by the exact command, home path
+# included, so the tracked copy keeps it verbatim: a no-op wherever home is
+# /home/corni. Elsewhere herdr adds a second entry — into the repo, through
+# the link — hence the check.
 herdr integration install claude
+if ! git -C "$repo" diff --quiet -- tools/claude/.claude/settings.json; then
+    warn "herdr changed tools/claude/.claude/settings.json (different home path?) — review: git -C $repo diff"
+fi
 # Release-matched copy of herdr's skill, bundled with the binary. An existing
 # one (e.g. from `npx skills add herdrdev/herdr`) is left alone.
 if [ ! -e "$HOME/.claude/skills/herdr" ]; then
