@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# ha NAME [claude args...]: start claude as a named herdr agent in a new split
-# next to this pane, so `herdr agent prompt NAME ...` reaches it from anywhere.
+# ha NAME [claude args...]: start claude as a named herdr agent in a new tab
+# (labelled NAME) of this workspace, so `herdr agent prompt NAME ...` reaches
+# it from anywhere.
 #
-# A new split rather than this pane: agent start needs its pane idle at a shell
-# prompt, and this one is busy running ha. The fresh shell takes a moment to
-# reach its prompt, hence the retries.
+# A new tab rather than this pane: agent start needs its pane idle at a shell
+# prompt, and this one is busy running ha. A tab rather than a split, so the
+# agent gets the full window. The fresh shell takes a moment to reach its
+# prompt, hence the retries.
 
 set -euo pipefail
 
@@ -15,7 +17,8 @@ name=$1
 shift
 (( $# )) && set -- -- "$@"
 
-pane=$(herdr pane split --current --direction right --cwd "$PWD" | jq -r .result.pane.pane_id)
+# The caller's workspace, not whichever one the UI has focused.
+pane=$(herdr tab create --workspace "$HERDR_WORKSPACE_ID" --cwd "$PWD" --label "$name" --focus | jq -r .result.root_pane.pane_id)
 for _ in {1..20}; do
     out=$(herdr agent start "$name" --kind claude --pane "$pane" "$@" 2>&1) && exit 0
     sleep 0.5
