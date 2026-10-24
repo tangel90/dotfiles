@@ -15,7 +15,7 @@ Personal dotfiles managed with **GNU Stow**. No build, no tests, no CI. Changes 
 
 Each top-level directory is a **stow package**: its subtree mirrors what should appear under `$HOME`. For example, `nvim/.config/nvim/init.lua` becomes `~/.config/nvim/init.lua` when `nvim` is stowed.
 
-Packages: `nvim`, `shell` (contains `zsh` and `PowerShell` sub-packages), `term` (per-terminal sub-packages: `alacritty`, `kitty`, `wezterm`, `windows_terminal`), `tools` (`claude`, `herdr`, `visidata` sub-packages), `scripts` (`~/.local/bin`), `arch` (Hyprland / waybar / greetd / qutebrowser), `gnupg`.
+Packages: `nvim`, `shell` (contains `zsh` and `PowerShell` sub-packages), `term` (per-terminal sub-packages: `alacritty`, `kitty`, `wezterm`, `windows_terminal`), `tools` (`claude`, `devcontainer`, `herdr`, `visidata` sub-packages), `scripts` (`~/.local/bin`), `arch` (Hyprland / waybar / greetd / qutebrowser), `gnupg`.
 
 ```sh
 # from repo root
@@ -62,17 +62,29 @@ Lua is formatted with **stylua** per `nvim/.config/nvim/.stylua.toml` (2-space i
 
 ## Scripts (`scripts/.local/bin`)
 
-Personal binaries stowed onto `$PATH`: `tmux-sessionizer` (fzf-over-`fd` project picker that creates/attaches tmux sessions), `tmux-windowizer`, `tmux-run-command`, `open-pass`, `open-tmp`, `script-runner`, `codex`. Shell scripts — no build step.
+Personal binaries stowed onto `$PATH`: `tmux-sessionizer` (fzf-over-`fd` project picker that creates/attaches tmux sessions), `tmux-windowizer`, `tmux-run-command`, `open-pass`, `open-tmp`, `script-runner`, `codex`, `dclaude`, `setup-agents`. Shell scripts — no build step.
 
 ## Claude Code integration
 
-`tools/claude/.claude/statusline-command.sh` is the rose-pine themed statusline renderer (reads Claude's JSON stdin, emits ANSI). Stowing `tools/claude` places it at `~/.claude/statusline-command.sh`; the statusline itself is configured in user-level settings, not in this repo.
+`tools/claude/.claude/` holds the user-level Claude config, stowed into `~/.claude/`: `settings.json`, `CLAUDE.md`, `keybindings.json`, the rose-pine `statusline-command.sh` (reads Claude's JSON stdin, emits ANSI), `output-styles/` (Calm) and `hooks/herdr-worktree.py`. Edits made through Claude (`/config`, `/output-style`) land in the repo copy through the link.
+
+`settings.json` keeps herdr's `SessionStart` entry verbatim (`bash '/home/corni/.claude/hooks/herdr-agent-state.sh' session`): herdr matches its entry by exact command, so changing the path makes `herdr integration install` add a duplicate. The hook script itself is generated per machine and gitignored.
 
 The repo-local `.claude/settings.local.json` is gitignored — anything put there will not be tracked.
 
+## Agent setup (Claude + herdr + dclaude)
+
+How the pieces fit:
+
+- **herdr** (`tools/herdr`) is the multiplexer; `.zshrc` starts it at login and `ha NAME [claude args]` spawns a named Claude agent in a new split.
+- **`dclaude`** (`scripts/`) runs Claude in the project's devcontainer, falling back to `tools/devcontainer/.config/devcontainer/default/devcontainer.json`. The container gets its own `~/.local/share/dclaude/claude` state, with host config copied in each run and only `.credentials.json` mounted writable. It sets `HERDR_AGENT=claude` on the host-side wrapper so herdr detects it, and `DCLAUDE=1` inside.
+- **Worktrees**: the `WorktreeCreate`/`WorktreeRemove` hooks route every Claude worktree through `herdr worktree create` (`~/.herdr/worktrees/<repo>/worktree-<name>`, shown as a herdr workspace). Without a running herdr server, or under `DCLAUDE=1`, they fall back to `git worktree add` under `<repo>/.claude/worktrees/`.
+
+On a new machine: clone, then run `scripts/.local/bin/setup-agents`. It checks prerequisites, installs Claude, herdr and the devcontainer CLI when missing, stows `scripts` and `tools/{claude,herdr,devcontainer}` with `--no-folding` (backing up real files in the way), runs `herdr integration install claude` and writes the herdr skill. Rerun it after pulling.
+
 ## Install / bootstrap
 
-`installer.sh` is **Arch/pacman-only** despite the README also documenting Debian/Ubuntu/WSL recipes. On non-Arch systems follow the README sections instead of running the script.
+`installer.sh` is **Arch/pacman-only** despite the README also documenting Debian/Ubuntu/WSL recipes. On non-Arch systems follow the README sections instead of running the script. The agent setup has its own distro-independent script, `setup-agents` (above).
 
 ## Git Workflow
 
