@@ -160,6 +160,11 @@ if [ "${HERDR_ENV:-}" = 1 ]; then
         --remote-env "HERDR_WORKSPACE_ID=${HERDR_WORKSPACE_ID:-}"
     )
 fi
+# Set in herdr panes by .zshrc: keep the container's claude in this pane too,
+# rather than in a background service of its own.
+if [ -n "${CLAUDE_CODE_DISABLE_AGENT_VIEW:-}" ]; then
+    env_args+=(--remote-env "CLAUDE_CODE_DISABLE_AGENT_VIEW=$CLAUDE_CODE_DISABLE_AGENT_VIEW")
+fi
 
 # The pane's foreground process is devcontainer (node), which hides claude from
 # herdr's process detection. HERDR_AGENT on that host-side wrapper tells herdr

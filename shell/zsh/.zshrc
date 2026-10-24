@@ -13,6 +13,16 @@ if [ "$PS1" != "" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [
     fi
 fi
 
+# Inside herdr, run claude in its own pane rather than in Claude's background
+# service. The service hosts every session in shared workers, which carry the
+# HERDR_* env of whichever pane first started the service — so herdr's
+# integration, which works through per-pane env, ends up tracking a viewer: no
+# resume after restart, no hfork, hooks reporting to a stale pane. Costs
+# background jobs (claude agents, /background, --bg) in herdr panes.
+if [ "$HERDR_ENV" = "1" ]; then
+    export CLAUDE_CODE_DISABLE_AGENT_VIEW=1
+fi
+
 export GPG_TTY="$TTY"
 gpg-connect-agent updatestartuptty /bye >/dev/null 2>&1
 
