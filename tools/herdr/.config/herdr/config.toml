@@ -34,3 +34,10 @@ peach = "#ffaa88"
 prefix = "ctrl+k"
 close_pane = "prefix+q"     # match tmux kill-pane
 detach = "prefix+d"         # match tmux; default was prefix+q
+new_tab = "prefix+t"        # default was prefix+c
+
+[[keys.command]]
+key = "prefix+m"
+type = "shell"
+command = "\"$HERDR_BIN_PATH\" pane move \"$HERDR_ACTIVE_PANE_ID\" --new-tab"
+description = "move pane to new tab"
