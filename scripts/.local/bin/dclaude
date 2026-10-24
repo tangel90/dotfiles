@@ -148,7 +148,9 @@ devcontainer exec "${dc_args[@]}" sh -c '
     [ "$(id -u)" = "$1" ] || echo "dclaude: container uid $(id -u) != host uid $1, herdr socket is unreachable" >&2
 ' sh "$(id -u)"
 
-env_args=(--remote-env "CLAUDE_CONFIG_DIR=$HOME/.claude")
+# DCLAUDE tells hooks they're in a container: herdr-worktree.py falls back to
+# plain git, since worktrees herdr creates live on host paths not mounted here.
+env_args=(--remote-env "CLAUDE_CONFIG_DIR=$HOME/.claude" --remote-env DCLAUDE=1)
 if [ "${HERDR_ENV:-}" = 1 ]; then
     env_args+=(
         --remote-env HERDR_ENV=1
