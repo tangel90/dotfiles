@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# hfork [NAME]: fork the Claude conversation in this herdr pane into a new
+# split. Run it from inside Claude as `!hfork`.
+#
+# Claude's own /fork starts the fork as a background session with no pane, so
+# herdr doesn't see it until attached — and an attached pane records the
+# viewer's session id, not the fork's, so herdr can't resume it after a
+# restart. `claude --resume <id> --fork-session` in a pane is a normal
+# foreground session instead: herdr tracks it under its real id, by name.
+#
+# The conversation id comes from herdr, which recorded it for this pane when
+# the session started.
+
+set -euo pipefail
+
+[ "${HERDR_ENV:-}" = 1 ] || { echo "hfork: not inside a herdr pane" >&2; exit 1; }
+if [ "${DCLAUDE:-}" = 1 ]; then
+    # The split would open on the host, where the container's conversations
+    # (and its /workspaces path) don't exist.
+    echo "hfork: inside dclaude — fork with: dclaude --resume <id> --fork-session" >&2
+    exit 1
+fi
+
+sid=$(herdr pane get "$HERDR_PANE_ID" | jq -r '.result.pane.agent_session.value // empty')
+[ -n "$sid" ] || { echo "hfork: herdr has no claude session recorded for this pane" >&2; exit 1; }
+
+exec ha "${1:-fork-${sid:0:8}}" --resume "$sid" --fork-session

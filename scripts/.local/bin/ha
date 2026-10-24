@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# ha NAME [claude args...]: start claude as a named herdr agent in a new split
+# next to this pane, so `herdr agent prompt NAME ...` reaches it from anywhere.
+#
+# A new split rather than this pane: agent start needs its pane idle at a shell
+# prompt, and this one is busy running ha. The fresh shell takes a moment to
+# reach its prompt, hence the retries.
+
+set -euo pipefail
+
+[ "${HERDR_ENV:-}" = 1 ] || { echo "ha: not inside a herdr pane" >&2; exit 1; }
+(( $# )) || { echo "usage: ha NAME [claude args...]" >&2; exit 2; }
+
+name=$1
+shift
+(( $# )) && set -- -- "$@"
+
+pane=$(herdr pane split --current --direction right --cwd "$PWD" | jq -r .result.pane.pane_id)
+for _ in {1..20}; do
+    out=$(herdr agent start "$name" --kind claude --pane "$pane" "$@" 2>&1) && exit 0
+    sleep 0.5
+done
+echo "ha: $out" >&2
+exit 1
