@@ -58,7 +58,7 @@ Lua is formatted with **stylua** per `nvim/.config/nvim/.stylua.toml` (2-space i
 
 ## Shell (zsh)
 
-`shell/zsh/.zshrc` auto-attaches/creates a `workspace0` tmux session at login, bootstraps **zinit**, loads **powerlevel10k** (config in `.p10k.zsh`), and turns on **vi-mode** bindings. Integrations wired via `eval`: `fzf`, `zoxide` (bound as `cd`), `direnv`. Notable aliases: `vim`→`nvim`, `cat`→`bat`, `grep`→`rg`, `e`→`yazi-cwd` (cd-to-yazi helper), `lg`→`gpg-unlock-lazygit`.
+`shell/zsh/.zshrc` launches or attaches herdr at login (tmux where herdr is missing), bootstraps **zinit**, loads **powerlevel10k** (config in `.p10k.zsh`), and turns on **vi-mode** bindings. Integrations wired via `eval`: `fzf`, `zoxide` (bound as `cd`), `direnv`. Notable aliases: `vim`→`nvim`, `cat`→`bat`, `grep`→`rg`, `e`→`yazi-cwd` (cd-to-yazi helper), `lg`→`gpg-unlock-lazygit`.
 
 ## Scripts (`scripts/.local/bin`)
 

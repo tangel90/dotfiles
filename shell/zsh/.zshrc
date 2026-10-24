@@ -1,10 +1,15 @@
-# tmux init
-if command -v tmux &> /dev/null && [ "$PS1" != "" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ "$TMUX" = "" ] && [ "$KUBECONFIG" = "" ] && [ "$HERDR_ENV" != "1" ]; then
-    sessions=$(tmux list-sessions 2>/dev/null)
-    if [ "$sessions" = "" ]; then
-        tmux new-session -A
-    else
-        tmux attach
+# multiplexer init: herdr (launches or attaches its persistent session), tmux
+# where herdr isn't installed. HERDR_ENV/TMUX keep panes from nesting.
+if [ "$PS1" != "" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ "$TMUX" = "" ] && [ "$KUBECONFIG" = "" ] && [ "$HERDR_ENV" != "1" ]; then
+    if command -v herdr &> /dev/null; then
+        herdr
+    elif command -v tmux &> /dev/null; then
+        sessions=$(tmux list-sessions 2>/dev/null)
+        if [ "$sessions" = "" ]; then
+            tmux new-session -A
+        else
+            tmux attach
+        fi
     fi
 fi
 
@@ -118,6 +123,26 @@ function yazi-cwd() {
     IFS= read -r -d '' cwd < "$tmp"
     [ "$cwd" != "" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
     rm -f -- "$tmp"
+}
+
+# ha NAME [claude args...]: start claude as a named herdr agent in a new split
+# next to this pane, so `herdr agent prompt NAME ...` reaches it from anywhere.
+# A new split rather than this pane: agent start needs its pane idle at a shell
+# prompt, and this one is busy running ha. The fresh shell takes a moment to
+# reach its prompt, hence the retries.
+function ha() {
+    [[ "$HERDR_ENV" = 1 ]] || { echo "ha: not inside a herdr pane" >&2; return 1; }
+    (( $# )) || { echo "usage: ha NAME [claude args...]" >&2; return 2; }
+    local name=$1 pane out i
+    shift
+    (( $# )) && set -- -- "$@"
+    pane=$(herdr pane split --current --direction right --cwd "$PWD" | jq -r .result.pane.pane_id) || return
+    for i in {1..20}; do
+        out=$(herdr agent start "$name" --kind claude --pane "$pane" "$@" 2>&1) && return 0
+        sleep 0.5
+    done
+    echo "ha: $out" >&2
+    return 1
 }
 
 function load-nvm() {
