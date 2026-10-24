@@ -1,0 +1,52 @@
+{
+  "$schema": "https://www.schemastore.org/claude-code-keybindings.json",
+  "$docs": "https://code.claude.com/docs/en/keybindings",
+  "bindings": [
+    {
+      "context": "Footer",
+      "bindings": {
+        "h": "footer:previous",
+        "l": "footer:next",
+        "k": "footer:up",
+        "j": "footer:down"
+      }
+    },
+    {
+      "context": "Autocomplete",
+      "bindings": {
+        "k": "autocomplete:previous",
+        "j": "autocomplete:next"
+      }
+    },
+    {
+      "context": "Confirmation",
+      "bindings": {
+        "k": "confirm:previous",
+        "j": "confirm:next"
+      }
+    },
+    {
+      "context": "Tabs",
+      "bindings": {
+        "h": "tabs:previous",
+        "l": "tabs:next"
+      }
+    },
+    {
+      "context": "DiffDialog",
+      "bindings": {
+        "h": "diff:previousSource",
+        "l": "diff:nextSource",
+        "k": "diff:previousFile",
+        "j": "diff:nextFile"
+      }
+    },
+    {
+      "context": "ModelPicker",
+      "bindings": {
+        "h": "modelPicker:decreaseEffort",
+        "l": "modelPicker:increaseEffort"
+      }
+    }
+  ]
+}

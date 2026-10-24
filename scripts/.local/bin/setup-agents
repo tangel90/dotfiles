@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# setup-agents: bring this machine up to the agent setup kept in this repo —
+# Claude Code, herdr (+ its Claude integration and skill), dclaude and its
+# devcontainer default, the herdr worktree hook. Safe to rerun after a pull.
+#
+# Cloning and stowing alone isn't enough: herdr, Claude and the devcontainer
+# CLI are installed binaries, and herdr's Claude hook and skill are generated
+# by herdr itself. Those are installed here when missing; everything that is a
+# file in this repo is stowed.
+#
+# Not distro-specific (unlike installer.sh), but the prerequisites — git, stow,
+# python3, jq, curl, and docker + npm for dclaude — come from your package
+# manager; they're only checked here.
+
+set -euo pipefail
+
+repo=$(cd "$(dirname "$(readlink -f "$0")")/../../.." && pwd)
+
+say() { printf '\033[1m==> %s\033[0m\n' "$*"; }
+warn() { printf '\033[33mwarn:\033[0m %s\n' "$*" >&2; }
+have() { command -v "$1" >/dev/null; }
+
+say "prerequisites"
+missing=()
+for cmd in git stow python3 jq curl; do have "$cmd" || missing+=("$cmd"); done
+if (( ${#missing[@]} )); then
+    echo "missing: ${missing[*]} — install them with your package manager, then rerun" >&2
+    exit 1
+fi
+have docker || warn "docker not found: dclaude needs it"
+if have docker && ! id -nG | grep -qw docker; then
+    warn "$USER is not in the docker group: dclaude needs to run docker without sudo"
+fi
+[ "$(id -u)" = 1000 ] || warn "uid is $(id -u), not 1000: dclaude's default image user is 1000 and the herdr socket is 0600"
+
+say "binaries"
+# The installers put these in ~/.local/bin, which the stowed shell config has on PATH.
+export PATH="$HOME/.local/bin:$PATH"
+have claude || curl -fsSL https://claude.ai/install.sh | bash
+have herdr || curl -fsSL https://herdr.dev/install.sh | sh
+if ! have devcontainer; then
+    if have npm; then npm install -g @devcontainers/cli; else warn "npm not found: skipping the devcontainer CLI (dclaude needs it)"; fi
+fi
+
+# Stow refuses to replace real files, and a fresh install leaves some (claude
+# writes ~/.claude/settings.json on first start). Move those aside first —
+# except files that already resolve into the repo through a folded directory
+# link, which would otherwise be moved out of the repo itself.
+stow_pkg() {
+    local dir=$1 pkg=$2 f target
+    while IFS= read -r f; do
+        target=$HOME/${f#./}
+        if [ -e "$target" ] && [ ! -L "$target" ] && [ "$(readlink -f "$target")" != "$(readlink -f "$dir/$pkg/$f")" ]; then
+            mv "$target" "$target.pre-stow.$(date +%Y%m%d%H%M%S)"
+            echo "backed up $target"
+        fi
+    done < <(cd "$dir/$pkg" && find . \( -type f -o -type l \) ! -name .stow-local-ignore)
+    stow -d "$dir" -t "$HOME" -R "$pkg"
+}
+
+say "stow"
+stow_pkg "$repo" scripts
+for pkg in claude herdr devcontainer; do stow_pkg "$repo/tools" "$pkg"; done
+
+say "herdr integration"
+# Writes ~/.claude/hooks/herdr-agent-state.sh and its SessionStart entry in
+# settings.json (already in the stowed copy, so normally a no-op there).
+herdr integration install claude
+# Release-matched copy of herdr's skill, bundled with the binary. An existing
+# one (e.g. from `npx skills add herdrdev/herdr`) is left alone.
+if [ ! -e "$HOME/.claude/skills/herdr" ]; then
+    mkdir -p "$HOME/.claude/skills/herdr"
+    herdr --skill >"$HOME/.claude/skills/herdr/SKILL.md"
+fi
+
+say "check"
+# Tools that rewrite a file in place can turn a stow link back into a plain
+# file, after which edits stop reaching the repo.
+for f in settings.json CLAUDE.md keybindings.json; do
+    [ -L "$HOME/.claude/$f" ] || warn "~/.claude/$f is no longer a link into the repo — diff it against tools/claude/.claude/$f and restow"
+done
+echo "done. Shell integration (herdr at login, ha) comes with: stow -d $repo/shell -t ~ zsh"

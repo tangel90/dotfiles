@@ -1,0 +1,73 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh issue *)",
+      "Bash(gh pr *)",
+      "Bash(gh label *)",
+      "Bash(gh api repos/einezahl/prosperityv4/*)",
+      "Bash(gh auth status)",
+      "Bash(gh repo view*)"
+    ],
+    "defaultMode": "auto"
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "paplay /usr/share/sounds/freedesktop/stereo/message-new-instant.oga 2>/dev/null || true",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "^(startup|resume|clear|compact|fork)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/home/corni/.claude/hooks/herdr-agent-state.sh' session",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/herdr-worktree.py\" create",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/herdr-worktree.py\" remove",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/statusline-command.sh\""
+  },
+  "effortLevel": "medium",
+  "voice": {
+    "enabled": true,
+    "mode": "hold"
+  },
+  "theme": "dark-ansi",
+  "editorMode": "vim",
+  "preferredNotifChannel": "kitty",
+  "voiceEnabled": true
+}
