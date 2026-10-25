@@ -11,6 +11,10 @@
   // Remap vscode to the host uid, so bind-mounted files stay yours and the
   // 0600 herdr socket is reachable.
   "updateRemoteUserUID": true,
+  // Docker's default seccomp profile plus user namespaces, which bubblewrap
+  // (Claude Code's Bash sandbox, turned on by dclaude) needs. Docker resolves
+  // the path on the host, hence the stowed copy under ~/.config.
+  "runArgs": ["--security-opt=seccomp=${localEnv:HOME}/.config/devcontainer/default/seccomp-userns.json"],
   "features": {
     // The herdr SessionStart hook is a python3 script. os-provided = apt
     // package, no build from source.
@@ -19,6 +23,7 @@
       "installTools": false
     }
   },
-  // The host statusline script parses claude's JSON with jq.
-  "postCreateCommand": "command -v jq >/dev/null || (sudo apt-get update && sudo apt-get install -y jq)"
+  // The host statusline script parses claude's JSON with jq; Claude's sandbox
+  // needs bubblewrap and socat.
+  "postCreateCommand": "command -v jq >/dev/null && command -v bwrap >/dev/null && command -v socat >/dev/null || (sudo apt-get update && sudo apt-get install -y jq bubblewrap socat)"
 }

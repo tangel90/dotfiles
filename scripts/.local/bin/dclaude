@@ -167,9 +167,47 @@ devcontainer exec "${dc_args[@]}" sh -c '
     [ "$(id -u)" = "$1" ] || echo "dclaude: container uid $(id -u) != host uid $1, herdr socket is unreachable" >&2
 ' sh "$(id -u)"
 
+# Claude's Bash sandbox keeps commands away from the herdr socket: it can type
+# into host panes, so anything reaching it can run commands on the host. Hooks
+# and the status line run outside the sandbox and keep reporting through it;
+# only Bash loses it. bubblewrap needs user namespaces, which Docker's default
+# seccomp profile forbids — the default devcontainer runs with
+# seccomp-userns.json for that; a project's own config needs the same runArgs.
+# Without them, run unsandboxed and say so rather than break every command.
+if devcontainer exec "${dc_args[@]}" sh -c 'command -v bwrap && command -v socat && unshare -U true' >/dev/null 2>&1; then
+    sandbox=1
+else
+    sandbox=
+    echo "dclaude: no sandbox in this container (needs bwrap, socat and user namespaces, see seccomp-userns.json); Bash can reach the herdr socket" >&2
+fi
+python3 - "$state/settings.json" "$sandbox" <<'PY'
+import json, sys
+
+path, sandbox = sys.argv[1:]
+with open(path) as f:
+    settings = json.load(f)
+if sandbox:
+    settings["sandbox"] = {
+        **settings.get("sandbox", {}),
+        "enabled": True,
+        # bubblewrap can't mount a fresh /proc in an unprivileged container
+        "enableWeakerNestedSandbox": True,
+        # no retrying a blocked command outside the sandbox
+        "allowUnsandboxedCommands": False,
+        "failIfUnavailable": True,
+        # the herdr socket's directory, see the mounts above
+        "filesystem": {"denyRead": ["/herdr"]},
+    }
+with open(path, "w") as f:
+    json.dump(settings, f, indent=2)
+PY
+
 # DCLAUDE tells hooks they're in a container: herdr-worktree.py falls back to
 # plain git, since worktrees herdr creates live on host paths not mounted here.
 env_args=(--remote-env "CLAUDE_CONFIG_DIR=$HOME/.claude" --remote-env DCLAUDE=1)
+# docker exec sets TERM=xterm and no COLORTERM, so claude assumes 16 colours
+# and rounds the theme's colours to the nearest basic one (rose -> white).
+env_args+=(--remote-env "TERM=${TERM:-xterm-256color}" --remote-env "COLORTERM=${COLORTERM:-truecolor}")
 if [ "${HERDR_ENV:-}" = 1 ]; then
     env_args+=(
         --remote-env HERDR_ENV=1
@@ -185,6 +223,40 @@ if [ -n "${CLAUDE_CODE_DISABLE_AGENT_VIEW:-}" ]; then
     env_args+=(--remote-env "CLAUDE_CODE_DISABLE_AGENT_VIEW=$CLAUDE_CODE_DISABLE_AGENT_VIEW")
 fi
 
+# Docker doesn't stop an exec'd process when its client goes away, so closing
+# the tab would leave claude running in the container: holding memory and API
+# connections, and racing a later resume of the same conversation. Each run
+# tags its container processes with DCLAUDE_RUN, which also shows in the host's
+# devcontainer exec command line. A detached watcher stops this run's tagged
+# processes once this script (exec'd into devcontainer, same pid) is gone,
+# however it ends: herdr kills a closed tab's processes too fast for an exit
+# trap. And before starting, tagged processes whose host side is gone are
+# stopped too, in case a watcher died.
+run_id=$(date +%s%N)-$$
+env_args+=(--remote-env "DCLAUDE_RUN=$run_id")
+cid=$(docker ps -q --filter "label=devcontainer.local_folder=$ws" | head -n1)
+# shellcheck disable=SC2016  # expanded in the container
+stop_tagged='
+    mode=$1 ids=" $2 "
+    for env in /proc/[0-9]*/environ; do
+        id=$(tr "\0" "\n" <"$env" 2>/dev/null | sed -n "s/^DCLAUDE_RUN=//p")
+        [ -n "$id" ] || continue
+        case $mode:$ids in
+            keep:*" $id "*) continue ;;
+            only:*" $id "*) ;;
+            only:*) continue ;;
+        esac
+        pid=${env#/proc/}; kill -TERM "${pid%/environ}" 2>/dev/null
+    done'
+if [ -n "$cid" ]; then
+    live=$(pgrep -af -- '--remote-env DCLAUDE_RUN=' | grep -o 'DCLAUDE_RUN=[0-9-]*' | cut -d= -f2 | tr '\n' ' ' || true)
+    docker exec -u "$(id -u)" "$cid" sh -c "$stop_tagged" sh keep "$live" >/dev/null 2>&1 || true
+    setsid -f sh -c '
+        while kill -0 "$1" 2>/dev/null; do sleep 2; done
+        docker exec -u "$2" "$3" sh -c "$4" sh only "$5"
+    ' sh $$ "$(id -u)" "$cid" "$stop_tagged" "$run_id" </dev/null >/dev/null 2>&1
+fi
+
 # The pane's foreground process is devcontainer (node), which hides claude from
 # herdr's process detection. HERDR_AGENT on that host-side wrapper tells herdr
 # to apply claude's screen manifest to it anyway — setting it inside the
@@ -193,10 +265,15 @@ export HERDR_AGENT=claude
 
 # Prefer the image's own claude; the host binary needs glibc (no alpine).
 # /opt/dclaude/bin goes on PATH for herdr; claude there is versioned, so it
-# never shadows the image's own.
+# never shadows the image's own. Custom themes are read from ~/.claude/themes,
+# not $CLAUDE_CONFIG_DIR, and the container's HOME is the image user's — so
+# link them there, or claude falls back to the base theme.
 exec devcontainer exec "${dc_args[@]}" "${env_args[@]}" sh -c '
     host=$1; shift
     PATH=/opt/dclaude/bin:$PATH; export PATH
+    if [ "$HOME/.claude" != "$CLAUDE_CONFIG_DIR" ] && [ -d "$CLAUDE_CONFIG_DIR/themes" ]; then
+        mkdir -p "$HOME/.claude" && ln -sfn "$CLAUDE_CONFIG_DIR/themes" "$HOME/.claude/themes"
+    fi
     if command -v claude >/dev/null; then exec claude "$@"; fi
     exec "$host" "$@"
 ' sh "/opt/dclaude/bin/$claude_bin" "$@"
