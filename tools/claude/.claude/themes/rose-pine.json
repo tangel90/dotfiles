@@ -1,0 +1,8 @@
+{
+  "name": "Rose Pine",
+  "base": "dark-ansi",
+  "overrides": {
+    "text": "#ebbcba",
+    "userMessageBackground": "#282c34"
+  }
+}

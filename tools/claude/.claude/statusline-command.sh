@@ -106,6 +106,10 @@ if [ -n "$ctx_used" ] && [ "${HERDR_ENV:-}" = 1 ] && [ -n "${HERDR_PANE_ID:-}" ]
     fi
 fi
 
+# Inside herdr the tab bar (hlimits) and the agent sidebar ($ctx) show all of
+# this, so print nothing and keep only the reporting above.
+[ "${HERDR_ENV:-}" = 1 ] && exit 0
+
 # ── pick color based on percentage ───────────────────────────────────────────
 bar_color() {
     local pct="$1"

@@ -77,7 +77,7 @@
     "enabled": true,
     "mode": "hold"
   },
-  "theme": "dark-ansi",
+  "theme": "custom:rose-pine",
   "editorMode": "vim",
   "preferredNotifChannel": "kitty",
   "voiceEnabled": true
