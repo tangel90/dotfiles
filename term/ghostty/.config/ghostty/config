@@ -10,3 +10,6 @@ window-height = 44
 
 # Always open at the size above instead of restoring the last window's size.
 window-save-state = never
+
+# No title bar; KDE still draws the border. Move/resize with Meta+drag.
+gtk-titlebar = false
