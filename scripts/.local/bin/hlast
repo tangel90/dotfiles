@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# hlast: focus the herdr agent that most needs you. Bound to prefix+o in
+# herdr's config.toml, replacing open_notification_target, which only works
+# while the toast is still on screen.
+#
+# An agent blocked on input wins (the most recently blocked one); otherwise
+# the one that finished last, by completion_seq. The focused pane is skipped,
+# so pressing it again from the target does nothing rather than bouncing.
+
+set -euo pipefail
+
+pane=$(herdr api snapshot | jq -r --arg self "${HERDR_ACTIVE_PANE_ID:-}" '
+    [.result.snapshot.agents[] | select(.pane_id != $self)] as $a
+    | ([$a[] | select(.agent_status == "blocked")] | max_by(.state_change_seq))
+      // ([$a[] | select(.completion_seq != null)] | max_by(.completion_seq))
+    | .pane_id // empty')
+
+[ -n "$pane" ] || exit 0
+herdr agent focus "$pane" >/dev/null

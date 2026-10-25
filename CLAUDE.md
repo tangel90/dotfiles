@@ -62,7 +62,7 @@ Lua is formatted with **stylua** per `nvim/.config/nvim/.stylua.toml` (2-space i
 
 ## Scripts (`scripts/.local/bin`)
 
-Personal binaries stowed onto `$PATH`: `tmux-sessionizer` (fzf-over-`fd` project picker that creates/attaches tmux sessions), `tmux-windowizer`, `tmux-run-command`, `open-pass`, `open-tmp`, `script-runner`, `codex`, `dclaude`, `setup-agents`, `ha`, `hfork`. Shell scripts — no build step.
+Personal binaries stowed onto `$PATH`: `tmux-sessionizer` (fzf-over-`fd` project picker that creates/attaches tmux sessions), `tmux-windowizer`, `tmux-run-command`, `open-pass`, `open-tmp`, `script-runner`, `codex`, `dclaude`, `setup-agents`, `ha`, `hfork`, `hbreak`, `hlast`, `hlazygit`. Shell scripts — no build step.
 
 ## Claude Code integration
 
@@ -77,7 +77,7 @@ The repo-local `.claude/settings.local.json` is gitignored — anything put ther
 How the pieces fit:
 
 - **herdr** (`tools/herdr`) is the multiplexer; `.zshrc` starts it at login. `ha NAME [claude args]` spawns a named Claude agent in a new tab (labelled NAME); `hfork [NAME]` (run inside Claude as `!hfork`) forks the pane's conversation into a new tab with `claude --resume <id> --fork-session`, which herdr tracks and can resume — unlike `/fork`, whose background session has no pane.
-- **herdr config** lives in `tools/herdr/.config/herdr/config.toml` (prefix `ctrl+k`; custom keys: `prefix+t` new tab, `prefix+m` move pane to new tab via `[[keys.command]]`). Check key defaults/conflicts against `https://herdr.dev/llms.txt` (links the per-version `config-reference.json`); apply with `herdr config check && herdr server reload-config`.
+- **herdr config** lives in `tools/herdr/.config/herdr/config.toml` (prefix `ctrl+k`; custom keys: `prefix+t` new tab (no name prompt), `alt+h|l` previous|next tab, `alt+j|k` next|previous workspace, `prefix+tab` last pane, `j`/`k` workspaces and `J`/`K` panes in the `prefix+w` picker, `prefix+alt+1..9` / `prefix+alt+n|p` focus agent by index / next|previous, `prefix+m` runs `hbreak` via `[[keys.command]]`: moves the pane to a new tab, named after its agent if any; `prefix+o` runs `hlast`: focuses the blocked or last-finished agent; `prefix+alt+g` runs `hlazygit`: this repo's lazygit tab, reused if open). Check key defaults/conflicts against `https://herdr.dev/llms.txt` (links the per-version `config-reference.json`); apply with `herdr config check && herdr server reload-config`.
 - **No background service in herdr panes**: `.zshrc` exports `CLAUDE_CODE_DISABLE_AGENT_VIEW=1` when `HERDR_ENV=1`. Otherwise Claude hosts every session in shared background workers carrying the env of whichever pane started the service, so herdr would track a viewer (no resume, no `hfork`, hooks hitting a stale pane). Background jobs (`claude agents`, `--bg`) are only available outside herdr.
 - **`dclaude`** (`scripts/`) runs Claude in the project's devcontainer, falling back to `tools/devcontainer/.config/devcontainer/default/devcontainer.json`. The container gets its own `~/.local/share/dclaude/claude` state, with host config copied in each run and only `.credentials.json` mounted writable. It sets `HERDR_AGENT=claude` on the host-side wrapper so herdr detects it, and `DCLAUDE=1` inside.
 - **Worktrees**: the `WorktreeCreate`/`WorktreeRemove` hooks route every Claude worktree through `herdr worktree create` (`~/.herdr/worktrees/<repo>/worktree-<name>`, shown as a herdr workspace). Without a running herdr server, or under `DCLAUDE=1`, they fall back to `git worktree add` under `<repo>/.claude/worktrees/`.

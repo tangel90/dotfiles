@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# hbreak [PANE_ID]: move a herdr pane out of its split into a new tab, like
+# tmux break-pane. Bound to prefix+m in herdr's config.toml.
+#
+# If the pane runs a named agent the new tab takes that name, matching tabs
+# that ha opens; otherwise it shows its number.
+
+set -euo pipefail
+
+pane=${1:-${HERDR_ACTIVE_PANE_ID:?hbreak: no pane given}}
+
+tab=$(herdr pane get "$pane" | jq -r .result.pane.tab_id)
+(( $(herdr tab get "$tab" | jq -r .result.tab.pane_count) > 1 )) || exit 0  # already alone in its tab
+
+name=$(herdr agent list | jq -r --arg p "$pane" '.result.agents[] | select(.pane_id == $p) | .name // empty')
+herdr pane move "$pane" --new-tab ${name:+--label "$name"} >/dev/null

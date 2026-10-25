@@ -1,10 +1,11 @@
 onboarding = false
 
 [ui.toast]
-delivery = "system"
+delivery = "herdr"         # in-app toasts, so prefix+o can jump to them
 
 [ui]
 status_indicators = "dots"
+prompt_new_tab_name = false  # prefix+t opens the tab straight away
 
 [theme]
 name = "rose-pine"
@@ -35,9 +36,36 @@ prefix = "ctrl+k"
 close_pane = "prefix+q"     # match tmux kill-pane
 detach = "prefix+d"         # match tmux; default was prefix+q
 new_tab = "prefix+t"        # default was prefix+c
+next_tab = ["prefix+n", "alt+l"]       # alt+h/l: no prefix needed
+previous_tab = ["prefix+p", "alt+h"]
+next_workspace = "alt+j"             # alt+j/k: workspaces, pairs with alt+h/l tabs
+previous_workspace = "alt+k"
+last_pane = "prefix+tab"            # toggle to the previously focused pane, like tmux prefix+;
+cycle_pane_next = []                # was prefix+tab; prefix+shift+tab still cycles back
+focus_agent = "prefix+alt+1..9"
+next_agent = "prefix+alt+n"
+previous_agent = "prefix+alt+p"
+open_notification_target = "prefix+shift+o"  # prefix+o runs hlast
+# prefix+w picker: j/k move between workspaces, J/K between panes (h/l unchanged)
+navigate_workspace_down = "j"
+navigate_workspace_up = "k"
+navigate_pane_down = "shift+j"
+navigate_pane_up = "shift+k"
 
 [[keys.command]]
 key = "prefix+m"
 type = "shell"
-command = "\"$HERDR_BIN_PATH\" pane move \"$HERDR_ACTIVE_PANE_ID\" --new-tab"
+command = "\"$HOME/.local/bin/hbreak\""
 description = "move pane to new tab"
+
+[[keys.command]]
+key = "prefix+o"            # replaces open_notification_target
+type = "shell"
+command = "\"$HOME/.local/bin/hlast\""
+description = "focus agent that finished last / needs input"
+
+[[keys.command]]
+key = "prefix+alt+g"
+type = "shell"
+command = "\"$HOME/.local/bin/hlazygit\""
+description = "lazygit tab for this repo"

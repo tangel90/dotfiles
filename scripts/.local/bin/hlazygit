@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# hlazygit: jump to the lazygit tab for *this* repo if one is already open,
+# otherwise start one in a new tab (labelled lazygit). Bound to prefix+alt+g
+# in herdr's config.toml; the herdr port of tmux-lazygit.
+#
+# Matching is per repo, by git toplevel, so a worktree counts as its own repo;
+# outside a repo the directory itself is the identity. Only the active
+# workspace is searched, like tmux-lazygit stays within its session.
+#
+# lazygit runs through `pane run`, i.e. typed into the tab's shell, which
+# buffers it until the prompt is up. exec closes the tab when lazygit quits.
+
+set -euo pipefail
+
+here=${HERDR_ACTIVE_PANE_CWD:-$PWD}
+ws=${HERDR_ACTIVE_WORKSPACE_ID:?hlazygit: no active workspace}
+
+root_of() {
+    git -C "$1" rev-parse --show-toplevel 2>/dev/null || printf '%s' "$1"
+}
+
+want=$(root_of "$here")
+
+tabs=$(herdr tab list --workspace "$ws" | jq -r '.result.tabs[] | select(.label == "lazygit") | .tab_id')
+for tab in $tabs; do
+    while read -r pane cwd; do
+        [ -n "$pane" ] && [ "$(root_of "$cwd")" = "$want" ] || continue
+        herdr tab focus "$tab" >/dev/null
+        exit 0
+    done < <(herdr pane list | jq -r --arg t "$tab" '.result.panes[] | select(.tab_id == $t) | "\(.pane_id) \(.foreground_cwd // .cwd)"')
+done
+
+pane=$(herdr tab create --workspace "$ws" --cwd "$here" --label lazygit --focus | jq -r .result.root_pane.pane_id)
+herdr pane run "$pane" "exec lazygit" >/dev/null
