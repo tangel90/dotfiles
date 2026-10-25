@@ -5,7 +5,20 @@ delivery = "herdr"         # in-app toasts, so prefix+o can jump to them
 
 [ui]
 status_indicators = "dots"
+# Claude usage, cached by the claude status line (see hlimits)
+tab_bar_right = [
+  { type = "command", command = "~/.local/bin/hlimits", interval_seconds = 10, timeout_seconds = 2 },
+]
 prompt_new_tab_name = false  # prefix+t opens the tab straight away
+
+# Claude agents: name and context use (reported by statusline-command.sh as
+# $ctx), then workspace. No tab: ha labels each agent's tab with its name, so
+# it would repeat the agent.
+[ui.sidebar.agents.rows_by_agent]
+claude = [
+  ["state_icon", "agent", { token = "$ctx", dim = true }],
+  ["machine", { token = "workspace", dim = true }],
+]
 
 [theme]
 name = "rose-pine"

@@ -13,6 +13,7 @@ love="\033[38;2;235;111;146m"     # #eb6f92
 subtle="\033[38;2;153;156;186m"   # #999cba
 text="\033[38;2;224;222;244m"     # #e0def4
 muted="\033[38;2;106;110;111m"    # #6a6e6f
+blue="\033[94m"                   # terminal palette bright blue, as Claude's dark-ansi theme uses
 reset="\033[0m"
 
 # ── directory ────────────────────────────────────────────────────────────────
@@ -54,36 +55,20 @@ fi
 # ── model ─────────────────────────────────────────────────────────────────────
 model=$(echo "$input" | jq -r '.model.display_name // ""')
 
-# ── context bar ───────────────────────────────────────────────────────────────
+# ── context ───────────────────────────────────────────────────────────────────
 ctx_used=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
-make_bar() {
-    local pct="$1"
-    local width=10
-    local pct_int=$(printf "%.0f" "$pct" 2>/dev/null || echo 0)
-    local filled=$(( pct_int * width / 100 ))
-    [ "$filled" -gt "$width" ] && filled=$width
-    local empty=$(( width - filled ))
-    local bar=""
-    for ((i=0; i<filled; i++)); do bar="${bar}█"; done
-    for ((i=0; i<empty; i++)); do bar="${bar}░"; done
-    echo "$bar"
-}
 
 # ── 5-hour session limit ──────────────────────────────────────────────────────
 five_pct=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
 five_resets=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
 
-# derive elapsed time: 5h window = 18000s; elapsed = 18000 - seconds_until_reset
-five_elapsed=""
+# time left until the 5h window resets
+five_left=""
 if [ -n "$five_resets" ]; then
     now=$(date +%s)
     seconds_until=$(( five_resets - now ))
     [ "$seconds_until" -lt 0 ] && seconds_until=0
-    elapsed_s=$(( 18000 - seconds_until ))
-    [ "$elapsed_s" -lt 0 ] && elapsed_s=0
-    elapsed_h=$(( elapsed_s / 3600 ))
-    elapsed_m=$(( (elapsed_s % 3600) / 60 ))
-    five_elapsed=$(printf "%dh%02dm" "$elapsed_h" "$elapsed_m")
+    five_left=$(printf "↻%dh%02dm" "$(( seconds_until / 3600 ))" "$(( (seconds_until % 3600) / 60 ))")
 fi
 
 # ── 7-day weekly limit ────────────────────────────────────────────────────────
@@ -101,13 +86,33 @@ if [ -n "$week_resets" ]; then
     week_elapsed_days=$(( elapsed_s / 86400 ))
 fi
 
-# ── pick bar color based on percentage ───────────────────────────────────────
+# Cache the limits for hlimits (herdr's tab bar), which has no other source.
+limits=$(echo "$input" | jq -c '.rate_limits // empty')
+if [ -n "$limits" ]; then
+    cache="${XDG_CACHE_HOME:-$HOME/.cache}/claude-limits.json"
+    mkdir -p "${cache%/*}"
+    echo "$limits" >"$cache.$$" && mv -f "$cache.$$" "$cache"
+fi
+
+# Report context use to herdr's agent sidebar ($ctx in ui.sidebar.agents),
+# only when it changes: the status line refreshes far more often than that.
+if [ -n "$ctx_used" ] && [ "${HERDR_ENV:-}" = 1 ] && [ -n "${HERDR_PANE_ID:-}" ] && command -v herdr >/dev/null; then
+    ctx_int=$(printf "%.0f" "$ctx_used")
+    ctx_val="$ctx_int%"
+    ctx_last="${XDG_RUNTIME_DIR:-/tmp}/claude-ctx-${HERDR_PANE_ID//[^A-Za-z0-9]/_}"
+    if [ "$(cat "$ctx_last" 2>/dev/null)" != "$ctx_val" ]; then
+        herdr pane report-metadata "$HERDR_PANE_ID" --source claude-statusline --token "ctx=$ctx_val" >/dev/null 2>&1 \
+            && echo "$ctx_val" >"$ctx_last"
+    fi
+fi
+
+# ── pick color based on percentage ───────────────────────────────────────────
 bar_color() {
     local pct="$1"
     local int_pct=$(printf "%.0f" "$pct" 2>/dev/null || echo 0)
     if   [ "$int_pct" -ge 85 ]; then echo "$love"
     elif [ "$int_pct" -ge 60 ]; then echo "$gold"
-    else                              echo "$pine"
+    else                              echo "$blue"
     fi
 }
 
@@ -132,33 +137,30 @@ line2=()
 
 # context
 if [ -n "$ctx_used" ]; then
-    bar=$(make_bar "$ctx_used")
     color=$(bar_color "$ctx_used")
     pct_int=$(printf "%.0f" "$ctx_used")
-    line2+=("$(printf "${subtle}ctx ${color}${bar}${subtle} ${pct_int}%%${reset}")")
+    line2+=("$(printf "${subtle}ctx ${color}${pct_int}%%${reset}")")
 fi
 
 # 5-hour session limit + elapsed timer
 if [ -n "$five_pct" ]; then
-    bar=$(make_bar "$five_pct")
     color=$(bar_color "$five_pct")
     pct_int=$(printf "%.0f" "$five_pct")
-    if [ -n "$five_elapsed" ]; then
-        line2+=("$(printf "${subtle}5h ${color}${bar}${subtle} ${pct_int}%% ${muted}(${five_elapsed})${reset}")")
+    if [ -n "$five_left" ]; then
+        line2+=("$(printf "${subtle}5h ${color}${pct_int}%% ${muted}(${five_left})${reset}")")
     else
-        line2+=("$(printf "${subtle}5h ${color}${bar}${subtle} ${pct_int}%%${reset}")")
+        line2+=("$(printf "${subtle}5h ${color}${pct_int}%%${reset}")")
     fi
 fi
 
 # weekly limit + elapsed days
 if [ -n "$week_pct" ]; then
-    bar=$(make_bar "$week_pct")
     color=$(bar_color "$week_pct")
     pct_int=$(printf "%.0f" "$week_pct")
     if [ -n "$week_elapsed_days" ]; then
-        line2+=("$(printf "${subtle}7d ${color}${bar}${subtle} ${pct_int}%% ${muted}(day ${week_elapsed_days})${reset}")")
+        line2+=("$(printf "${subtle}7d ${color}${pct_int}%% ${muted}(day ${week_elapsed_days})${reset}")")
     else
-        line2+=("$(printf "${subtle}7d ${color}${bar}${subtle} ${pct_int}%%${reset}")")
+        line2+=("$(printf "${subtle}7d ${color}${pct_int}%%${reset}")")
     fi
 fi
 
