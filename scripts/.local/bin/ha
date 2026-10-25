@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
-# ha [--host] NAME [claude args...]: start claude as a named herdr agent in a
-# new tab (labelled NAME) of the shared "agents" workspace, created on first
-# use, so `herdr agent prompt NAME ...` reaches it from anywhere. It runs in the
-# project's devcontainer through dclaude (always a fresh session, --new), or
-# with --host as plain claude on the host.
+# ha [--host] [--workspace ID] NAME [claude args...]: start claude as a named
+# herdr agent in a new tab (labelled NAME) of this workspace, or of ID, so `herdr agent prompt NAME ...`
+# reaches it from anywhere. It runs in the project's devcontainer through
+# dclaude (always a fresh session, --new), or with --host as plain claude on
+# the host.
 #
 # A new tab rather than this pane: agent start needs its pane idle at a shell
 # prompt, and this one is busy running ha. A tab rather than a split, so the
-# agent gets the full window. A separate workspace, so agents stay out of the
-# project's tab bar; reach them through the agents panel or prefix+alt+1..9.
-# The fresh shell takes a moment to reach its prompt, hence the retries.
+# agent gets the full window. The fresh shell takes a moment to reach its
+# prompt, hence the retries.
 #
 # herdr agent start only launches the canonical claude executable, so dclaude
 # is typed into the tab instead, and the agent named once herdr detects it —
@@ -20,24 +19,25 @@ set -euo pipefail
 
 [ "${HERDR_ENV:-}" = 1 ] || { echo "ha: not inside a herdr pane" >&2; exit 1; }
 host=
-if [ "${1:-}" = --host ]; then
-    host=1
+ws=
+while [ $# -gt 0 ]; do
+    case $1 in
+        --host) host=1 ;;
+        --workspace) ws=${2:?ha: --workspace needs an ID}; shift ;;
+        *) break ;;
+    esac
     shift
-fi
-(( $# )) || { echo "usage: ha [--host] NAME [claude args...]" >&2; exit 2; }
+done
+(( $# )) || { echo "usage: ha [--host] [--workspace ID] NAME [claude args...]" >&2; exit 2; }
 
 name=$1
 shift
 
-ws=$(herdr workspace list | jq -r '.result.workspaces[] | select(.label == "agents") | .workspace_id' | head -n1)
-if [ -n "$ws" ]; then
-    pane=$(herdr tab create --workspace "$ws" --cwd "$PWD" --label "$name" --focus | jq -r .result.root_pane.pane_id)
-else
-    # A new workspace comes with a tab of its own; use that one.
-    created=$(herdr workspace create --label agents --cwd "$PWD" --focus)
-    pane=$(jq -r .result.root_pane.pane_id <<<"$created")
-    herdr tab rename "$(jq -r .result.tab.tab_id <<<"$created")" "$name" >/dev/null
-fi
+# The caller's workspace, not whichever one the UI has focused. Asked via the
+# pane: HERDR_WORKSPACE_ID goes stale once the pane moves to another workspace.
+# --workspace is for callers without a pane of their own, like hp's popup.
+[ -n "$ws" ] || ws=$(herdr pane get "$HERDR_PANE_ID" | jq -r .result.pane.workspace_id)
+pane=$(herdr tab create --workspace "$ws" --cwd "$PWD" --label "$name" --focus | jq -r .result.root_pane.pane_id)
 
 if [ -z "$host" ]; then
     herdr pane run "$pane" "$(printf '%q ' dclaude --new "$@")" >/dev/null

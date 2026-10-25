@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # hfork [NAME]: fork the Claude conversation in this herdr pane into a new
 # tab (via ha --host, since this is a host session). Run it from inside Claude
-# as `!hfork`.
+# as `!hfork`. NAME defaults to this agent's name plus -fork (-fork2, ... when
+# taken).
 #
 # Claude's own /fork starts the fork as a background session with no pane, so
 # herdr doesn't see it until attached — and an attached pane records the
@@ -22,7 +23,24 @@ if [ "${DCLAUDE:-}" = 1 ]; then
     exit 1
 fi
 
-sid=$(herdr pane get "$HERDR_PANE_ID" | jq -r '.result.pane.agent_session.value // empty')
+# HERDR_PANE_ID goes stale when the pane moves to another workspace; herdr
+# still resolves it, and reports the current id.
+info=$(herdr pane get "$HERDR_PANE_ID")
+pane=$(jq -r .result.pane.pane_id <<<"$info")
+sid=$(jq -r '.result.pane.agent_session.value // empty' <<<"$info")
 [ -n "$sid" ] || { echo "hfork: herdr has no claude session recorded for this pane" >&2; exit 1; }
 
-exec ha --host "${1:-fork-${sid:0:8}}" --resume "$sid" --fork-session
+name=${1:-}
+if [ -z "$name" ]; then
+    agents=$(herdr agent list)
+    base=$(jq -r --arg p "$pane" '.result.agents[] | select(.pane_id == $p) | .name // empty' <<<"$agents")
+    base=${base:+$base-fork}
+    base=${base:-fork-${sid:0:8}}
+    name=$base
+    n=1
+    while jq -e --arg n "$name" '.result.agents[] | select(.name == $n)' <<<"$agents" >/dev/null; do
+        name=$base$((++n))
+    done
+fi
+
+exec ha --host "$name" --resume "$sid" --fork-session

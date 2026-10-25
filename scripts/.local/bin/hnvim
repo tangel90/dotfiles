@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# hnvim: jump to this workspace's nvim tab, or open one (labelled nvim) at the
+# workspace's project root. Bound to prefix+o in herdr's config.toml.
+#
+# One per workspace, found by its label; nvim runs through `pane run` with
+# exec, so quitting it closes the tab.
+
+set -euo pipefail
+
+ws=${HERDR_ACTIVE_WORKSPACE_ID:?hnvim: no active workspace}
+
+tab=$(herdr tab list --workspace "$ws" | jq -r 'first(.result.tabs[] | select(.label == "nvim") | .tab_id) // empty')
+if [ -n "$tab" ]; then
+    herdr tab focus "$tab" >/dev/null
+    exit 0
+fi
+
+root=$(herdr workspace get "$ws" | jq -r '.result.workspace.worktree.checkout_path // empty')
+pane=$(herdr tab create --workspace "$ws" --cwd "${root:-${HERDR_ACTIVE_PANE_CWD:-$HOME}}" --label nvim --focus | jq -r .result.root_pane.pane_id)
+herdr pane run "$pane" "exec nvim" >/dev/null

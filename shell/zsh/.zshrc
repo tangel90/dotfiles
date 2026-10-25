@@ -181,6 +181,30 @@ _direnv_precmd_hook() {
     eval "$(direnv export zsh)"
 }
 precmd_functions=(_direnv_precmd_hook ${precmd_functions:#_direnv_hook})
+
+# hcouple [NAME|off]: inside herdr, let the agent in the same tab (or NAME)
+# see every command finished in this pane, with its output — for what agents
+# can't run themselves, like sudo. It gets them as soon as it is idle.
+# The hook goes first in precmd_functions so $? is still the command's status;
+# the work is in the hcouple script.
+function hcouple() {
+    if [[ $1 == off ]]; then
+        unset HCOUPLE; echo "hcouple: off"; return
+    fi
+    local picked
+    picked=$(command hcouple pick "$@") || return
+    HCOUPLE=(${=picked})  # config dir, session id, agent name
+    echo "hcouple: ${HCOUPLE[3]} sees what you run here, from its next turn on (hcouple off to stop)"
+}
+_hcouple_preexec() { _hcouple_cmd=$1 }
+_hcouple_precmd() {
+    local st=$?
+    [[ ${#HCOUPLE} -eq 3 && -n $_hcouple_cmd && $_hcouple_cmd != hcouple* ]] &&
+        command hcouple send "${HCOUPLE[1]}" "${HCOUPLE[2]}" "${HCOUPLE[3]}" "$st" "$_hcouple_cmd"
+    _hcouple_cmd=
+}
+preexec_functions+=(_hcouple_preexec)
+precmd_functions=(_hcouple_precmd $precmd_functions)
 # <<< Shell hooks <<<
 
 # >>> Personal (untracked) interactive config >>>

@@ -1,0 +1,454 @@
+#!/usr/bin/env python3
+"""hp: herdr project picker, the herdr counterpart of tmux-sessionizer.
+Bound to prefix+s in herdr's config.toml, as a popup.
+
+One fzf list, in this order:
+  ws      open herdr workspaces                -> switch to it
+  chat    past Claude conversations, host and  -> open the project's workspace
+          dclaude, newest 10 per project          and resume it in a new tab
+  recent  projects opened through hp before,   -> reopen the workspace
+          whose workspace is closed
+  dir     every project folder (fd over ~)     -> new workspace
+
+A new workspace (from recent or dir) runs the project's start file, one tab
+per line as `label: command`:
+
+    # .herdr-start
+    agent: ha
+    server: npm run dev
+
+`ha` starts the project's agent through the ha script, named after the
+project unless a NAME is given (`ha --host`, `ha NAME --model opus`, ...);
+anything else runs in its own tab. Without .herdr-start, a .tmux-start runs
+its one command in a tab, and a CLAUDE.md alone gets `agent: ha`. Resuming a
+chat into a closed project opens its workspace without the start file.
+
+herdr forgets closed workspaces, so hp keeps its own history of opened
+projects in ~/.local/state/hp/history.json.
+"""
+
+import json
+import os
+import re
+import shlex
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+HOME = Path.home()
+HOST_CHATS = HOME / ".claude" / "projects"
+DCLAUDE_CHATS = Path(os.environ.get("XDG_DATA_HOME", HOME / ".local/share")) / "dclaude" / "claude" / "projects"
+HISTORY = Path(os.environ.get("XDG_STATE_HOME", HOME / ".local/state")) / "hp" / "history.json"
+SNAPSHOTS = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "herdr" / "session-snapshots"
+CHATS_PER_PROJECT = 10
+
+# Same rule as tmux-sessionizer: names that describe an environment or a
+# layout slot say nothing on their own, so they take their parent's name too.
+GENERIC = set("prod production dev develop development test tests testing stage staging qa uat "
+              "main master src app data seeds target tmp temp current latest".split())
+
+DIM, BOLD, RESET = "\033[2m", "\033[1m", "\033[0m"
+KIND_COLOR = {"ws": "\033[94m", "chat": "\033[95m", "recent": "\033[93m", "dir": "\033[2m"}
+STATE_ICON = {"blocked": "\033[91m●", "working": "\033[93m●", "done": "\033[92m●", "idle": "\033[2m○"}
+
+
+def herdr(*args):
+    out = subprocess.run(["herdr", *args], capture_output=True, text=True)
+    try:
+        return json.loads(out.stdout)
+    except ValueError:
+        return {}
+
+
+def snapshot():
+    return herdr("api", "snapshot").get("result", {}).get("snapshot", {})
+
+
+def git_root(path):
+    out = subprocess.run(["git", "-C", str(path), "rev-parse", "--show-toplevel"], capture_output=True, text=True)
+    return Path(out.stdout.strip()) if out.returncode == 0 else Path(path)
+
+
+def branch(path):
+    out = subprocess.run(["git", "-C", str(path), "branch", "--show-current"], capture_output=True, text=True)
+    return out.stdout.strip()
+
+
+def project_name(path):
+    path = Path(path)
+    name = path.name
+    if name.lower() in GENERIC:
+        name = f"{path.parent.name}-{name}"
+    return name
+
+
+def short(path):
+    path = str(path)
+    return "~" + path[len(str(HOME)):] if path.startswith(str(HOME)) else path
+
+
+def ago(ts):
+    s = max(0, time.time() - ts)
+    for unit, n in (("d", 86400), ("h", 3600), ("m", 60)):
+        if s >= n:
+            return f"{int(s // n)}{unit} ago"
+    return "now"
+
+
+def line(kind, key, path, text):
+    return f"{kind}\t{key}\t{path}\t{KIND_COLOR[kind]}{kind:<6}{RESET} {text}"
+
+
+# ── history ──────────────────────────────────────────────────────────────────
+
+def history():
+    try:
+        return json.loads(HISTORY.read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def remember(path):
+    h = history()
+    h[str(path)] = time.time()
+    HISTORY.parent.mkdir(parents=True, exist_ok=True)
+    HISTORY.write_text(json.dumps(h, indent=2))
+
+
+# ── chats ────────────────────────────────────────────────────────────────────
+
+def read_head(path, size=65536):
+    with open(path, "rb") as f:
+        return f.read(size).decode("utf-8", "replace").splitlines()
+
+
+def read_tail(path, size=262144):
+    with open(path, "rb") as f:
+        f.seek(0, 2)
+        f.seek(max(0, f.tell() - size))
+        lines = f.read().decode("utf-8", "replace").splitlines()
+    return lines[1:] if len(lines) > 1 else lines  # first one is likely cut
+
+
+def records(lines):
+    for raw in lines:
+        try:
+            yield json.loads(raw)
+        except ValueError:
+            continue
+
+
+def message_text(rec):
+    content = (rec.get("message") or {}).get("content")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return " ".join(b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text")
+    return ""
+
+
+def is_prompt(rec):
+    text = message_text(rec).strip()
+    return rec.get("type") == "user" and not rec.get("isMeta") and text and not text.startswith("<")
+
+
+def container_folders():
+    """dclaude chats live under /workspaces/<name>; map <name> back to the host folder."""
+    out = subprocess.run(["docker", "ps", "-a", "--format", '{{.Label "devcontainer.local_folder"}}'],
+                         capture_output=True, text=True)
+    return {Path(p).name: Path(p) for p in out.stdout.split() if p}
+
+
+def known_names():
+    """Agent names herdr has seen, by session id: live ones plus recent snapshots."""
+    names = {}
+    files = sorted(SNAPSHOTS.glob("*.json"), key=lambda p: p.stat().st_mtime)[-5:]
+    for f in files:
+        try:
+            snap = json.loads(f.read_text())
+        except (OSError, ValueError):
+            continue
+        for ws in snap.get("workspaces", []):
+            for tab in ws.get("tabs", []):
+                for pane in tab.get("panes", {}).values():
+                    sid = (pane.get("agent_session") or {}).get("value")
+                    if sid and pane.get("agent_name"):
+                        names[sid] = pane["agent_name"]
+    return names
+
+
+def chats(snap):
+    folders = None
+    names = known_names()
+    live = {}
+    for agent in snap.get("agents", []):
+        sid = (agent.get("agent_session") or {}).get("value")
+        if sid:
+            live[sid] = agent
+            if agent.get("name"):
+                names[sid] = agent["name"]
+
+    found = []
+    for src, root in (("host", HOST_CHATS), ("dclaude", DCLAUDE_CHATS)):
+        if not root.is_dir():
+            continue
+        for project in root.iterdir():
+            files = [f for f in project.glob("*.jsonl") if not f.name.startswith("agent-")]
+            files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+            for f in files[:CHATS_PER_PROJECT]:
+                head = list(records(read_head(f)))
+                first = next((r for r in head if is_prompt(r)), None)
+                if not first:
+                    continue
+                tail = list(records(read_tail(f)))
+                if not any(r.get("type") == "assistant" for r in head + tail):
+                    continue  # never answered: nothing to resume
+                cwd = Path(first.get("cwd") or "")
+                if src == "dclaude":
+                    if folders is None:
+                        folders = container_folders()
+                    parts = cwd.parts
+                    if len(parts) < 3 or parts[1] != "workspaces" or parts[2] not in folders:
+                        continue
+                    cwd = folders[parts[2]].joinpath(*parts[3:])
+                if not cwd.is_dir():
+                    continue  # e.g. a removed worktree
+                title = next((r["aiTitle"] for r in reversed(tail) if r.get("type") == "ai-title"), None)
+                title = title or message_text(first).strip().splitlines()[0]
+                sid = f.stem
+                found.append({
+                    "src": src, "sid": sid, "cwd": cwd, "mtime": f.stat().st_mtime, "file": f,
+                    "title": title, "name": names.get(sid), "live": live.get(sid),
+                })
+    found.sort(key=lambda c: c["mtime"], reverse=True)
+    return found
+
+
+# ── list ─────────────────────────────────────────────────────────────────────
+
+def ws_root(ws):
+    wt = ws.get("worktree") or {}
+    return Path(wt["checkout_path"]) if wt.get("checkout_path") else None
+
+
+def list_entries():
+    snap = snapshot()
+    open_roots = {}
+    for ws in snap.get("workspaces", []):
+        root = ws_root(ws)
+        agents = [a for a in snap.get("agents", []) if a.get("workspace_id") == ws["workspace_id"]]
+        icon = STATE_ICON.get(ws.get("agent_status"), " ")
+        info = f"{len(agents)} agent{'s' if len(agents) != 1 else ''}" if agents else "no agents"
+        where = f"{branch(root):<14} {DIM}{short(root)}{RESET}" if root else ""
+        print(line("ws", ws["workspace_id"], root or "", f"{BOLD}{ws.get('label', ''):<22}{RESET} {icon}{RESET} {info:<10} {where}"), flush=True)
+        if root:
+            open_roots[str(root)] = ws
+
+    for c in chats(snap):
+        state = "running" if c["live"] else ago(c["mtime"])
+        name = c["name"] or "–"
+        print(line("chat", f"{c['src']}:{c['sid']}", c["cwd"],
+                   f"{project_name(git_root(c['cwd'])):<22} {name:<16} {c['title'][:60]:<60} {DIM}{state} · {c['src']}{RESET}"), flush=True)
+
+    shown = set(open_roots)
+    for path, _ in sorted(history().items(), key=lambda kv: kv[1], reverse=True):
+        if path in shown or not Path(path).is_dir():
+            continue
+        shown.add(path)
+        print(line("recent", path, path, f"{project_name(path):<22} {DIM}{short(path)}{RESET}"), flush=True)
+
+    # Same search as tmux-sessionizer, shallowest first.
+    fd = subprocess.Popen(
+        ["fd", ".", str(HOME), "--type", "d", "-d", "6", "--hidden", "--follow",
+         "-E", ".git", "-E", "node_modules", "-E", ".cache", "-E", "notes/", "-E", "tmp/",
+         "-E", ".password-store", "-E", "queries/"],
+        stdout=subprocess.PIPE, text=True)
+    dirs = sorted((d.strip().rstrip("/") for d in fd.stdout), key=lambda d: (d.count("/"), d))
+    for d in dirs:
+        if d not in shown:
+            print(line("dir", d, d, short(d)), flush=True)
+
+
+# ── preview ──────────────────────────────────────────────────────────────────
+
+def preview(kind, key, path):
+    if kind == "ws":
+        snap = snapshot()
+        ws = next((w for w in snap.get("workspaces", []) if w["workspace_id"] == key), None)
+        if not ws:
+            return
+        print(f"{BOLD}{ws.get('label')}{RESET}  {short(path)}  {branch(path) if path else ''}\n")
+        for tab in snap.get("tabs", []):
+            if tab.get("workspace_id") != key:
+                continue
+            print(f"{BOLD}{tab.get('label')}{RESET}")
+            for pane in snap.get("panes", []):
+                if pane.get("tab_id") != tab["tab_id"]:
+                    continue
+                agent = next((a for a in snap.get("agents", []) if a.get("pane_id") == pane["pane_id"]), None)
+                if agent:
+                    ctx = (pane.get("tokens") or {}).get("ctx", "")
+                    print(f"  {STATE_ICON.get(agent.get('agent_status'), ' ')}{RESET} {agent.get('name') or agent.get('agent')} {DIM}{ctx}{RESET}")
+                    print(f"    {DIM}{pane.get('terminal_title_stripped', '')}{RESET}")
+                else:
+                    print(f"  {DIM}{pane.get('terminal_title_stripped') or 'shell'}{RESET}")
+        return
+
+    if kind == "chat":
+        src, sid = key.split(":", 1)
+        root = HOST_CHATS if src == "host" else DCLAUDE_CHATS
+        f = next(root.glob(f"*/{sid}.jsonl"), None)
+        if not f:
+            return
+        tail = list(records(read_tail(f)))
+        title = next((r["aiTitle"] for r in reversed(tail) if r.get("type") == "ai-title"), "")
+        print(f"{BOLD}{title}{RESET}\n{DIM}{src} · {short(path)} · {sid} · {ago(f.stat().st_mtime)}{RESET}\n")
+        msgs = [r for r in tail if (r.get("type") == "assistant" and message_text(r).strip()) or is_prompt(r)]
+        for r in msgs[-12:]:
+            who = f"\033[95m❯{RESET}" if r["type"] == "user" else f"\033[91m●{RESET}"
+            text = re.sub(r"\s+", " ", message_text(r)).strip()
+            print(f"{who} {text[:400]}\n")
+        return
+
+    p = Path(path)
+    print(f"{BOLD}{project_name(git_root(p))}{RESET}  {short(p)}  {branch(p)}\n")
+    plan = start_plan(git_root(p) if (git_root(p) / ".git").exists() else p)
+    if plan:
+        print(f"{BOLD}starts:{RESET}")
+        for label, cmd in plan:
+            print(f"  {label}: {cmd}")
+    else:
+        print(f"{DIM}no start file: opens a plain workspace{RESET}")
+    print()
+    for entry in sorted(p.iterdir(), key=lambda e: e.name)[:30] if p.is_dir() else []:
+        print(f"  {entry.name}{'/' if entry.is_dir() else ''}")
+
+
+# ── actions ──────────────────────────────────────────────────────────────────
+
+def start_plan(path):
+    path = Path(path)
+    start = path / ".herdr-start"
+    if start.is_file():
+        plan = []
+        for raw in start.read_text().splitlines():
+            raw = raw.strip()
+            if not raw or raw.startswith("#") or ":" not in raw:
+                continue
+            label, cmd = raw.split(":", 1)
+            plan.append((label.strip(), cmd.strip()))
+        return plan
+    tmux = path / ".tmux-start"
+    if tmux.is_file() and tmux.read_text().strip():
+        return [("start", tmux.read_text().strip().splitlines()[0])]
+    if (path / "CLAUDE.md").is_file():
+        return [("agent", "ha")]
+    return []
+
+
+def agent_names():
+    return {a["name"] for a in herdr("agent", "list").get("result", {}).get("agents", []) if a.get("name")}
+
+
+def unique_name(base):
+    taken = agent_names()
+    name, n = base, 1
+    while name in taken:
+        n += 1
+        name = f"{base}-{n}"
+    return name
+
+
+def run_ha(ws, cwd, args):
+    env = {**os.environ, "HERDR_ENV": "1"}
+    subprocess.run(["ha", "--workspace", ws, *args], cwd=cwd, env=env, check=False)
+
+
+def open_workspace(path, start=True):
+    """Focus the workspace for path, or create it; returns its id."""
+    path = Path(path)
+    for ws in snapshot().get("workspaces", []):
+        if ws_root(ws) == path:
+            herdr("workspace", "focus", ws["workspace_id"])
+            remember(path)
+            return ws["workspace_id"]
+
+    labels = {w.get("label") for w in snapshot().get("workspaces", [])}
+    label = base = project_name(path)
+    n = 1
+    while label in labels:
+        n += 1
+        label = f"{base}-{n}"
+    created = herdr("workspace", "create", "--cwd", str(path), "--label", label, "--focus").get("result", {})
+    ws = created["workspace"]["workspace_id"]
+    remember(path)
+    if not start:
+        return ws
+
+    for tab_label, cmd in start_plan(path):
+        argv = shlex.split(cmd)
+        if argv and argv[0] == "ha":
+            args = argv[1:]
+            flags = []
+            while args and args[0] == "--host":
+                flags.append(args.pop(0))
+            name = args.pop(0) if args and not args[0].startswith("-") else label
+            run_ha(ws, path, [*flags, unique_name(name), *args])
+        else:
+            pane = herdr("tab", "create", "--workspace", ws, "--cwd", str(path), "--label", tab_label,
+                         "--no-focus").get("result", {}).get("root_pane", {}).get("pane_id")
+            if pane:
+                herdr("pane", "run", pane, cmd)
+    return ws
+
+
+def resume_chat(key, path):
+    src, sid = key.split(":", 1)
+    live = next((a for a in snapshot().get("agents", []) if (a.get("agent_session") or {}).get("value") == sid), None)
+    if live:
+        herdr("agent", "focus", live["pane_id"])
+        return
+    path = Path(path)
+    root = git_root(path)
+    ws = open_workspace(root, start=False)
+    name = unique_name(known_names().get(sid) or project_name(root))
+    run_ha(ws, path, [*(["--host"] if src == "host" else []), name, "--resume", sid])
+
+
+def act(selection):
+    kind, key, path = selection.split("\t")[:3]
+    if kind == "ws":
+        herdr("workspace", "focus", key)
+    elif kind == "chat":
+        resume_chat(key, path)
+    else:
+        p = Path(path)
+        root = git_root(p)
+        open_workspace(root if (root / ".git").exists() else p)
+
+
+def main():
+    if sys.argv[1:2] == ["--list"]:
+        try:
+            list_entries()
+        except BrokenPipeError:
+            pass
+        return
+    if sys.argv[1:2] == ["--preview"]:
+        preview(*sys.argv[2:5])
+        return
+
+    me = shlex.quote(os.path.abspath(__file__))
+    fzf = subprocess.run(
+        ["fzf", "--ansi", "--delimiter=\t", "--with-nth=4", "--no-sort", "--layout=reverse",
+         "--prompt=project> ", "--info=inline-right",
+         f"--preview={me} --preview {{1}} {{2}} {{3}}", "--preview-window=right,45%,wrap"],
+        stdin=subprocess.Popen([sys.executable, os.path.abspath(__file__), "--list"], stdout=subprocess.PIPE).stdout,
+        stdout=subprocess.PIPE, text=True)
+    if fzf.returncode == 0 and fzf.stdout.strip():
+        act(fzf.stdout.rstrip("\n"))
+
+
+if __name__ == "__main__":
+    main()

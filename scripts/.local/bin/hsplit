@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# hsplit: split the active herdr pane to the right and, when its tab holds an
+# agent, couple the new shell to it with hcouple — so the user's commands
+# there (sudo and the like) reach that agent. Bound to prefix+v in herdr's
+# config.toml; the plain split moved to prefix+shift+v.
+
+set -euo pipefail
+
+src=${HERDR_ACTIVE_PANE_ID:?hsplit: no active pane}
+tab=$(herdr pane get "$src" | jq -r .result.pane.tab_id)
+pane=$(herdr pane split "$src" --direction right --focus | jq -r .result.pane.pane_id)
+
+if herdr agent list | jq -e --arg t "$tab" 'any(.result.agents[]; .tab_id == $t)' >/dev/null; then
+    herdr pane run "$pane" hcouple >/dev/null
+fi

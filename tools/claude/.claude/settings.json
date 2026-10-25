@@ -8,7 +8,11 @@
       "Bash(gh auth status)",
       "Bash(gh repo view*)"
     ],
-    "defaultMode": "auto"
+    "defaultMode": "auto",
+    "ask": [
+      "Bash(herdr pane read *)",
+      "Bash(herdr agent read *)"
+    ]
   },
   "hooks": {
     "Notification": [
@@ -63,6 +67,17 @@
             "type": "command",
             "command": "python3 \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/herdr-worktree.py\" remove",
             "timeout": 60
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/hcouple-hook.sh\"",
+            "timeout": 5
           }
         ]
       }

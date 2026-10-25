@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# hcouple: let an agent see what the user runs in a herdr pane, for what agents
+# can't run in their own Bash tool, like sudo with a password prompt.
+#
+# The user types the zsh function of the same name (.zshrc):
+#     hcouple          couple this pane to the agent in the same tab
+#     hcouple NAME     ... to agent NAME
+#     hcouple off      stop
+# which calls this script:
+#     hcouple pick [NAME]                 print "DIR SID NAME" for the agent
+#     hcouple send DIR SID AGENT STATUS COMMAND  log one finished command
+#
+# Each finished command, with its exit status and output, is appended to
+# DIR/hcouple/SID.log, where DIR is the Claude config dir the agent runs with —
+# ~/.claude for host agents, dclaude's state dir for container ones, which the
+# container mounts as its config dir. The agent's UserPromptSubmit hook
+# (hooks/hcouple-hook.sh) hands the log over with the agent's next prompt.
+# To get it a prompt, a short note is sent once the agent is idle — right away,
+# or by a detached waiter while it works — unless a prompt has taken the log
+# over by then. Only an idle agent gets typed into, so it rarely meets the
+# user typing there.
+#
+# The output comes from herdr's copy of the pane, read right after the command
+# ends: everything after the last line showing the typed command after a
+# prompt symbol, cut to its last 150 lines.
+
+set -euo pipefail
+
+[ "${HERDR_ENV:-}" = 1 ] && [ -n "${HERDR_PANE_ID:-}" ] || { echo "hcouple: not inside a herdr pane" >&2; exit 1; }
+
+dclaude_state=${XDG_DATA_HOME:-$HOME/.local/share}/dclaude/claude
+
+this_pane() {
+    herdr pane get "$HERDR_PANE_ID" | jq -r ".result.pane.$1"
+}
+
+pick() {
+    local agents agent sid
+    agents=$(herdr agent list)
+    if [ -n "${1:-}" ]; then
+        agent=$(jq -c --arg n "$1" 'first(.result.agents[] | select(.name == $n or .pane_id == $n)) // empty' <<<"$agents")
+        [ -n "$agent" ] || { echo "hcouple: no agent $1" >&2; exit 1; }
+    else
+        agent=$(jq -c --arg t "$(this_pane tab_id)" --arg p "$(this_pane pane_id)" \
+            '[.result.agents[] | select(.tab_id == $t and .pane_id != $p)] | if length == 1 then .[0] else empty end' <<<"$agents")
+        [ -n "$agent" ] || { echo "hcouple: not exactly one agent in this tab; name one: hcouple NAME" >&2; exit 1; }
+    fi
+    sid=$(jq -r '.agent_session.value // empty' <<<"$agent")
+    [ -n "$sid" ] || { echo "hcouple: herdr has no session for that agent yet" >&2; exit 1; }
+    # A container agent's transcripts are in dclaude's state; anything else is a host agent.
+    if compgen -G "$dclaude_state/projects/*/$sid.jsonl" >/dev/null; then
+        printf '%s %s %s\n' "$dclaude_state" "$sid" "$(jq -r '.name // .pane_id' <<<"$agent")"
+    else
+        printf '%s %s %s\n' "$HOME/.claude" "$sid" "$(jq -r '.name // .pane_id' <<<"$agent")"
+    fi
+}
+
+send() {
+    local dir=$1 sid=$2 agent=$3 status=$4 command=$5 pane first output
+    pane=$(this_pane pane_id)
+    first=$(printf '%s\n' "$command" | sed -n '/[^[:space:]]/{s/^[[:space:]]*//;s/[[:space:]]*$//;p;q}')
+    output=$(herdr pane read "$pane" --source recent-unwrapped --lines 2000 | awk -v c="$first" '
+        { line[NR] = $0; s = $0; sub(/[ \t]+$/, "", s)
+          if (c == "" || length(s) < length(c) || substr(s, length(s) - length(c) + 1) != c) next
+          # The typed line is the prompt symbol, then the command; without
+          # that check, output that merely ends like a short command
+          # ("tools" for ls) would pass for it.
+          p = substr(s, 1, length(s) - length(c)); sub(/[ \t]+$/, "", p)
+          if (p ~ /(❯|❮|[$#%>])$/) start = NR }
+        END { if (start) for (i = start + 1; i <= NR; i++) print line[i] }' |
+        sed -e :a -e '/^[[:space:]]*$/{$d;N;ba' -e '}' | tail -n 150)
+    mkdir -p "$dir/hcouple"
+    {
+        printf '$ %s   (exit %s, %s)\n' "$command" "$status" "$(date +%T)"
+        printf '%s\n\n' "${output:-(no output)}"
+    } >>"$dir/hcouple/$sid.log"
+
+    [ -n "$agent" ] || return 0
+    setsid -f bash -c '
+        herdr agent wait "$1" --until idle --until done --timeout 1800000 >/dev/null 2>&1 || exit 0
+        [ -s "$2" ] || exit 0
+        herdr agent prompt "$1" "[hcouple] New output from my coupled shell pane (attached)." >/dev/null 2>&1
+    ' sh "$agent" "$dir/hcouple/$sid.log" </dev/null >/dev/null 2>&1
+}
+
+case ${1:-} in
+    pick) shift; pick "$@" ;;
+    # Four args: a shell coupled before the agent was passed along; log only.
+    send) shift; [ $# -eq 4 ] && set -- "$1" "$2" "" "$3" "$4"; [ $# -eq 5 ] || exit 2; send "$@" ;;
+    *) sed -n '5,8p' "$0" | sed 's/^#//' >&2; exit 2 ;;
+esac

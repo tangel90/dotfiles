@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# hlast: focus the herdr agent that most needs you. Bound to prefix+o in
+# hlast: focus the herdr agent that most needs you. Bound to prefix+a in
 # herdr's config.toml, replacing open_notification_target, which only works
 # while the toast is still on screen.
 #

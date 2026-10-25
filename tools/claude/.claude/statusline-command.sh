@@ -94,15 +94,16 @@ if [ -n "$limits" ]; then
     echo "$limits" >"$cache.$$" && mv -f "$cache.$$" "$cache"
 fi
 
-# Report context use to herdr's agent sidebar ($ctx in ui.sidebar.agents),
-# only when it changes: the status line refreshes far more often than that.
-if [ -n "$ctx_used" ] && [ "${HERDR_ENV:-}" = 1 ] && [ -n "${HERDR_PANE_ID:-}" ] && command -v herdr >/dev/null; then
-    ctx_int=$(printf "%.0f" "$ctx_used")
-    ctx_val="$ctx_int%"
-    ctx_last="${XDG_RUNTIME_DIR:-/tmp}/claude-ctx-${HERDR_PANE_ID//[^A-Za-z0-9]/_}"
-    if [ "$(cat "$ctx_last" 2>/dev/null)" != "$ctx_val" ]; then
-        herdr pane report-metadata "$HERDR_PANE_ID" --source claude-statusline --token "ctx=$ctx_val" >/dev/null 2>&1 \
-            && echo "$ctx_val" >"$ctx_last"
+# Report context use and model to herdr's agent sidebar ($ctx and $model in
+# ui.sidebar.agents), only when they change: the status line refreshes far
+# more often than that.
+if [ -n "$ctx_used$model" ] && [ "${HERDR_ENV:-}" = 1 ] && [ -n "${HERDR_PANE_ID:-}" ] && command -v herdr >/dev/null; then
+    ctx_val=${ctx_used:+$(printf "%.0f" "$ctx_used")%}
+    meta_last="${XDG_RUNTIME_DIR:-/tmp}/claude-ctx-${HERDR_PANE_ID//[^A-Za-z0-9]/_}"
+    if [ "$(cat "$meta_last" 2>/dev/null)" != "$ctx_val|$model" ]; then
+        herdr pane report-metadata "$HERDR_PANE_ID" --source claude-statusline \
+            --token "ctx=$ctx_val" --token "model=$model" >/dev/null 2>&1 \
+            && echo "$ctx_val|$model" >"$meta_last"
     fi
 fi
 
