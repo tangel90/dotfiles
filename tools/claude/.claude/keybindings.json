@@ -12,13 +12,6 @@
       }
     },
     {
-      "context": "Autocomplete",
-      "bindings": {
-        "k": "autocomplete:previous",
-        "j": "autocomplete:next"
-      }
-    },
-    {
       "context": "Confirmation",
       "bindings": {
         "k": "confirm:previous",
