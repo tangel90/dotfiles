@@ -32,6 +32,17 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "^(startup|resume|clear|compact|fork)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/dclaude-resume.sh\"",
+            "timeout": 10,
+            "async": true
+          }
+        ]
       }
     ],
     "WorktreeCreate": [

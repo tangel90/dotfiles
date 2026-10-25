@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # hfork [NAME]: fork the Claude conversation in this herdr pane into a new
-# tab (via ha). Run it from inside Claude as `!hfork`.
+# tab (via ha --host, since this is a host session). Run it from inside Claude
+# as `!hfork`.
 #
 # Claude's own /fork starts the fork as a background session with no pane, so
 # herdr doesn't see it until attached — and an attached pane records the
@@ -24,4 +25,4 @@ fi
 sid=$(herdr pane get "$HERDR_PANE_ID" | jq -r '.result.pane.agent_session.value // empty')
 [ -n "$sid" ] || { echo "hfork: herdr has no claude session recorded for this pane" >&2; exit 1; }
 
-exec ha "${1:-fork-${sid:0:8}}" --resume "$sid" --fork-session
+exec ha --host "${1:-fork-${sid:0:8}}" --resume "$sid" --fork-session

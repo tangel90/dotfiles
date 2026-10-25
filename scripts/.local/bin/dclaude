@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# dclaude [--rebuild] [claude args...]: run Claude Code inside this project's
-# devcontainer, still reporting to the herdr pane it was started from.
+# dclaude [--rebuild] [--new] [claude args...]: run Claude Code inside this
+# project's devcontainer, still reporting to the herdr pane it was started from.
+# Without claude args it continues the project's latest container session, if
+# there is one; --new starts fresh instead.
 #
 # herdr learns about a Claude session through the SessionStart hook in
 # ~/.claude (installed by `herdr integration install claude`), which writes to
@@ -29,10 +31,15 @@
 set -euo pipefail
 
 up_args=()
-if [ "${1:-}" = --rebuild ]; then
-    up_args+=(--remove-existing-container)
+new=
+while [ $# -gt 0 ]; do
+    case $1 in
+        --rebuild) up_args+=(--remove-existing-container) ;;
+        --new) new=1 ;;
+        *) break ;;
+    esac
     shift
-fi
+done
 
 ws=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 
@@ -113,6 +120,18 @@ if [ -f "$HOME/.claude/.credentials.json" ]; then
 fi
 
 devcontainer up "${dc_args[@]}" "${up_args[@]}" "${mounts[@]}" >/dev/null
+
+# Continue the latest session by default, like `claude -c`, but only when there
+# is one: -c with nothing to continue exits instead of starting fresh. The
+# container's sessions live in its own state, under the in-container cwd
+# (/workspaces/<project>) with every non-alphanumeric character turned into -.
+# A project config with a custom workspaceFolder never matches, so starts fresh.
+if [ $# -eq 0 ] && [ -z "$new" ]; then
+    project=$(printf '/workspaces/%s' "$(basename "$ws")" | sed 's/[^A-Za-z0-9]/-/g')
+    if compgen -G "$state/projects/$project/*.jsonl" >/dev/null; then
+        set -- --continue
+    fi
+fi
 
 # claude keeps its global state (account, theme, onboarding, trusted folders)
 # in $CLAUDE_CONFIG_DIR/.claude.json, not ~/.claude.json — without this it
