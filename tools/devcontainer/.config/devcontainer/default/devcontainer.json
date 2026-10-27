@@ -24,6 +24,8 @@
     }
   },
   // The host statusline script parses claude's JSON with jq; Claude's sandbox
-  // needs bubblewrap and socat.
-  "postCreateCommand": "command -v jq >/dev/null && command -v bwrap >/dev/null && command -v socat >/dev/null || (sudo apt-get update && sudo apt-get install -y jq bubblewrap socat)"
+  // needs bubblewrap and socat. pre-commit and detect-secrets for repos with
+  // hooks, installed to /usr/local/bin: on PATH in every shell, sandbox
+  // included, and the fallback of host-installed .git/hooks/pre-commit.
+  "postCreateCommand": "(command -v jq && command -v bwrap && command -v socat && command -v pipx) >/dev/null || (sudo apt-get update && sudo apt-get install -y jq bubblewrap socat pipx); for t in pre-commit detect-secrets; do command -v $t >/dev/null || sudo PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install $t; done"
 }

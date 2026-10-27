@@ -60,6 +60,12 @@ fi
 (( $# )) && set -- -- "$@"
 for _ in {1..20}; do
     out=$(herdr agent start "$name" --kind claude --pane "$pane" "$@" 2>&1) && exit 0
+    # An attempt can start and name the agent yet still exit non-zero; the
+    # retry then hits agent_name_taken on our own pane.
+    if [[ $out == *agent_name_taken* ]] &&
+        herdr agent list | jq -e --arg p "$pane" --arg n "$name" 'any(.result.agents[]; .pane_id == $p and .name == $n)' >/dev/null; then
+        exit 0
+    fi
     sleep 0.5
 done
 echo "ha: $out" >&2
