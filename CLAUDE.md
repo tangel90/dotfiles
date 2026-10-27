@@ -98,8 +98,3 @@ On a new machine: clone, then run `scripts/.local/bin/setup-agents`. It checks p
 ## Install / bootstrap
 
 `installer.sh` is **Arch/pacman-only** despite the README also documenting Debian/Ubuntu/WSL recipes. On non-Arch systems follow the README sections instead of running the script. The agent setup has its own distro-independent script, `setup-agents` (above).
-
-## Git Workflow
-
-- Keep git commit messages a concise one-liner
-- don't sign commit messages
