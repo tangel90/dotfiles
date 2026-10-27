@@ -30,8 +30,11 @@ while [ $# -gt 0 ]; do
 done
 (( $# )) || { echo "usage: ha [--host] [--workspace ID] NAME [claude args...]" >&2; exit 2; }
 
-name=$1
+# herdr's rule for agent names; lowercased here, and checked before a tab is
+# made for it, so a bad name doesn't leave an empty tab behind.
+name=${1,,}
 shift
+[[ $name =~ ^[a-z][a-z0-9_-]{0,31}$ ]] || { echo "ha: agent name must start with a letter and contain only letters, digits, '-' or '_' (1-32 characters)" >&2; exit 2; }
 
 # The caller's workspace, not whichever one the UI has focused. Asked via the
 # pane: HERDR_WORKSPACE_ID goes stale once the pane moves to another workspace.

@@ -27,6 +27,7 @@ herdr forgets closed workspaces, so hp keeps its own history of opened
 projects in ~/.local/state/hp/history.json.
 """
 
+import functools
 import json
 import os
 import re
@@ -42,6 +43,8 @@ DCLAUDE_CHATS = Path(os.environ.get("XDG_DATA_HOME", HOME / ".local/share")) / "
 HISTORY = Path(os.environ.get("XDG_STATE_HOME", HOME / ".local/state")) / "hp" / "history.json"
 SNAPSHOTS = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "herdr" / "session-snapshots"
 CHATS_PER_PROJECT = 10
+LIST_PROMPT, LIST_HEADER = "project> ", "ctrl-g: search chat prompts · ctrl-/: preview size"
+GREP_PROMPT, GREP_HEADER = "prompts> ", "ctrl-g: back to projects"
 
 # Same rule as tmux-sessionizer: names that describe an environment or a
 # layout slot say nothing on their own, so they take their parent's name too.
@@ -49,6 +52,7 @@ GENERIC = set("prod production dev develop development test tests testing stage 
               "main master src app data seeds target tmp temp current latest".split())
 
 DIM, BOLD, RESET = "\033[2m", "\033[1m", "\033[0m"
+HIT = "\033[1;93m"
 KIND_COLOR = {"ws": "\033[94m", "chat": "\033[95m", "recent": "\033[93m", "dir": "\033[2m"}
 STATE_ICON = {"blocked": "\033[91m●", "working": "\033[93m●", "done": "\033[92m●", "idle": "\033[2m○"}
 
@@ -149,10 +153,20 @@ def message_text(rec):
 
 
 def is_prompt(rec):
+    """A message the user typed. Claude wraps slash commands, bash input and
+    reminders in tags, so a leading tag means not typed, except a paste."""
     text = message_text(rec).strip()
-    return rec.get("type") == "user" and not rec.get("isMeta") and text and not text.startswith("<")
+    typed = not text.startswith("<") or text.startswith("<pasted_content")
+    return rec.get("type") == "user" and not rec.get("isMeta") and text and typed
 
 
+def plain(text):
+    """First line of text with tags stripped, e.g. a paste's wrapper."""
+    lines = re.sub(r"</?[a-z_-]+[^>]*>", "", text).strip().splitlines()
+    return lines[0].strip() if lines else ""
+
+
+@functools.cache
 def container_folders():
     """dclaude chats live under /workspaces/<name>; map <name> back to the host folder."""
     out = subprocess.run(["docker", "ps", "-a", "--format", '{{.Label "devcontainer.local_folder"}}'],
@@ -178,8 +192,12 @@ def known_names():
     return names
 
 
-def chats(snap):
-    folders = None
+def chat_roots():
+    return [(src, root) for src, root in (("host", HOST_CHATS), ("dclaude", DCLAUDE_CHATS)) if root.is_dir()]
+
+
+def agent_index(snap):
+    """Agent names and live agents, by session id."""
     names = known_names()
     live = {}
     for agent in snap.get("agents", []):
@@ -188,41 +206,104 @@ def chats(snap):
             live[sid] = agent
             if agent.get("name"):
                 names[sid] = agent["name"]
+    return names, live
 
+
+def chat_entry(src, f, names, live):
+    """One chat file as a list entry, or None when there is nothing to resume."""
+    head = list(records(read_head(f)))
+    first = next((r for r in head if is_prompt(r)), None)
+    if not first:
+        return None
+    tail = list(records(read_tail(f)))
+    if not any(r.get("type") == "assistant" for r in head + tail):
+        return None  # never answered
+    cwd = Path(first.get("cwd") or "")
+    if src == "dclaude":
+        folders = container_folders()
+        parts = cwd.parts
+        if len(parts) < 3 or parts[1] != "workspaces" or parts[2] not in folders:
+            return None
+        cwd = folders[parts[2]].joinpath(*parts[3:])
+    if not cwd.is_dir():
+        return None  # e.g. a removed worktree
+    title = next((r["aiTitle"] for r in reversed(tail) if r.get("type") == "ai-title"), None)
+    title = title or plain(message_text(first))
+    sid = f.stem
+    return {
+        "src": src, "sid": sid, "cwd": cwd, "mtime": f.stat().st_mtime, "file": f,
+        "title": title, "name": names.get(sid), "live": live.get(sid),
+    }
+
+
+def chats(snap):
+    names, live = agent_index(snap)
     found = []
-    for src, root in (("host", HOST_CHATS), ("dclaude", DCLAUDE_CHATS)):
-        if not root.is_dir():
-            continue
+    for src, root in chat_roots():
         for project in root.iterdir():
             files = [f for f in project.glob("*.jsonl") if not f.name.startswith("agent-")]
             files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
             for f in files[:CHATS_PER_PROJECT]:
-                head = list(records(read_head(f)))
-                first = next((r for r in head if is_prompt(r)), None)
-                if not first:
-                    continue
-                tail = list(records(read_tail(f)))
-                if not any(r.get("type") == "assistant" for r in head + tail):
-                    continue  # never answered: nothing to resume
-                cwd = Path(first.get("cwd") or "")
-                if src == "dclaude":
-                    if folders is None:
-                        folders = container_folders()
-                    parts = cwd.parts
-                    if len(parts) < 3 or parts[1] != "workspaces" or parts[2] not in folders:
-                        continue
-                    cwd = folders[parts[2]].joinpath(*parts[3:])
-                if not cwd.is_dir():
-                    continue  # e.g. a removed worktree
-                title = next((r["aiTitle"] for r in reversed(tail) if r.get("type") == "ai-title"), None)
-                title = title or message_text(first).strip().splitlines()[0]
-                sid = f.stem
-                found.append({
-                    "src": src, "sid": sid, "cwd": cwd, "mtime": f.stat().st_mtime, "file": f,
-                    "title": title, "name": names.get(sid), "live": live.get(sid),
-                })
+                c = chat_entry(src, f, names, live)
+                if c:
+                    found.append(c)
     found.sort(key=lambda c: c["mtime"], reverse=True)
     return found
+
+
+def matching_prompts(f, query):
+    q = query.casefold()
+    with open(f, encoding="utf-8", errors="replace") as fh:
+        return [r for r in records(fh) if is_prompt(r) and q in message_text(r).casefold()]
+
+
+def snippet(text, query, width=70):
+    """text around the first hit of query, whitespace collapsed."""
+    text = re.sub(r"\s+", " ", text).strip()
+    i = max(0, text.casefold().find(query.casefold()) - 20)
+    return ("…" if i else "") + text[i:i + width]
+
+
+def grep_chats(query):
+    """Every chat with a prompt containing query (all of them, not just the newest per project)."""
+    roots = chat_roots()
+    if not query.strip() or not roots:
+        return []
+    out = subprocess.run(["rg", "-l", "-F", "-i", "--glob", "*.jsonl", "--glob", "!agent-*", "--", query,
+                          *(str(r) for _, r in roots)], capture_output=True, text=True)
+    names, live = agent_index(snapshot())
+    found = []
+    # A session id (or its start) finds that chat by file name, before any
+    # prompt that happens to contain the string.
+    if re.fullmatch(r"[0-9a-f-]{4,36}", query.strip().lower()):
+        for src, root in roots:
+            for f in root.glob(f"*/{query.strip().lower()}*.jsonl"):
+                c = chat_entry(src, f, names, live)
+                if c:
+                    c["hit"] = f"session {c['sid']}"
+                    found.append(c)
+    by_id = {c["sid"] for c in found}
+    for path in out.stdout.splitlines():
+        if Path(path).stem in by_id:
+            continue
+        f = Path(path)
+        src = next(s for s, r in roots if f.is_relative_to(r))
+        hits = matching_prompts(f, query)
+        if not hits:
+            continue  # matched outside the prompts
+        c = chat_entry(src, f, names, live)
+        if c:
+            c["hit"] = snippet(message_text(hits[-1]), query)
+            found.append(c)
+    found.sort(key=lambda c: c["mtime"], reverse=True)
+    return found
+
+
+def chat_line(c, text):
+    state = "running" if c["live"] else ago(c["mtime"])
+    name = c["name"] or "–"
+    return line("chat", f"{c['src']}:{c['sid']}", c["cwd"],
+                f"{project_name(git_root(c['cwd'])):<22} {name:<16} {text[:60]:<60} {DIM}{state} · {c['src']} · {c['sid'][:8]}{RESET}")
 
 
 # ── list ─────────────────────────────────────────────────────────────────────
@@ -246,10 +327,7 @@ def list_entries():
             open_roots[str(root)] = ws
 
     for c in chats(snap):
-        state = "running" if c["live"] else ago(c["mtime"])
-        name = c["name"] or "–"
-        print(line("chat", f"{c['src']}:{c['sid']}", c["cwd"],
-                   f"{project_name(git_root(c['cwd'])):<22} {name:<16} {c['title'][:60]:<60} {DIM}{state} · {c['src']}{RESET}"), flush=True)
+        print(chat_line(c, c["title"]), flush=True)
 
     shown = set(open_roots)
     for path, _ in sorted(history().items(), key=lambda kv: kv[1], reverse=True):
@@ -304,6 +382,13 @@ def preview(kind, key, path):
         tail = list(records(read_tail(f)))
         title = next((r["aiTitle"] for r in reversed(tail) if r.get("type") == "ai-title"), "")
         print(f"{BOLD}{title}{RESET}\n{DIM}{src} · {short(path)} · {sid} · {ago(f.stat().st_mtime)}{RESET}\n")
+        query = os.environ.get("FZF_QUERY", "")
+        if os.environ.get("FZF_PROMPT") == GREP_PROMPT and query.strip():
+            pattern = re.compile(re.escape(query), re.IGNORECASE)
+            for r in matching_prompts(f, query)[-12:]:
+                text = re.sub(r"\s+", " ", message_text(r)).strip()
+                print(f"\033[95m❯{RESET} {pattern.sub(lambda m: HIT + m[0] + RESET, text[:600])}\n")
+            return
         msgs = [r for r in tail if (r.get("type") == "assistant" and message_text(r).strip()) or is_prompt(r)]
         for r in msgs[-12:]:
             who = f"\033[95m❯{RESET}" if r["type"] == "user" else f"\033[91m●{RESET}"
@@ -374,12 +459,19 @@ def open_workspace(path, start=True):
             remember(path)
             return ws["workspace_id"]
 
-    labels = {w.get("label") for w in snapshot().get("workspaces", [])}
-    label = base = project_name(path)
-    n = 1
-    while label in labels:
-        n += 1
-        label = f"{base}-{n}"
+    # A workspace already named after the project (e.g. opened outside hp, so
+    # herdr knows no root for it) gets the folder as a new tab instead of a
+    # second workspace "<name>-2". Its start file has run there already.
+    label = project_name(path)
+    same = next((w for w in snapshot().get("workspaces", []) if w.get("label") == label), None)
+    if same:
+        ws = same["workspace_id"]
+        herdr("workspace", "focus", ws)
+        remember(path)
+        if start:
+            herdr("tab", "create", "--workspace", ws, "--cwd", str(path), "--label", path.name, "--focus")
+        return ws
+
     created = herdr("workspace", "create", "--cwd", str(path), "--label", label, "--focus").get("result", {})
     ws = created["workspace"]["workspace_id"]
     remember(path)
@@ -403,11 +495,44 @@ def open_workspace(path, start=True):
     return ws
 
 
+def claude_bg(*args):
+    """claude's background-session commands; .zshrc disables them in herdr panes."""
+    env = {k: v for k, v in os.environ.items() if k != "CLAUDE_CODE_DISABLE_AGENT_VIEW"}
+    return subprocess.run(["claude", *args], capture_output=True, text=True, env=env)
+
+
+def take_over_background(sid):
+    """Stop the background session holding sid, so it can be resumed in a herdr
+    pane; claude refuses --resume while it runs. False if it is busy."""
+    try:
+        sessions = json.loads(claude_bg("agents", "--json").stdout)
+    except ValueError:
+        return True
+    bg = next((s for s in sessions if s.get("kind") == "background" and s.get("sessionId") == sid), None)
+    if not bg:
+        return True
+    if bg.get("status") != "idle":
+        return False
+    claude_bg("stop", bg["id"])
+    for _ in range(20):
+        try:
+            if not any(s.get("sessionId") == sid for s in json.loads(claude_bg("agents", "--json").stdout)):
+                break
+        except ValueError:
+            break
+        time.sleep(0.25)
+    return True
+
+
 def resume_chat(key, path):
     src, sid = key.split(":", 1)
     live = next((a for a in snapshot().get("agents", []) if (a.get("agent_session") or {}).get("value") == sid), None)
     if live:
         herdr("agent", "focus", live["pane_id"])
+        return
+    if src == "host" and not take_over_background(sid):
+        print(f"hp: {sid[:8]} is busy in the background; let it finish or `claude attach` it outside herdr", file=sys.stderr)
+        input("press enter")
         return
     path = Path(path)
     root = git_root(path)
@@ -435,15 +560,30 @@ def main():
         except BrokenPipeError:
             pass
         return
+    if sys.argv[1:2] == ["--grep"]:
+        try:
+            for c in grep_chats(" ".join(sys.argv[2:])):
+                print(chat_line(c, c["hit"]), flush=True)
+        except BrokenPipeError:
+            pass
+        return
     if sys.argv[1:2] == ["--preview"]:
         preview(*sys.argv[2:5])
         return
 
+    # ctrl-g toggles prompt search: fzf stops filtering and reruns hp --grep
+    # with the query on every change instead.
     me = shlex.quote(os.path.abspath(__file__))
+    in_grep = f"[[ $FZF_PROMPT == {shlex.quote(GREP_PROMPT)} ]]"
+    to_grep = f"change-prompt({GREP_PROMPT})+change-header({GREP_HEADER})+disable-search+reload({me} --grep {{q}})"
+    to_list = f"change-prompt({LIST_PROMPT})+change-header({LIST_HEADER})+enable-search+reload({me} --list)"
     fzf = subprocess.run(
-        ["fzf", "--ansi", "--delimiter=\t", "--with-nth=4", "--no-sort", "--layout=reverse",
-         "--prompt=project> ", "--info=inline-right",
-         f"--preview={me} --preview {{1}} {{2}} {{3}}", "--preview-window=right,45%,wrap"],
+        ["fzf", "--height=100%", "--ansi", "--delimiter=\t", "--with-nth=4", "--no-sort", "--layout=reverse",
+         f"--prompt={LIST_PROMPT}", f"--header={LIST_HEADER}", "--info=inline-right",
+         f"--bind=ctrl-g:transform:{in_grep} && echo {shlex.quote(to_list)} || echo {shlex.quote(to_grep)}",
+         f"--bind=change:transform:{in_grep} && echo {shlex.quote(f'reload({me} --grep {{q}})')}",
+         f"--preview={me} --preview {{1}} {{2}} {{3}}", "--preview-window=down,35%,wrap",
+         "--bind=ctrl-/:change-preview-window(down,70%,wrap|hidden|down,35%,wrap)"],
         stdin=subprocess.Popen([sys.executable, os.path.abspath(__file__), "--list"], stdout=subprocess.PIPE).stdout,
         stdout=subprocess.PIPE, text=True)
     if fzf.returncode == 0 and fzf.stdout.strip():

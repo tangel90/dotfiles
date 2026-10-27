@@ -6,13 +6,16 @@
       "Bash(gh label *)",
       "Bash(gh api repos/einezahl/prosperityv4/*)",
       "Bash(gh auth status)",
-      "Bash(gh repo view*)"
+      "Bash(gh repo view*)",
+      "Bash(herdr agent list*)",
+      "Bash(herdr agent prompt *)",
+      "Bash(herdr agent start *)",
+      "Bash(herdr wait *)",
+      "Bash(herdr tab list*)",
+      "Bash(herdr workspace list*)"
     ],
-    "defaultMode": "auto",
-    "ask": [
-      "Bash(herdr pane read *)",
-      "Bash(herdr agent read *)"
-    ]
+    "ask": ["Bash(herdr pane read *)", "Bash(herdr agent read *)"],
+    "defaultMode": "auto"
   },
   "hooks": {
     "Notification": [
@@ -32,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash '/home/corni/.claude/hooks/herdr-agent-state.sh' session",
+            "command": "[ ! -f '/home/corni/.claude/hooks/herdr-agent-state.sh' ] || bash '/home/corni/.claude/hooks/herdr-agent-state.sh' session",
             "timeout": 10
           }
         ]
@@ -45,6 +48,16 @@
             "command": "sh \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/dclaude-resume.sh\"",
             "timeout": 10,
             "async": true
+          }
+        ]
+      },
+      {
+        "matcher": "^(startup|resume|clear|compact|fork)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ ! -f '/home/thomas/.claude/hooks/herdr-agent-state.sh' ] || bash '/home/thomas/.claude/hooks/herdr-agent-state.sh' session",
+            "timeout": 10
           }
         ]
       }
@@ -87,6 +100,15 @@
     "type": "command",
     "command": "bash \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/statusline-command.sh\""
   },
+  "sandbox": {
+    "network": {
+      "allowUnixSockets": [
+        "/home/thomas/.config/herdr/herdr.sock",
+        "/home/corni/.config/herdr/herdr.sock"
+      ]
+    },
+    "excludedCommands": ["herdr *", "rds *", "bin/rds *"]
+  },
   "effortLevel": "medium",
   "voice": {
     "enabled": true,
@@ -95,5 +117,38 @@
   "theme": "custom:rose-pine",
   "editorMode": "vim",
   "preferredNotifChannel": "kitty",
+  "autoMode": {
+    "soft_deny": [
+      "$defaults",
+      "Bash(snow sql:* --role *ADMIN*)",
+      "Bash(dbt run-operation:*)"
+    ],
+    "environment": [
+      "### Org-wide",
+      "**Organization**: None configured",
+      "**Cloud provider(s)**: Snowflake (used via `snow` CLI / dbt-snowflake; infrastructure-as-code in sibling `../snowflake-iac` repo)",
+      "**Repository visibility**: Not queryable via gh (origin remote is a self-hosted GitLab host, not a plain owner/repo GitHub shape). Remotes point to internal hosts (`con.trianel.com`, `gitlab-trianel.gitlabhosting.com`) — treat as private/internal, not public",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: `op` (1Password CLI) referenced as a secrets-manager marker in this repo; `.secrets.baseline` and `.env` are gitignored",
+      "**Default / protected branches**: Default branch `main`; feature work branches off `cpm/dev` per CLAUDE.md git workflow; no gh ruleset/branch-protection data available (not queryable here)",
+      "**CI/CD deploy targets**: None configured",
+      "**Network posture**: None configured",
+      "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine with open internet",
+      "**Source control**: This repo (`snowflake-reporting` / `report-data-store-dbt`) and its remotes — `origin` (gitlab-trianel.gitlabhosting.com:eit-reporting/report-data-store-dbt.git) and `bitbucket` (con.trianel.com/drp/snowflake_dbt.git) — no additional orgs configured",
+      "**Trusted internal domains**: con.trianel.com, gitlab-trianel.gitlabhosting.com (this repo's own remote hosts)",
+      "**Trusted cloud buckets**: None configured",
+      "**Key internal services**: Snowflake account used via `snow` CLI (`dev` connection/profile) and dbt; Postgres `smorrebrod` service (`PGSERVICE=smorrebrod-local`) used by `scripts/refresh_from_postgres.sh`",
+      "**Internal package registry**: None configured",
+      "**Sensitive data locations & audiences**: `samples/*.ndjson` (PII-bearing POS/time-series exports), `scripts/scan_pii.py`, `.secrets.baseline`, `.env` — share only with audiences cleared at the named+specifics bar",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: Snowflake namespaces/databases containing `PRD`/`PROD` as a whole segment (e.g. a future `PRD_*` database), matching the `prod`/`production` whole-word rule; `tst`/`dev` targets are not sensitive by this rule alone",
+      "**Protected deployment namespaces / environments**: None configured beyond the Sensitive remote targets heuristic — `./deploy.sh <env> ...` in `../snowflake-iac` targeting a `prod`/`production`-named environment would qualify",
+      "**Protected IaC scopes**: `../snowflake-iac` role/warehouse grants (`sql/10_role/`, `sql/40_grants/`) and any `prod`/`production`-segment environment deploy there",
+      "### User-specific",
+      "**Primary use of Claude Code**: software development (dbt + Snowflake DataVault 2.0 reporting pipeline)",
+      "**Trusted repo**: This repo (snowflake-reporting / report-data-store-dbt) and its configured remotes (origin on gitlab-trianel.gitlabhosting.com, bitbucket on con.trianel.com) — treat as private/internal",
+      "**Org-specific CLIs**: `dbt`, `snow` (Snowflake CLI), `sqlfluff`"
+    ]
+  },
   "voiceEnabled": true
 }

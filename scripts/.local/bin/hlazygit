@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # hlazygit: jump to the lazygit tab for *this* repo if one is already open,
-# otherwise start one in a new tab (labelled lazygit). Bound to prefix+alt+g
+# otherwise start one in a new tab (labelled lazygit). Unbound now that prefix+i opens a lazygit popup
 # in herdr's config.toml; the herdr port of tmux-lazygit.
 #
 # Matching is per repo, by git toplevel, so a worktree counts as its own repo;

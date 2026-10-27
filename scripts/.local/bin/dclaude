@@ -162,10 +162,21 @@ PY
 fi
 
 # The herdr hook silently no-ops on either of these, so say it up front.
+# Then git: the container has no identity of its own, so commits fail — use the
+# one the host resolves for this repo. Worktrees made in here record the
+# container's /workspaces/... paths, which break git on the host, so make them
+# relative (git 2.48+; older git ignores the key). And pre-commit hooks are
+# fetched here, outside Claude's sandbox, whose proxy blocks github.com.
 devcontainer exec "${dc_args[@]}" sh -c '
     command -v python3 >/dev/null || echo "dclaude: no python3 in container, herdr will not see this session" >&2
     [ "$(id -u)" = "$1" ] || echo "dclaude: container uid $(id -u) != host uid $1, herdr socket is unreachable" >&2
-' sh "$(id -u)"
+    [ -z "$2" ] || git config --global user.name "$2"
+    [ -z "$3" ] || git config --global user.email "$3"
+    git config --global worktree.useRelativePaths true
+    if [ -f .pre-commit-config.yaml ] && command -v pre-commit >/dev/null; then
+        pre-commit install-hooks >/dev/null 2>&1 || echo "dclaude: pre-commit install-hooks failed, commits may fail in the sandbox" >&2
+    fi
+' sh "$(id -u)" "$(git -C "$ws" config user.name || true)" "$(git -C "$ws" config user.email || true)"
 
 # Claude's Bash sandbox keeps commands away from the herdr socket: it can type
 # into host panes, so anything reaching it can run commands on the host. Hooks

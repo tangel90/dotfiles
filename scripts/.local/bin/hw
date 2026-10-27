@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# hw [--here]: pick a file with fzf and open it in a new tab named after it —
+# nvim, or visidata for csv/tsv/ndjson/parquet. The herdr port of
+# tmux-windowizer, bound in herdr's config.toml as popups: prefix+ctrl+w
+# (--here: below the pane's directory, 4 deep) and prefix+alt+w (all of ~).
+# The tab is made through mux-open, so this works under tmux too.
+
+set -euo pipefail
+
+here=${HERDR_ACTIVE_PANE_CWD:-$PWD}
+fd_args=(--type f --follow --hidden --exclude .git --no-ignore-vcs)
+if [ "${1:-}" = --here ]; then
+    cd "$here"
+    list=(fd --strip-cwd-prefix . -d 4 "${fd_args[@]}")
+else
+    list=(fd . "$HOME" -d 8 "${fd_args[@]}")
+fi
+
+# fd dies of SIGPIPE when a file is picked before it finishes listing, so its
+# status is ignored; an empty pick (esc) ends here.
+selected=$({ "${list[@]}" || true; } | fzf --height=100% --preview 'bat --color=always {}' --bind 'F2:toggle-preview' --preview-window=down,50%) || true
+[ -n "$selected" ] || exit 0
+selected=$(realpath "$selected")
+
+dir=$(dirname "$selected")
+file=$(basename "$selected")
+# A dotfile without another dot keeps its name (.zshrc -> zshrc), anything
+# else loses its extension.
+if [[ $file == .* && $file != *.*.* ]]; then
+    label=${file//./}
+else
+    label=${file%.*}
+fi
+
+case ${file##*.} in
+csv)
+    # semicolon files from German Excel exports
+    first=$(head -1 "$selected")
+    semis=${first//[^;]/} commas=${first//[^,]/}
+    delim=,
+    (( ${#semis} > ${#commas} )) && delim=';'
+    cmd=(vd --csv-delimiter "$delim" "$file")
+    ;;
+tsv | ndjson | parquet) cmd=(vd "$file") ;;
+*) cmd=(nvim "$file") ;;
+esac
+
+mux-open --label "$label" --cwd "$dir" -- "${cmd[@]}"

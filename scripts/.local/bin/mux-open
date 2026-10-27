@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# mux-open [--label L] [--cwd DIR] [--no-focus] -- CMD [ARGS...]: run CMD in a
+# new tab of whichever multiplexer we're in: herdr (the caller's workspace),
+# else tmux (a new window). The only multiplexer-aware piece for tools like
+# sqlrun and nvim's runners, so they never talk to herdr or tmux directly.
+#
+# The tab is created unfocused, CMD started, and only then focused: keys typed
+# while it spawns stay where they were (e.g. nvim) instead of leaking into it.
+# CMD runs under exec, so the tab closes when it exits.
+
+set -euo pipefail
+
+label=run
+cwd=$PWD
+focus=1
+while [ $# -gt 0 ]; do
+    case $1 in
+        --label) label=${2:?mux-open: --label needs a value}; shift ;;
+        --cwd) cwd=${2:?mux-open: --cwd needs a value}; shift ;;
+        --no-focus) focus= ;;
+        --) shift; break ;;
+        *) break ;;
+    esac
+    shift
+done
+(( $# )) || { echo "usage: mux-open [--label L] [--cwd DIR] [--no-focus] -- CMD [ARGS...]" >&2; exit 2; }
+
+mkdir -p "$cwd"
+cmd="exec $(printf '%q ' "$@")"
+
+if [ "${HERDR_ENV:-}" = 1 ] || [ -n "${HERDR_ACTIVE_WORKSPACE_ID:-}" ]; then
+    # The caller's workspace, asked via its pane: HERDR_WORKSPACE_ID goes stale
+    # once the pane moves (see ha). Popups and key commands have no pane of
+    # their own; herdr hands them the active workspace instead.
+    if [ -n "${HERDR_PANE_ID:-}" ]; then
+        ws=$(herdr pane get "$HERDR_PANE_ID" | jq -r .result.pane.workspace_id)
+    else
+        ws=${HERDR_ACTIVE_WORKSPACE_ID:?mux-open: no herdr pane or active workspace}
+    fi
+    created=$(herdr tab create --workspace "$ws" --cwd "$cwd" --label "$label" --no-focus)
+    pane=$(jq -r .result.root_pane.pane_id <<<"$created")
+    tab=$(jq -r .result.tab.tab_id <<<"$created")
+    herdr pane run "$pane" "$cmd" >/dev/null
+    [ -z "$focus" ] || herdr tab focus "$tab" >/dev/null
+elif [ -n "${TMUX:-}" ]; then
+    win=$(tmux new-window -d -P -F '#{window_id}' -n "$label" -c "$cwd" "$cmd")
+    [ -z "$focus" ] || tmux select-window -t "$win"
+else
+    echo "mux-open: neither in herdr nor tmux" >&2
+    exit 1
+fi

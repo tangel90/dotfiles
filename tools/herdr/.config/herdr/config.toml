@@ -4,20 +4,40 @@ onboarding = false
 delivery = "herdr"         # in-app toasts, so prefix+shift+o can jump to them
 
 [ui]
+tab_bar_position = "bottom"
 status_indicators = "symbols"
 # Claude usage, cached by the claude status line (see hlimits)
+tab_bar_right_separator = " · "
 tab_bar_right = [
   { type = "command", command = "~/.local/bin/hlimits", interval_seconds = 10, timeout_seconds = 2 },
+  { type = "datetime", format = "%H:%M" },
 ]
 prompt_new_tab_name = false  # prefix+t opens the tab straight away
+confirm_close = false        # closing the last pane closes the workspace without asking
+# On WSL "auto" draws herdr's own steady block cursor, dropping the pane's
+# cursor shape (nvim's insert-mode bar). Native passes it to the terminal; may
+# bring back occasional cursor flicker during heavy output.
+host_cursor = "native"
+show_agent_labels_on_pane_borders = true  # agent name on split pane borders, unless the pane has a manual label
 
-# Claude agents: name and model, then workspace and context use ($model and
-# $ctx, reported by statusline-command.sh). No tab: ha labels
+# Claude agents: name, then workspace and context use ($ctx, reported by
+# statusline-command.sh; its $model is left out as noise). No tab: ha labels
 # each agent's tab with its name, so it would repeat the agent.
+# $ctx is dim, gold from 50%, love (red) from 80%. It reads "42%", which
+# numeric rules reject, so the bands match on text: single digits ("5%".."9%")
+# first, keeping the default, before the leading-digit rules could catch them.
 [ui.sidebar.agents.rows_by_agent]
 claude = [
-  ["state_icon", "agent", { token = "$model", dim = true }],
-  ["machine", { token = "workspace", dim = true }, { token = "$ctx", dim = true }],
+  ["state_icon", "agent"],
+  ["machine", { token = "workspace", dim = true }, { token = "$ctx", dim = true, rules = [
+    { equals = "100%", fg = "#eb6f92", dim = false },
+    { equals = "5%" }, { equals = "6%" }, { equals = "7%" }, { equals = "8%" }, { equals = "9%" },
+    { starts_with = "9", fg = "#eb6f92", dim = false },
+    { starts_with = "8", fg = "#eb6f92", dim = false },
+    { starts_with = "7", fg = "#f6c177", dim = false },
+    { starts_with = "6", fg = "#f6c177", dim = false },
+    { starts_with = "5", fg = "#f6c177", dim = false },
+  ] }],
 ]
 
 [theme]
@@ -51,13 +71,12 @@ prefix = "ctrl+k"
 close_pane = "prefix+q"     # match tmux kill-pane
 detach = "prefix+d"         # match tmux; default was prefix+q
 new_tab = "prefix+t"        # default was prefix+c
-next_tab = ["prefix+n", "alt+l"]       # alt+h/l: no prefix needed
-previous_tab = ["prefix+p", "alt+h"]
-next_workspace = "alt+j"             # alt+j/k: workspaces, pairs with alt+h/l tabs
-previous_workspace = "alt+k"
-last_pane = "prefix+tab"            # toggle to the previously focused pane, like tmux prefix+;
-cycle_pane_next = []                # was prefix+tab; prefix+shift+tab still cycles back
-focus_agent = "prefix+alt+1..9"
+next_tab = ["prefix+n", "alt+right"]   # alt+left/right: no prefix needed
+previous_tab = ["prefix+p", "alt+left"]
+next_workspace = "alt+down"          # alt+down/up: workspaces, pairs with alt+left/right tabs
+previous_workspace = "alt+up"
+focus_agent = "prefix+1..9"
+switch_tab = "alt+1..9"            # default prefix+1..9 went to agents; alt+ like alt+left/right
 next_agent = "prefix+alt+n"
 previous_agent = "prefix+alt+p"
 open_notification_target = "prefix+shift+o"  # prefix+o runs hnvim, prefix+a hlast
@@ -85,16 +104,34 @@ command = "\"$HOME/.local/bin/hlast\""
 description = "focus agent that finished last / needs input"
 
 [[keys.command]]
-key = "prefix+alt+g"
-type = "shell"
-command = "\"$HOME/.local/bin/hlazygit\""
-description = "lazygit tab for this repo"
+key = "prefix+i"
+type = "popup"
+command = "cd \"${HERDR_ACTIVE_PANE_CWD:-$HOME}\" && exec lazygit"
+description = "lazygit in the pane's directory"
+width = "90%"
+height = "85%"
 
 [[keys.command]]
 key = "prefix+e"            # replaces edit_scrollback, now prefix+shift+e
 type = "popup"
 command = "cd \"${HERDR_ACTIVE_PANE_CWD:-$HOME}\" && exec yazi"
 description = "yazi in the pane's directory"
+width = "90%"
+height = "85%"
+
+[[keys.command]]
+key = "prefix+ctrl+w"
+type = "popup"
+command = "\"$HOME/.local/bin/hw\" --here"
+description = "open a file below the pane's directory in a new tab (hw)"
+width = "90%"
+height = "85%"
+
+[[keys.command]]
+key = "prefix+alt+w"
+type = "popup"
+command = "\"$HOME/.local/bin/hw\""
+description = "open any file under ~ in a new tab (hw)"
 width = "90%"
 height = "85%"
 

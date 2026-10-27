@@ -50,6 +50,11 @@ stow_pkg() {
     local dir=$1 pkg=$2 f target
     while IFS= read -r f; do
         target=$HOME/${f#./}
+        # A hand-made absolute link into the repo isn't stow's, so stow
+        # refuses it; nothing is lost by letting stow redo it.
+        if [ -L "$target" ] && [[ $(readlink "$target") == /* ]] && [ "$(readlink -f "$target")" = "$(readlink -f "$dir/$pkg/$f")" ]; then
+            rm "$target"
+        fi
         if [ -e "$target" ] && [ ! -L "$target" ] && [ "$(readlink -f "$target")" != "$(readlink -f "$dir/$pkg/$f")" ]; then
             mv "$target" "$target.pre-stow.$(date +%Y%m%d%H%M%S)"
             echo "backed up $target"

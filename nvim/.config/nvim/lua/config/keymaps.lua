@@ -43,25 +43,15 @@ local function in_sql_runner_dir(path)
     return false
 end
 
--- Ask the DB to EXPLAIN the buffer's SQL before running. Returns true if the
--- query is structurally valid (or the user chooses to proceed despite an error).
--- Uses `psql` for postgres-flavoured files; snow explain for snowflake.
+-- Ask the DB to EXPLAIN the buffer's SQL before running (sqlrun --check).
+-- Returns true if the query is structurally valid, or the user chooses to
+-- proceed despite an error. Postgres only; snowflake runs unchecked.
 local function explain_check_psql(sql)
-    local clean = sql:gsub(';%s*$', ''):gsub('%s*$', '')
-    local out = vim.fn.systemlist {
-        'psql',
-        '-q',
-        '-v',
-        'ON_ERROR_STOP=1',
-        '-P',
-        'pager=off',
-        '-c',
-        'EXPLAIN ' .. clean,
-    }
-    if vim.v.shell_error == 0 then
+    local res = vim.system({ 'sqlrun', '--engine', 'psql', '--check', '-' }, { stdin = sql, text = true, cwd = vim.fn.getcwd() }):wait()
+    if res.code == 0 then
         return true
     end
-    local msg = table.concat(out, '\n'):gsub('\n*$', '')
+    local msg = (res.stderr or ''):gsub('\n*$', '')
     local ans = vim.fn.confirm('Query rejected by DB:\n' .. msg .. '\n\nRun anyway?', '&Yes\n&No', 2)
     return ans == 1
 end
@@ -277,12 +267,9 @@ local function snow_session_send(sql, label)
     vim.notify('sent ' .. label .. ' → snow session', vim.log.levels.INFO)
 end
 
--- Create the FIFO (if missing) and run the reader in a new tmux window.
+-- Create the FIFO (if missing) and run the reader in a new multiplexer tab
+-- (mux-open: herdr or tmux), unfocused.
 local function snow_session_start()
-    if not vim.env.TMUX then
-        vim.notify('not inside tmux — cannot host the snow session', vim.log.levels.ERROR)
-        return
-    end
     local fifo = snow_fifo()
     if vim.fn.getftype(fifo) ~= 'fifo' then
         vim.fn.system { 'mkfifo', fifo }
@@ -295,7 +282,7 @@ local function snow_session_start()
     -- after each send.
     local tmpl = vim.g.snow_session_cmd or 'tail -f %s | snow sql -i'
     local cmd = tmpl:format(vim.fn.shellescape(fifo))
-    vim.system({ 'tmux', 'new-window', '-d', '-n', 'snow', cmd }, { text = true }, function(res)
+    vim.system({ 'mux-open', '--label', 'snow', '--no-focus', '--', 'sh', '-c', cmd }, { text = true }, function(res)
         vim.schedule(function()
             if res.code ~= 0 then
                 vim.notify('failed to start snow session: ' .. (res.stderr or ''), vim.log.levels.ERROR)
@@ -306,86 +293,53 @@ local function snow_session_start()
     end)
 end
 
--- Run a shell pipeline that writes query results to `out_file`, then — only on
--- success — open visidata on it in a new tmux window. The query itself runs as
--- an async background job in nvim (no terminal buffer); errors are surfaced via
--- vim.notify. Requires running inside tmux.
-local function run_to_visidata_tmux(shell_cmd, out_file, label, cwd)
-    if not vim.env.TMUX then
-        vim.notify('not inside tmux — cannot open external visidata pane', vim.log.levels.ERROR)
-        return
-    end
+-- Notify a failed job: the tail of stderr (snow-parquet raises full python
+-- tracebacks, whose last lines carry the actual error).
+local function notify_failure(label, res)
+    local err = (res.stderr ~= '' and res.stderr) or res.stdout or ''
+    local lines = vim.split(vim.trim(err), '\n')
+    err = table.concat(vim.list_slice(lines, math.max(1, #lines - 14)), '\n')
+    vim.notify(label .. ' failed:\n' .. (err ~= '' and err or ('exit ' .. res.code)), vim.log.levels.ERROR)
+end
+
+-- Run a query through sqlrun (scripts/.local/bin), which owns the whole
+-- pipeline: direnv, {{ENV}}, snow-parquet / psql, the parquet conversion and,
+-- with --open, visidata in a new multiplexer tab. nvim only builds the
+-- arguments and reports. Runs async with the editor's cwd, where the .envrc
+-- that picks the environment lives; on success on_done gets the result path.
+local function sqlrun(args, label, on_done)
     vim.notify('running ' .. label .. ' …', vim.log.levels.INFO)
-    vim.system({ 'sh', '-c', shell_cmd }, { text = true }, function(res)
+    vim.system(vim.list_extend({ 'sqlrun' }, args), { text = true, cwd = vim.fn.getcwd() }, function(res)
         vim.schedule(function()
             if res.code ~= 0 then
-                local err = (res.stderr ~= '' and res.stderr) or res.stdout or ('exit ' .. res.code)
-                vim.notify(label .. ' failed:\n' .. err, vim.log.levels.ERROR)
+                notify_failure(label, res)
                 return
             end
-            -- New tmux window named "vd", with cwd set to the target dir,
-            -- running visidata on the result file. Create it DETACHED (-d) so
-            -- focus doesn't switch mid-query — any buffered keystrokes stay in
-            -- nvim instead of leaking into visidata — then select it once it's
-            -- spawned. -P -F prints the window id so we select exactly it.
-            local tmux_cmd = { 'tmux', 'new-window', '-d', '-P', '-F', '#{window_id}', '-n', 'vd' }
-            if cwd then
-                vim.fn.mkdir(cwd, 'p') -- ensure the dir exists
-                table.insert(tmux_cmd, '-c')
-                table.insert(tmux_cmd, cwd)
+            if on_done then
+                on_done(vim.trim(res.stdout))
             end
-            table.insert(tmux_cmd, 'visidata ' .. vim.fn.shellescape(out_file))
-            vim.system(tmux_cmd, { text = true }, function(win)
-                local win_id = (win.stdout or ''):gsub('%s+$', '')
-                if win.code == 0 and win_id ~= '' then
-                    -- brief settle, then switch to the fully-initialised window
-                    vim.system { 'tmux', 'select-window', '-t', win_id }
-                end
-            end)
-            vim.notify(label .. ' → opened in tmux window', vim.log.levels.INFO)
         end)
     end)
 end
 
--- Wrap a "query → CSV on stdout" command so the result lands as parquet, and
--- return the shell pipeline plus the file visidata should open.
---
--- Why bother: visidata's text loaders (csv/json) type every column as anytype,
--- so SQL casts are lost and dates/numbers are re-parsed from strings on every
--- cell access. Parquet carries the types (arrow_to_vdtype), and duckdb's
--- read_csv infers them from the CSV in one pass. Measured on 200k rows x 10
--- cols: file 22M → 4.2M, vd load 0.57s → 0.33s, and with date/float columns
--- actually typed, a full scan of 3 columns drops 10.9s → 1.4s and sort-by-date
--- 5.7s → 0.8s. The conversion itself costs ~0.3s.
---
--- duckdb only needs its bundled CSV reader here (no extension autoload, unlike
--- read_json_auto). If duckdb is missing the command fails loudly via notify.
-local function csv_to_parquet(cmd_to_csv, csv_file)
-    local parquet = csv_file:gsub('%.csv$', '') .. '.parquet'
-    -- SQL string literals: single quotes, doubled to escape. tempnames never
-    -- contain quotes, but keep it correct anyway.
-    local function sql_str(s)
-        return "'" .. s:gsub("'", "''") .. "'"
+-- sqlrun's snowflake arguments: the env and connection this buffer resolved to
+-- (see snow_env / snow_connection), when known; sqlrun's own direnv pass covers
+-- the rest.
+local function snow_args(path, format)
+    local args = { '--engine', 'snow', '--format', format }
+    local env = snow_env()
+    if env then
+        vim.list_extend(args, { '--env', env, '--connection', snow_connection(env) })
     end
-    local sql = string.format('COPY (FROM read_csv(%s)) TO %s (FORMAT parquet)', sql_str(csv_file), sql_str(parquet))
-    return string.format('%s && duckdb -c %s', cmd_to_csv, vim.fn.shellescape(sql)), parquet
+    table.insert(args, path)
+    return args
 end
 
--- Same as run_to_visidata_tmux, but on success opens the result file in a new
--- vim buffer (vsplit) instead of an external visidata pane.
-local function run_to_vim_buffer(shell_cmd, out_file, label)
-    vim.notify('running ' .. label .. ' …', vim.log.levels.INFO)
-    vim.system({ 'sh', '-c', shell_cmd }, { text = true }, function(res)
-        vim.schedule(function()
-            if res.code ~= 0 then
-                local err = (res.stderr ~= '' and res.stderr) or res.stdout or ('exit ' .. res.code)
-                vim.notify(label .. ' failed:\n' .. err, vim.log.levels.ERROR)
-                return
-            end
-            vim.cmd('edit ' .. vim.fn.fnameescape(out_file))
-            vim.notify(label .. ' → opened in buffer', vim.log.levels.INFO)
-        end)
-    end)
+local function open_in_buffer(label)
+    return function(out)
+        vim.cmd('edit ' .. vim.fn.fnameescape(out))
+        vim.notify(label .. ' → opened in buffer', vim.log.levels.INFO)
+    end
 end
 
 vim.api.nvim_create_autocmd('FileType', {
@@ -397,47 +351,11 @@ vim.api.nvim_create_autocmd('FileType', {
         end
         local bufopt = { buffer = args.buf }
 
+        -- snow-parquet underneath: arrow straight from the connector to
+        -- parquet, so warehouse types (TIMESTAMP, NUMBER) reach visidata intact.
         vim.keymap.set('n', '<leader>rs', function()
-            -- snow EXPLAIN is not reliably available; skip pre-flight for snow.
-            -- snow-parquet instead of `snow sql`: the CLI can only print text, so
-            -- the old json/csv route made Snowflake's arrow result set into
-            -- strings just for something downstream to parse back. snow-parquet
-            -- fetches the arrow batches straight from the connector and writes
-            -- parquet — no text hop, and warehouse types (TIMESTAMP, NUMBER)
-            -- reach visidata intact. No duckdb pass needed here.
-            local out = query_out_path(path, 'parquet')
-            -- snow-parquet expands {{ENV}} itself, but it only sees the
-            -- environment nvim hands it — which is empty unless nvim happened to
-            -- be started inside an env dir. Pass the env this buffer resolved to,
-            -- and the matching connection, so the database and the credentials
-            -- agree instead of silently falling back to config.toml's default.
-            local env = snow_env()
-            if not env then
-                vim.notify('no environment known for {{ENV}} — run :SnowEnv tst, or start nvim from an env dir', vim.log.levels.ERROR)
-                return
-            end
-            -- Through `direnv exec`, because run_to_visidata_tmux runs this with
-            -- vim.system({'sh','-c',…}) — a plain child of nvim that inherits
-            -- only nvim's own environment, with no shell and no direnv hook. The
-            -- admin connection uses an encrypted private key whose
-            -- PRIVATE_KEY_PASSPHRASE comes from `pass` in .envrc, so it never
-            -- reached snow-parquet unless nvim itself was launched inside that
-            -- directory. direnv exec is harmless where no .envrc exists, and the
-            -- explicit `env` assignments after it still win over the .envrc.
-            --
-            -- getcwd(), not the buffer's directory: the explorer tree is one
-            -- shared directory symlinked into dev/tst/prd and nvim resolves the
-            -- symlink, so the buffer path names no environment (see envrc_env).
-            local cmd = string.format(
-                'direnv exec %s env SNOWFLAKE_ENV=%s SNOWFLAKE_DEFAULT_CONNECTION_NAME=%s snow-parquet -f %s -o %s',
-                vim.fn.shellescape(vim.fn.getcwd()),
-                vim.fn.shellescape(env:upper()),
-                vim.fn.shellescape(snow_connection(env)),
-                vim.fn.shellescape(path),
-                vim.fn.shellescape(out)
-            )
-            run_to_visidata_tmux(cmd, out, 'snow query', vim.fn.expand '~/data/snowflake/')
-        end, vim.tbl_extend('force', bufopt, { desc = 'snow → arrow → parquet → visidata (tmux)' }))
+            sqlrun(vim.list_extend(snow_args(path, 'parquet'), { '--open' }), 'snow query')
+        end, vim.tbl_extend('force', bufopt, { desc = 'snow → parquet → visidata (sqlrun)' }))
 
         -- Feed the long-lived session instead of a one-shot run.
         vim.keymap.set('n', '<leader>rq', function()
@@ -452,12 +370,20 @@ vim.api.nvim_create_autocmd('FileType', {
             local done = out .. '.done'
             vim.fn.delete(done)
             snow_session_send(('-- out: %s\n-- format: csv\n%s'):format(out, sql), label .. ' → visidata')
-            -- Block until the session signals completion; non-zero exit surfaces via notify.
-            local wait = ('for i in $(seq 1 6000); do [ -f %s ] && break; sleep 0.1; done; grep -q "^ok$" %s'):format(
+            -- Wait for the session to signal completion, then open the result.
+            local wait = ('for i in $(seq 1 6000); do [ -f %s ] && break; sleep 0.1; done; grep -q "^ok$" %s && exec mux-open --label vd --cwd %s -- visidata %s'):format(
                 vim.fn.shellescape(done),
-                vim.fn.shellescape(done)
+                vim.fn.shellescape(done),
+                vim.fn.shellescape(vim.fn.expand '~/data/snowflake'),
+                vim.fn.shellescape(out)
             )
-            run_to_visidata_tmux(wait, out, 'snow session', vim.fn.expand '~/data/snowflake/')
+            vim.system({ 'sh', '-c', wait }, { text = true }, function(res)
+                if res.code ~= 0 then
+                    vim.schedule(function()
+                        notify_failure('snow session', res)
+                    end)
+                end
+            end)
         end
 
         vim.keymap.set('n', '<leader>rv', function()
@@ -476,61 +402,29 @@ vim.api.nvim_create_autocmd('FileType', {
             snow_session_send(visual_sql(args.buf), 'selection')
         end, vim.tbl_extend('force', bufopt, { desc = 'snow session ← selection' }))
 
-        vim.keymap.set(
-            'n',
-            '<leader>rQ',
-            snow_session_start,
-            vim.tbl_extend('force', bufopt, { desc = 'start snow session (tmux + FIFO)' })
-        )
+        vim.keymap.set('n', '<leader>rQ', snow_session_start, vim.tbl_extend('force', bufopt, { desc = 'start snow session (mux tab + FIFO)' }))
 
         vim.keymap.set('n', '<leader>rp', function()
-            if not explain_check_psql(buf_sql(args.buf)) then
-                return
+            if explain_check_psql(buf_sql(args.buf)) then
+                sqlrun({ '--engine', 'psql', '--open', path }, 'psql query')
             end
-            local csv = query_out_path(path, 'csv')
-            local cmd, out = csv_to_parquet(
-                string.format(
-                    "psql -q -v ON_ERROR_STOP=1 -P pager=off -c 'SET client_min_messages = error;' --csv -f %s > %s",
-                    vim.fn.shellescape(path),
-                    vim.fn.shellescape(csv)
-                ),
-                csv
-            )
-            run_to_visidata_tmux(cmd, out, 'psql query', vim.fn.expand '~/data/postgres/')
-        end, vim.tbl_extend('force', bufopt, { desc = 'psql → EXPLAIN → CSV → parquet → visidata (tmux)' }))
+        end, vim.tbl_extend('force', bufopt, { desc = 'psql → EXPLAIN → parquet → visidata (sqlrun)' }))
 
         vim.keymap.set('n', '<leader>rj', function()
-            if not explain_check_psql(buf_sql(args.buf)) then
-                return
+            if explain_check_psql(buf_sql(args.buf)) then
+                sqlrun({ '--engine', 'psql', '--format', 'jsonl', '--open', path }, 'psql query (json)')
             end
-            local out = query_out_path(path, 'jsonl')
-            local cmd = string.format(
-                "psql -q -v ON_ERROR_STOP=1 -P pager=off -At -c 'SET client_min_messages = error;' -f %s > %s",
-                vim.fn.shellescape(path),
-                vim.fn.shellescape(out)
-            )
-            run_to_visidata_tmux(cmd, out, 'psql query (json)', vim.fn.expand '~/data/postgres/')
-        end, vim.tbl_extend('force', bufopt, { desc = 'psql → JSONL → visidata (tmux)' }))
+        end, vim.tbl_extend('force', bufopt, { desc = 'psql → JSONL → visidata (sqlrun)' }))
 
         -- Same queries, but results land in a new vim buffer (CSV) instead of visidata.
         vim.keymap.set('n', '<leader>rS', function()
-            local out = query_out_path(path, 'csv')
-            local cmd =
-                string.format('snow sql --format csv -f %s > %s', vim.fn.shellescape(path), vim.fn.shellescape(out))
-            run_to_vim_buffer(cmd, out, 'snow query')
+            sqlrun(snow_args(path, 'csv'), 'snow query', open_in_buffer 'snow query')
         end, vim.tbl_extend('force', bufopt, { desc = 'snow → CSV → vim buffer' }))
 
         vim.keymap.set('n', '<leader>rP', function()
-            if not explain_check_psql(buf_sql(args.buf)) then
-                return
+            if explain_check_psql(buf_sql(args.buf)) then
+                sqlrun({ '--engine', 'psql', '--format', 'csv', path }, 'psql query', open_in_buffer 'psql query')
             end
-            local out = query_out_path(path, 'csv')
-            local cmd = string.format(
-                "psql -q -v ON_ERROR_STOP=1 -P pager=off -c 'SET client_min_messages = error;' --csv -f %s > %s",
-                vim.fn.shellescape(path),
-                vim.fn.shellescape(out)
-            )
-            run_to_vim_buffer(cmd, out, 'psql query')
         end, vim.tbl_extend('force', bufopt, { desc = 'psql → EXPLAIN → CSV → vim buffer' }))
     end,
 })

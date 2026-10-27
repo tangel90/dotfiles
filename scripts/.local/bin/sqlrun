@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# sqlrun: run SQL against Snowflake or Postgres and write the result to a file.
+#
+#   sqlrun --engine snow|psql [options] [FILE|-]
+#
+#   --format parquet|csv|jsonl   result format (default parquet; jsonl: psql only,
+#                                for queries that select one json value per row)
+#   --env ENV                    snow: what {{ENV}} expands to (else $SNOWFLAKE_ENV/$ENV)
+#   --connection NAME            snow: connections.toml entry (else snow-parquet's default)
+#   --name STEM                  output file stem (default: FILE's, or "query")
+#   -o OUT                       output path (default: $TMPDIR/sqlrun-$UID/STEM_TIMESTAMP.EXT)
+#   --check                      psql: only EXPLAIN the SQL; errors go to stderr
+#   --open                       on success, open the result in visidata via mux-open
+#
+# Reads FILE, or stdin with - or no FILE. Prints the result path on stdout;
+# errors go to stderr with a non-zero exit, so callers (nvim, agents, a shell)
+# only need the exit code and the two streams.
+#
+# Runs under `direnv exec .` when there's an .envrc above the cwd: credentials
+# (the snow key passphrase from pass, PGSERVICE, …) and the per-directory ENV
+# live there, and a caller like nvim doesn't carry them in its own environment.
+# --env/--connection are applied after, so they win over the .envrc.
+#
+# Why parquet: visidata types text columns as anytype; parquet keeps the types.
+# Snowflake goes through snow-parquet (arrow straight from the connector), and
+# psql's CSV through duckdb's read_csv, which infers types in one pass.
+
+set -euo pipefail
+
+die() { echo "sqlrun: $*" >&2; exit 1; }
+
+engine= format=parquet env= conn= name= out= check= open= src=
+while [ $# -gt 0 ]; do
+    case $1 in
+        --engine) engine=${2:?}; shift ;;
+        --format) format=${2:?}; shift ;;
+        --env) env=${2:?}; shift ;;
+        --connection) conn=${2:?}; shift ;;
+        --name) name=${2:?}; shift ;;
+        -o) out=${2:?}; shift ;;
+        --check) check=1 ;;
+        --open) open=1 ;;
+        -h|--help) sed -n '2,/^$/s/^# \{0,1\}//p' "$0"; exit 0 ;;
+        -) src=- ;;
+        -*) die "unknown option $1" ;;
+        *) src=$1 ;;
+    esac
+    shift
+done
+case $engine in snow|psql) ;; *) die "--engine snow|psql required" ;; esac
+case $format in parquet|csv) ;; jsonl) [ "$engine" = psql ] || die "jsonl is psql only" ;; *) die "unknown format $format" ;; esac
+
+# Re-run inside the directory's direnv environment, once.
+if [ -z "${SQLRUN_DIRENV:-}" ] && command -v direnv >/dev/null && direnv status 2>/dev/null | grep -q '^Found RC path'; then
+    exec env SQLRUN_DIRENV=1 direnv exec . "$0" --engine "$engine" --format "$format" \
+        ${env:+--env "$env"} ${conn:+--connection "$conn"} ${name:+--name "$name"} ${out:+-o "$out"} \
+        ${check:+--check} ${open:+--open} "${src:--}"
+fi
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+# SQL to a file: psql -f and snow-parquet -f both want one, and stdin is read once.
+if [ -z "$src" ] || [ "$src" = - ]; then
+    sql=$tmp/query.sql
+    cat >"$sql"
+    name=${name:-query}
+else
+    [ -r "$src" ] || die "cannot read $src"
+    sql=$src
+    name=${name:-$(basename "${src%.*}")}
+fi
+[ -n "$(tr -d '[:space:]' <"$sql")" ] || die "no SQL given"
+
+if [ -n "$check" ]; then
+    [ "$engine" = psql ] || die "--check is psql only"
+    # EXPLAIN takes one statement: strip a trailing ; and whitespace.
+    shopt -s extglob
+    query=$(<"$sql")
+    query=${query%%+([[:space:];])}
+    psql -q -v ON_ERROR_STOP=1 -P pager=off -c "EXPLAIN $query" >/dev/null
+    exit
+fi
+
+if [ -z "$out" ]; then
+    dir=${TMPDIR:-/tmp}/sqlrun-$(id -u)
+    mkdir -p "$dir"
+    out=$dir/${name}_$(date +%Y%m%dT%H%M%S).$format
+fi
+
+# duckdb SQL string literal
+lit() { printf "'%s'" "${1//\'/\'\'}"; }
+
+case $engine in
+snow)
+    [ -z "$env" ] || export SNOWFLAKE_ENV=${env^^}
+    [ -z "$conn" ] || export SNOWFLAKE_DEFAULT_CONNECTION_NAME=${conn,,}
+    if [ "$format" = parquet ]; then
+        snow-parquet -f "$sql" -o "$out" >/dev/null
+    else
+        snow-parquet -f "$sql" -o "$tmp/result.parquet" >/dev/null
+        duckdb -c "COPY (FROM $(lit "$tmp/result.parquet")) TO $(lit "$out") (FORMAT csv, HEADER)"
+    fi
+    ;;
+psql)
+    psql_args=(-q -v ON_ERROR_STOP=1 -P pager=off -c 'SET client_min_messages = error;')
+    case $format in
+    jsonl) psql "${psql_args[@]}" -At -f "$sql" >"$out" ;;
+    csv) psql "${psql_args[@]}" --csv -f "$sql" >"$out" ;;
+    parquet)
+        psql "${psql_args[@]}" --csv -f "$sql" >"$tmp/result.csv"
+        duckdb -c "COPY (FROM read_csv($(lit "$tmp/result.csv"))) TO $(lit "$out") (FORMAT parquet)"
+        ;;
+    esac
+    ;;
+esac
+
+[ -z "$open" ] || mux-open --label vd --cwd "$HOME/data/$([ "$engine" = snow ] && echo snowflake || echo postgres)" -- visidata "$out"
+echo "$out"
