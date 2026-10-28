@@ -174,7 +174,16 @@ devcontainer exec "${dc_args[@]}" sh -c '
     [ -z "$3" ] || git config --global user.email "$3"
     git config --global worktree.useRelativePaths true
     if [ -f .pre-commit-config.yaml ] && command -v pre-commit >/dev/null; then
-        pre-commit install-hooks >/dev/null 2>&1 || echo "dclaude: pre-commit install-hooks failed, commits may fail in the sandbox" >&2
+        # install-hooks builds every hook environment too (e.g. downloads Go
+        # for golang hooks); in the sandbox the cache is read-only, so what
+        # fails here fails every commit. Show why rather than swallow it.
+        # Golang hooks (gitleaks) build from source, and the Go module proxy
+        # (storage.googleapis.com) times out from here: retry fetching the
+        # modules straight from their origins.
+        if ! out=$(pre-commit install-hooks 2>&1) && ! out=$(GOPROXY=direct pre-commit install-hooks 2>&1); then
+            echo "dclaude: pre-commit install-hooks failed, commits will fail in the sandbox:" >&2
+            printf "%s\n" "$out" | tail -n 20 >&2
+        fi
     fi
 ' sh "$(id -u)" "$(git -C "$ws" config user.name || true)" "$(git -C "$ws" config user.email || true)"
 

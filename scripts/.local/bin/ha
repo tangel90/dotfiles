@@ -47,13 +47,25 @@ shift
 tab=
 [ -z "$group" ] || tab=$(herdr tab list --workspace "$ws" | jq -r --arg l "$group" 'first(.result.tabs[] | select(.label == $l) | .tab_id) // empty')
 if [ -n "$tab" ]; then
-    # Split the tab's newest pane, alternating right and down by pane count,
-    # so the panes tile rather than shrinking into ever-thinner columns.
+    # Split the largest pane (ties within 10%: the right-most, then lowest),
+    # right if it's at least as wide as tall, else down. A terminal cell is
+    # about twice as tall as wide, hence 2*height. 1 = A, 2 = A|B, 3 = A|B/C, 4 = A/D|B/C
+    # (2x2), and so on. Rects come from pane layout; the jq accepts them flat
+    # or under .rect.
     panes=$(herdr pane list --workspace "$ws" | jq -c --arg t "$tab" '[.result.panes[] | select(.tab_id == $t) | .pane_id]')
-    [ "$(jq length <<<"$panes")" -gt 0 ] || { echo "ha: tab $group has no panes" >&2; exit 1; }
-    dir=right
-    (( $(jq length <<<"$panes") % 2 == 0 )) && dir=down
-    pane=$(herdr pane split "$(jq -r 'last' <<<"$panes")" --direction "$dir" --cwd "$PWD" | jq -r .result.pane.pane_id)
+    first=$(jq -r 'first // empty' <<<"$panes")
+    [ -n "$first" ] || { echo "ha: tab $group has no panes" >&2; exit 1; }
+    read -r target dir < <(herdr pane layout --pane "$first" | jq -r --argjson ids "$panes" '
+        [.. | objects | select(.pane_id? as $p | $ids | index($p))
+            | (.rect // .) as $r | select($r.width and $r.height)
+            | {id: .pane_id, x: ($r.x // 0), y: ($r.y // 0), w: $r.width, h: $r.height, a: ($r.width * $r.height)}]
+        | unique_by(.id)
+        | (map(.a) | max) as $m
+        | map(select(.a >= 0.9 * $m)) | max_by([.x, .y])
+        | "\(.id) \(if .w >= 2 * .h then "right" else "down" end)"')
+    # No usable layout: fall back to the tab's last pane, split right.
+    [ -n "${target:-}" ] || { target=$(jq -r last <<<"$panes"); dir=right; }
+    pane=$(herdr pane split "$target" --direction "$dir" --cwd "$PWD" | jq -r .result.pane.pane_id)
 else
     pane=$(herdr tab create --workspace "$ws" --cwd "$PWD" --label "${group:-$name}" --focus | jq -r .result.root_pane.pane_id)
 fi
