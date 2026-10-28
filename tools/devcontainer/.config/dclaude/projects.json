@@ -1,0 +1,8 @@
+{
+  "~/projects/report-data-store/dbt-bpm": {
+    "files": ["~/.dbt/profiles.yml", "~/.snowflake/keys/s_t_schulz.p8"],
+    "env": { "DBT_PROFILES_DIR": "/home/thomas/.dbt" },
+    "allowedDomains": ["*.snowflakecomputing.com"],
+    "setup": "uv venv -q --allow-existing --python 3.12 .venv && uv pip install -q --python .venv 'dbt-core~=1.11.0' 'dbt-snowflake~=1.11.0'"
+  }
+}

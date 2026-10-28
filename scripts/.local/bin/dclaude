@@ -68,7 +68,7 @@ mkdir -p "$state/skills" "$bin"
 
 # Host config. -L because some of these are stow symlinks into the dotfiles
 # repo, which isn't mounted.
-for name in settings.json CLAUDE.md keybindings.json hooks output-styles themes statusline-command.sh; do
+for name in settings.json CLAUDE.md keybindings.json hooks output-styles themes agents statusline-command.sh; do
     rm -rf "${state:?}/$name"
     if [ -e "$HOME/.claude/$name" ]; then cp -RL "$HOME/.claude/$name" "$state/$name"; fi
 done
@@ -232,6 +232,45 @@ fi
 # rather than in a background service of its own.
 if [ -n "${CLAUDE_CODE_DISABLE_AGENT_VIEW:-}" ]; then
     env_args+=(--remote-env "CLAUDE_CODE_DISABLE_AGENT_VIEW=$CLAUDE_CODE_DISABLE_AGENT_VIEW")
+fi
+
+# Per-project extras, opted into on the host in ~/.config/dclaude/projects.json
+# (stowed from tools/devcontainer), keyed by project path, "~/..." allowed.
+# Never read from the repo, so a project can't ask for the host's secrets.
+#   files           host files copied in at the same absolute path, 0600, each
+#                   run, so they stay current without a rebuild
+#   env             extra environment for claude
+#   allowedDomains  added to the sandbox's network allowlist, through --settings
+#                   since the state's settings.json is shared by all projects
+#   setup           command run in the project before claude, outside the
+#                   sandbox (its proxy blocks downloads from e.g. github.com)
+projects=${XDG_CONFIG_HOME:-$HOME/.config}/dclaude/projects.json
+extras={}
+if [ -f "$projects" ]; then
+    extras=$(jq -c --arg ws "$ws" --arg tws "~/${ws#"$HOME"/}" '.[$ws] // .[$tws] // {}' "$projects")
+fi
+if [ "$extras" != {} ]; then
+    cid=$(docker ps -q --filter "label=devcontainer.local_folder=$ws" | head -n1)
+    while IFS= read -r f; do
+        f=${f/#\~/$HOME}
+        if [ ! -f "$f" ]; then echo "dclaude: $f not found, not copied" >&2; continue; fi
+        # shellcheck disable=SC2016  # expanded in the container
+        docker exec -i -u "$(id -u)" "$cid" sh -c '
+            d=$(dirname "$1")
+            [ -w "$d" ] || { sudo mkdir -p "$d" && sudo chown "$(id -u):$(id -g)" "$d"; }
+            umask 077 && cat >"$1"
+        ' sh "$f" <"$f"
+    done < <(jq -r '.files[]?' <<<"$extras")
+    while IFS= read -r kv; do
+        env_args+=(--remote-env "$kv")
+    done < <(jq -r '.env // {} | to_entries[] | "\(.key)=\(.value)"' <<<"$extras")
+    setup=$(jq -r '.setup // empty' <<<"$extras")
+    if [ -n "$setup" ]; then
+        devcontainer exec "${dc_args[@]}" "${env_args[@]}" sh -c "$setup" >&2 || echo "dclaude: project setup failed: $setup" >&2
+    fi
+    if [ -n "$sandbox" ] && jq -e '.allowedDomains | length > 0' <<<"$extras" >/dev/null; then
+        set -- --settings "$(jq -c '{sandbox: {network: {allowedDomains: .allowedDomains}}}' <<<"$extras")" "$@"
+    fi
 fi
 
 # Docker doesn't stop an exec'd process when its client goes away, so closing

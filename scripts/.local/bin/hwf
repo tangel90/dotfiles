@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# hwf: jump to the workflow-design agent, or start it: host claude running as
+# the workflow-agent subagent (tools/claude/.claude/agents/workflow-agent.md),
+# in a new tab of this workspace labelled workflow.
+#
+# Host rather than dclaude: designing means reading ~/.local/bin, the herdr
+# socket and the docs, none of which a container agent reaches.
+
+set -euo pipefail
+
+name=workflow
+
+tab=$(herdr agent list | jq -r --arg n "$name" 'first(.result.agents[] | select(.name == $n) | .tab_id) // empty')
+if [ -n "$tab" ]; then
+    herdr tab focus "$tab" >/dev/null
+    exit 0
+fi
+
+ws=${HERDR_ACTIVE_WORKSPACE_ID:-}
+exec "$HOME/.local/bin/ha" --host ${ws:+--workspace "$ws"} "$name" --agent workflow-agent

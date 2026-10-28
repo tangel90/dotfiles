@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# ha [--host] [--workspace ID] NAME [claude args...]: start claude as a named
-# herdr agent in a new tab (labelled NAME) of this workspace, or of ID, so `herdr agent prompt NAME ...`
-# reaches it from anywhere. It runs in the project's devcontainer through
-# dclaude (always a fresh session, --new), or with --host as plain claude on
-# the host.
+# ha [--host] [--workspace ID] [--tab LABEL] NAME [claude args...]: start claude
+# as a named herdr agent in a new tab (labelled NAME) of this workspace, or of
+# ID, so `herdr agent prompt NAME ...` reaches it from anywhere. With --tab, it
+# joins the tab labelled LABEL as a new split instead, creating that tab if
+# there is none, to group agents (e.g. rds's dbt-workers). It runs in the
+# project's devcontainer through dclaude (always a fresh session, --new), or
+# with --host as plain claude on the host.
 #
 # A new tab rather than this pane: agent start needs its pane idle at a shell
 # prompt, and this one is busy running ha. A tab rather than a split, so the
@@ -20,15 +22,17 @@ set -euo pipefail
 [ "${HERDR_ENV:-}" = 1 ] || { echo "ha: not inside a herdr pane" >&2; exit 1; }
 host=
 ws=
+group=
 while [ $# -gt 0 ]; do
     case $1 in
         --host) host=1 ;;
         --workspace) ws=${2:?ha: --workspace needs an ID}; shift ;;
+        --tab) group=${2:?ha: --tab needs a LABEL}; shift ;;
         *) break ;;
     esac
     shift
 done
-(( $# )) || { echo "usage: ha [--host] [--workspace ID] NAME [claude args...]" >&2; exit 2; }
+(( $# )) || { echo "usage: ha [--host] [--workspace ID] [--tab LABEL] NAME [claude args...]" >&2; exit 2; }
 
 # herdr's rule for agent names; lowercased here, and checked before a tab is
 # made for it, so a bad name doesn't leave an empty tab behind.
@@ -40,7 +44,23 @@ shift
 # pane: HERDR_WORKSPACE_ID goes stale once the pane moves to another workspace.
 # --workspace is for callers without a pane of their own, like hp's popup.
 [ -n "$ws" ] || ws=$(herdr pane get "$HERDR_PANE_ID" | jq -r .result.pane.workspace_id)
-pane=$(herdr tab create --workspace "$ws" --cwd "$PWD" --label "$name" --focus | jq -r .result.root_pane.pane_id)
+tab=
+[ -z "$group" ] || tab=$(herdr tab list --workspace "$ws" | jq -r --arg l "$group" 'first(.result.tabs[] | select(.label == $l) | .tab_id) // empty')
+if [ -n "$tab" ]; then
+    # Split the tab's newest pane, alternating right and down by pane count,
+    # so the panes tile rather than shrinking into ever-thinner columns.
+    panes=$(herdr pane list --workspace "$ws" | jq -c --arg t "$tab" '[.result.panes[] | select(.tab_id == $t) | .pane_id]')
+    [ "$(jq length <<<"$panes")" -gt 0 ] || { echo "ha: tab $group has no panes" >&2; exit 1; }
+    dir=right
+    (( $(jq length <<<"$panes") % 2 == 0 )) && dir=down
+    pane=$(herdr pane split "$(jq -r 'last' <<<"$panes")" --direction "$dir" --cwd "$PWD" | jq -r .result.pane.pane_id)
+else
+    pane=$(herdr tab create --workspace "$ws" --cwd "$PWD" --label "${group:-$name}" --focus | jq -r .result.root_pane.pane_id)
+fi
+# Pane label too: herdr's sidebar has no token for the agent name, so the
+# agent rows show the pane label instead (config.toml). Unlike the tab label
+# it follows the pane when hbreak or a move takes it elsewhere.
+herdr pane rename "$pane" "$name" >/dev/null
 
 if [ -z "$host" ]; then
     herdr pane run "$pane" "$(printf '%q ' dclaude --new "$@")" >/dev/null

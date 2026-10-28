@@ -1,0 +1,40 @@
+{
+  "sandbox": {
+    "excludedCommands": ["sprint *"]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(sprint status*)",
+      "Bash(sprint sync*)",
+      "Bash(sprint up*)",
+      "Bash(herdr agent list*)",
+      "Bash(herdr agent get *)",
+      "Bash(herdr agent prompt *)",
+      "Bash(herdr agent wait *)",
+      "Edit(./TASKS.md)",
+      "Edit(./docs/**)"
+    ],
+    "deny": [
+      "Bash(sprint init*)",
+      "Bash(herdr pane run *)",
+      "Bash(herdr pane send-text *)",
+      "Bash(herdr pane send-keys *)",
+      "Bash(herdr agent send-keys *)",
+      "Bash(herdr agent start *)",
+      "Bash(* close *)",
+      "Bash(herdr server *)",
+      "Bash(herdr worktree *)",
+      "Bash(git push*)",
+      "Bash(git commit*)",
+      "Bash(git reset*)",
+      "Bash(git checkout*)",
+      "Edit(./bin/**)",
+      "Edit(./.claude/**)",
+      "Edit(./.envrc)",
+      "Edit(./.sprint)",
+      "Edit(./CLAUDE.md)",
+      "Edit(./agents.tsv)",
+      "Edit(./sessions.tsv)"
+    ]
+  }
+}

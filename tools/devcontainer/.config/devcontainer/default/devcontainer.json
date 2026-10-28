@@ -11,6 +11,8 @@
   // Remap vscode to the host uid, so bind-mounted files stay yours and the
   // 0600 herdr socket is reachable.
   "updateRemoteUserUID": true,
+  // Claude's ctrl+g opens the prompt in $EDITOR; the image sets none.
+  "remoteEnv": { "EDITOR": "nvim" },
   // Docker's default seccomp profile plus user namespaces, which bubblewrap
   // (Claude Code's Bash sandbox, turned on by dclaude) needs. Docker resolves
   // the path on the host, hence the stowed copy under ~/.config.
@@ -24,8 +26,10 @@
     }
   },
   // The host statusline script parses claude's JSON with jq; Claude's sandbox
-  // needs bubblewrap and socat. pre-commit and detect-secrets for repos with
-  // hooks, installed to /usr/local/bin: on PATH in every shell, sandbox
-  // included, and the fallback of host-installed .git/hooks/pre-commit.
-  "postCreateCommand": "(command -v jq && command -v bwrap && command -v socat && command -v pipx) >/dev/null || (sudo apt-get update && sudo apt-get install -y jq bubblewrap socat pipx); for t in pre-commit detect-secrets; do command -v $t >/dev/null || sudo PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install $t; done"
+  // needs bubblewrap and socat; neovim is ctrl+g's prompt editor (stock, no
+  // host config). pre-commit and detect-secrets for repos with
+  // hooks, and uv for project toolchains (dclaude's per-project setup),
+  // installed to /usr/local/bin: on PATH in every shell, sandbox included,
+  // and the fallback of host-installed .git/hooks/pre-commit.
+  "postCreateCommand": "(command -v jq && command -v bwrap && command -v socat && command -v pipx && command -v nvim) >/dev/null || (sudo apt-get update && sudo apt-get install -y jq bubblewrap socat pipx neovim); for t in pre-commit detect-secrets uv; do command -v $t >/dev/null || sudo PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install $t; done"
 }

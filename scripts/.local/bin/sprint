@@ -1,0 +1,271 @@
+#!/usr/bin/env python3
+"""sprint: run a multi-agent sprint hub (team-lead + workers), any hub.
+
+    sprint status            live state, pane and session per agent, open tasks
+    sprint up [NAME...]      start missing agents (all, or NAME...), resuming
+                             their last recorded session where it still exists
+    sprint sync [-q]         record changed sessions in sessions.tsv
+    sprint init [LABEL]      scaffold a hub in the current folder from the
+                             templates (existing files are kept)
+
+The hub is the nearest folder upwards with an agents.tsv (or $SPRINT_HUB):
+
+    agents.tsv    name<TAB>folder<TAB>mode[<TAB>tab], # comments. folder is
+                  relative to the hub or absolute; mode dclaude|host; tab is a
+                  herdr tab label to group agents in (ha --tab).
+    sessions.tsv  iso-time<TAB>name<TAB>session-id, appended by sync.
+    TASKS.md      open tasks as "- [ ] ... @name".
+    .sprint       key=value: workspace (herdr workspace label, default the
+                  hub's folder name).
+
+Agents start through ha in the hub's herdr workspace, created if missing. A
+session resumes only if its history is still filed under the agent's folder:
+host ~/.claude/projects/<path>/, dclaude its state dir's
+projects/-workspaces-<repo>/. Generalises report-data-store's bin/rds.
+"""
+
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+from datetime import datetime
+from pathlib import Path
+
+TEMPLATES = Path(os.path.realpath(__file__)).parent.parent / "share" / "sprint" / "templates"
+DCLAUDE_STATE = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "dclaude" / "claude"
+
+
+def die(msg):
+    sys.exit(f"sprint: {msg}")
+
+
+def herdr(*args):
+    out = subprocess.run(["herdr", *args], capture_output=True, text=True)
+    try:
+        return json.loads(out.stdout)
+    except ValueError:
+        return {}
+
+
+def snapshot():
+    return herdr("api", "snapshot").get("result", {}).get("snapshot", {})
+
+
+def find_hub():
+    if os.environ.get("SPRINT_HUB"):
+        return Path(os.environ["SPRINT_HUB"]).resolve()
+    here = Path.cwd().resolve()
+    for d in (here, *here.parents):
+        if (d / "agents.tsv").is_file():
+            return d
+    die("no agents.tsv here or above (sprint init scaffolds a hub)")
+
+
+def config(hub):
+    conf = {"workspace": hub.name}
+    f = hub / ".sprint"
+    if f.is_file():
+        for line in f.read_text().splitlines():
+            if "=" in line and not line.lstrip().startswith("#"):
+                k, v = line.split("=", 1)
+                conf[k.strip()] = v.strip()
+    return conf
+
+
+def roster(hub):
+    rows = []
+    for line in (hub / "agents.tsv").read_text().splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        f = line.split("\t")
+        if len(f) < 3:
+            die(f"agents.tsv: need name, folder and mode: {line!r}")
+        name, folder, mode = f[0], f[1], f[2]
+        if mode not in ("dclaude", "host"):
+            die(f"agents.tsv: {name}: mode must be dclaude or host, not {mode!r}")
+        tab = f[3] if len(f) > 3 and f[3] else None
+        rows.append({"name": name, "dir": (hub / folder).resolve(), "folder": folder, "mode": mode, "tab": tab})
+    return rows
+
+
+def sessions(hub):
+    last = {}
+    f = hub / "sessions.tsv"
+    if f.is_file():
+        for line in f.read_text().splitlines():
+            parts = line.split("\t")
+            if len(parts) >= 3 and not line.startswith("#"):
+                last[parts[1]] = parts[2]
+    return last
+
+
+def mangle(path):
+    return re.sub(r"[^A-Za-z0-9]", "-", str(path))
+
+
+def git_root(path):
+    out = subprocess.run(["git", "-C", str(path), "rev-parse", "--show-toplevel"], capture_output=True, text=True)
+    return Path(out.stdout.strip()) if out.returncode == 0 else Path(path)
+
+
+def history(agent, sid):
+    if agent["mode"] == "host":
+        base = Path(os.environ.get("CLAUDE_CONFIG_DIR", Path.home() / ".claude")) / "projects" / mangle(agent["dir"])
+    else:
+        base = DCLAUDE_STATE / "projects" / mangle(f"/workspaces/{git_root(agent['dir']).name}")
+    return (base / f"{sid}.jsonl").is_file()
+
+
+def live(snap):
+    return {a["name"]: a for a in snap.get("agents", []) if a.get("name")}
+
+
+def sid_of(agent):
+    return (agent.get("agent_session") or {}).get("value")
+
+
+def cmd_sync(hub, quiet=False):
+    snap = snapshot()
+    if not snap:
+        die("herdr is not reachable")
+    agents, last = live(snap), sessions(hub)
+    changed = []
+    for row in roster(hub):
+        sid = sid_of(agents.get(row["name"], {}))
+        if sid and last.get(row["name"]) != sid:
+            changed.append(f"{datetime.now().astimezone().isoformat(timespec='seconds')}\t{row['name']}\t{sid}\n")
+    if changed:
+        with open(hub / "sessions.tsv", "a") as f:
+            f.writelines(changed)
+    if not quiet:
+        for c in changed:
+            print("recorded", c.split("\t")[1], c.split("\t")[2].strip())
+        if not changed:
+            print("sessions up to date")
+
+
+def cmd_status(hub):
+    snap = snapshot()
+    agents, last = live(snap), sessions(hub)
+    tasks = (hub / "TASKS.md").read_text().splitlines() if (hub / "TASKS.md").is_file() else []
+    open_tasks = [t.strip() for t in tasks if re.match(r"\s*- \[ \]", t)]
+    names = set()
+    for row in roster(hub):
+        names.add(row["name"])
+        a = agents.get(row["name"])
+        state = a.get("agent_status", "?") if a else "-"
+        pane = a.get("pane_id", "") if a else ""
+        sid = (sid_of(a) if a else None) or last.get(row["name"]) or ""
+        tab = f" [{row['tab']}]" if row["tab"] else ""
+        print(f"{row['name']:<24} {state:<8} {pane:<8} {sid[:8]:<8} {row['folder']} ({row['mode']}){tab}")
+        for t in open_tasks:
+            if re.search(rf"@{re.escape(row['name'])}\b", t):
+                print(f"    {t}")
+    others = [t for t in open_tasks if not any(re.search(rf"@{re.escape(n)}\b", t) for n in names)]
+    if others:
+        print("\nother open tasks:")
+        for t in others:
+            print(f"    {t}")
+
+
+def workspace(snap, label, hub):
+    ws = next((w for w in snap.get("workspaces", []) if w.get("label") == label), None)
+    if ws:
+        return ws["workspace_id"]
+    created = herdr("workspace", "create", "--cwd", str(hub), "--label", label, "--no-focus").get("result", {})
+    if "workspace" not in created:
+        die(f"could not create herdr workspace {label!r}")
+    return created["workspace"]["workspace_id"]
+
+
+def cmd_up(hub, names):
+    snap = snapshot()
+    if not snap:
+        die("herdr is not reachable")
+    rows = roster(hub)
+    unknown = set(names) - {r["name"] for r in rows}
+    if unknown:
+        die(f"not in agents.tsv: {' '.join(sorted(unknown))}")
+    agents, last = live(snap), sessions(hub)
+    ws = workspace(snap, config(hub)["workspace"], hub)
+    failed, started_dclaude = [], False
+    for row in rows:
+        if names and row["name"] not in names:
+            continue
+        if row["name"] in agents:
+            print(f"{row['name']}: running")
+            continue
+        if not row["dir"].is_dir():
+            print(f"{row['name']}: folder {row['dir']} missing", file=sys.stderr)
+            failed.append(row["name"])
+            continue
+        args = ["ha", *(["--host"] if row["mode"] == "host" else []), "--workspace", ws]
+        args += [*(["--tab", row["tab"]] if row["tab"] else []), row["name"]]
+        sid = last.get(row["name"])
+        if sid and history(row, sid):
+            args += ["--resume", sid]
+            print(f"{row['name']}: resuming {sid[:8]}")
+        else:
+            print(f"{row['name']}: starting fresh")
+        if subprocess.run(args, cwd=row["dir"], env={**os.environ, "HERDR_ENV": "1"}).returncode != 0:
+            print(f"{row['name']}: failed to start", file=sys.stderr)
+            failed.append(row["name"])
+        elif row["mode"] == "dclaude":
+            started_dclaude = True
+    cmd_sync(hub, quiet=True)
+    # dclaude agents come up in the background, maybe after a container build;
+    # keep recording for a while, so a restart doesn't lose their first session.
+    if started_dclaude:
+        subprocess.Popen([sys.executable, os.path.realpath(__file__), "sync", "--watch"], cwd=hub,
+                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         start_new_session=True)
+    if failed:
+        die(f"failed: {' '.join(failed)}")
+
+
+def cmd_init(label):
+    hub = Path.cwd()
+    subs = {"{{HUB}}": hub.name, "{{HUB_PATH}}": str(hub), "{{WORKSPACE}}": label or hub.name,
+            "{{HUMAN}}": os.environ.get("USER", "human")}
+    for src in sorted(TEMPLATES.rglob("*")):
+        if src.is_dir():
+            continue
+        dst = hub / src.relative_to(TEMPLATES)
+        if dst.exists():
+            print(f"kept    {dst.relative_to(hub)}")
+            continue
+        text = src.read_text()
+        for k, v in subs.items():
+            text = text.replace(k, v)
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_text(text)
+        print(f"created {dst.relative_to(hub)}")
+
+
+def main():
+    argv = sys.argv[1:]
+    cmd = argv[0] if argv else "status"
+    rest = argv[1:]
+    if cmd in ("-h", "--help", "help"):
+        print(__doc__.strip())
+    elif cmd == "init":
+        cmd_init(rest[0] if rest else None)
+    elif cmd == "status":
+        cmd_status(find_hub())
+    elif cmd == "up":
+        cmd_up(find_hub(), rest)
+    elif cmd == "sync" and rest == ["--watch"]:
+        hub = find_hub()
+        for _ in range(40):
+            time.sleep(15)
+            cmd_sync(hub, quiet=True)
+    elif cmd == "sync":
+        cmd_sync(find_hub(), quiet=rest == ["-q"])
+    else:
+        die(f"unknown command {cmd!r} (status, up, sync, init)")
+
+
+if __name__ == "__main__":
+    main()

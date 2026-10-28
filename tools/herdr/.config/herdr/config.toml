@@ -28,7 +28,7 @@ show_agent_labels_on_pane_borders = true  # agent name on split pane borders, un
 # first, keeping the default, before the leading-digit rules could catch them.
 [ui.sidebar.agents.rows_by_agent]
 claude = [
-  ["state_icon", "agent"],
+  ["state_icon", "pane"],   # pane label = herdr agent name, set by ha
   ["machine", { token = "workspace", dim = true }, { token = "$ctx", dim = true, rules = [
     { equals = "100%", fg = "#eb6f92", dim = false },
     { equals = "5%" }, { equals = "6%" }, { equals = "7%" }, { equals = "8%" }, { equals = "9%" },
@@ -75,8 +75,7 @@ next_tab = ["prefix+n", "alt+right"]   # alt+left/right: no prefix needed
 previous_tab = ["prefix+p", "alt+left"]
 next_workspace = "alt+down"          # alt+down/up: workspaces, pairs with alt+left/right tabs
 previous_workspace = "alt+up"
-focus_agent = "prefix+1..9"
-switch_tab = "alt+1..9"            # default prefix+1..9 went to agents; alt+ like alt+left/right
+switch_tab = ["prefix+1..9", "alt+1..9"]   # prefix+1..9 is the default; alt+ pairs with alt+left/right
 next_agent = "prefix+alt+n"
 previous_agent = "prefix+alt+p"
 open_notification_target = "prefix+shift+o"  # prefix+o runs hnvim, prefix+a hlast
@@ -132,6 +131,14 @@ key = "prefix+alt+w"
 type = "popup"
 command = "\"$HOME/.local/bin/hw\""
 description = "open any file under ~ in a new tab (hw)"
+width = "90%"
+height = "85%"
+
+[[keys.command]]
+key = "prefix+shift+a"
+type = "popup"
+command = "\"$HOME/.local/bin/hagent\""
+description = "start a Claude subagent definition as an agent in a new tab (hagent)"
 width = "90%"
 height = "85%"
 

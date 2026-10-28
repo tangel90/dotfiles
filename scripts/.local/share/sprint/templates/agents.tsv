@@ -1,0 +1,3 @@
+# name<TAB>folder (relative to the hub, or absolute)<TAB>mode (dclaude|host)[<TAB>herdr tab]
+# Workers are <x>-worker, grouped in tabs per kind. Tabs, not spaces, between fields.
+team-lead	.	host

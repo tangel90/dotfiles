@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+# hagent: pick a Claude subagent definition with fzf and start it as its own
+# herdr agent (claude --agent NAME) in a new tab, run from the pane's
+# directory. Bound to prefix+shift+a as a popup in herdr's config.toml.
+#
+# Lists the user's agents (~/.claude/agents) and the project's
+# (<repo>/.claude/agents). Enter starts it through dclaude, alt-enter as host
+# claude, e.g. for workflow-agent, which reads host scripts and herdr. The
+# herdr agent is named after the definition, numbered if that name is taken.
+
+set -euo pipefail
+
+here=${HERDR_ACTIVE_PANE_CWD:-$PWD}
+cd "$here"
+root=$(git rev-parse --show-toplevel 2>/dev/null || true)
+
+dirs=("$HOME/.claude/agents")
+[ -n "$root" ] && dirs+=("$root/.claude/agents")
+
+# name <TAB> scope <TAB> description <TAB> file; name and description from
+# the frontmatter, the file name when there's no name.
+list() {
+    local d scope f
+    for d in "${dirs[@]}"; do
+        [ -d "$d" ] || continue
+        [ "$d" = "$HOME/.claude/agents" ] && scope=user || scope=project
+        for f in "$d"/*.md; do
+            [ -e "$f" ] || continue
+            awk -v f="$f" -v scope="$scope" '
+                NR == 1 && $0 != "---" { exit }
+                NR > 1 && $0 == "---" { exit }
+                /^name:/ { sub(/^name:[ \t]*/, ""); name = $0 }
+                /^description:/ { sub(/^description:[ \t]*/, ""); desc = $0 }
+                END {
+                    if (name == "") { name = f; sub(/.*\//, "", name); sub(/\.md$/, "", name) }
+                    printf "%s\t%s\t%s\t%s\n", name, scope, desc, f
+                }' "$f"
+        done
+    done
+}
+
+out=$(list | fzf --height=100% --delimiter='\t' --with-nth=1,2,3 --expect=alt-enter \
+    --header 'enter: dclaude · alt-enter: host' \
+    --preview 'bat --color=always --style=plain {4}' --preview-window=down,60%) || exit 0
+key=$(head -1 <<<"$out")
+line=$(sed -n 2p <<<"$out")
+[ -n "$line" ] || exit 0
+agent=$(cut -f1 <<<"$line")
+
+# herdr's rule for agent names, see ha.
+base=$(tr '[:upper:]' '[:lower:]' <<<"$agent" | tr -c 'a-z0-9_\n-' '-')
+[[ $base =~ ^[a-z] ]] || base=a-$base
+base=${base:0:29}
+name=$base
+agents=$(herdr agent list)
+n=1
+while jq -e --arg n "$name" '.result.agents[] | select(.name == $n)' <<<"$agents" >/dev/null; do
+    name=$base$((++n))
+done
+
+flags=()
+[ "$key" = alt-enter ] && flags+=(--host)
+# ha wants HERDR_ENV, which popups don't get (as in hp); in a popup the active
+# workspace stands in for the caller's pane, run from a shell ha finds its own.
+[ -n "${HERDR_ACTIVE_WORKSPACE_ID:-}" ] && flags+=(--workspace "$HERDR_ACTIVE_WORKSPACE_ID")
+HERDR_ENV=1 exec "$HOME/.local/bin/ha" "${flags[@]}" "$name" --agent "$agent"
