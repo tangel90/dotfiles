@@ -72,16 +72,17 @@ close_pane = "prefix+q"     # match tmux kill-pane
 detach = "prefix+d"         # match tmux; default was prefix+q
 new_tab = "prefix+t"        # default was prefix+c
 next_tab = ["prefix+n", "alt+right"]   # alt+left/right: no prefix needed
-previous_tab = ["prefix+p", "alt+left"]
+previous_tab = "alt+left"                # prefix+p is open-pass, as in tmux
+rename_pane = "prefix+ctrl+p"            # prefix+shift+p is open-pass show
 next_workspace = "alt+down"          # alt+down/up: workspaces, pairs with alt+left/right tabs
 previous_workspace = "alt+up"
 switch_tab = ["prefix+1..9", "alt+1..9"]   # prefix+1..9 is the default; alt+ pairs with alt+left/right
 next_agent = "prefix+alt+n"
 previous_agent = "prefix+alt+p"
-open_notification_target = "prefix+shift+o"  # prefix+o runs hnvim, prefix+a hlast
-settings = "prefix+shift+s"                  # prefix+s runs hp
+open_notification_target = []                 # prefix+a runs hlast instead (works after the toast is gone), prefix+o hnvim
 split_vertical = "prefix+shift+v"            # prefix+v runs hsplit (split + hcouple)
-clear_pane = "prefix+ctrl+r"                 # wipe screen + scrollback, e.g. after a secret was shown
+cycle_pane_next = []                         # was prefix+tab, now last tab (plugins/last-tab); prefix+shift+tab still cycles
+clear_pane = "prefix+ctrl+r"                # wipe screen + scrollback, e.g. after a secret was shown
 copy_mode = "prefix+f"                       # default was prefix+[
 edit_scrollback = "prefix+shift+e"           # prefix+e runs yazi
 # prefix+w picker: j/k move between workspaces, J/K between panes (h/l unchanged)
@@ -143,7 +144,7 @@ width = "90%"
 height = "85%"
 
 [[keys.command]]
-key = "prefix+s"            # replaces settings, now prefix+shift+s
+key = "prefix+shift+o"      # was open_notification_target; prefix+s is herdr's Settings again
 type = "popup"
 command = "\"$HOME/.local/bin/hp\""
 description = "project picker: workspaces, chats, folders"
@@ -157,7 +158,35 @@ command = "\"$HOME/.local/bin/hsplit\""
 description = "split right, coupled to the tab's agent (hcouple)"
 
 [[keys.command]]
-key = "prefix+o"            # replaces open_notification_target, now prefix+shift+o
+key = "prefix+o"            # replaces open_notification_target, now unbound (hlast on prefix+a)
 type = "shell"
 command = "\"$HOME/.local/bin/hnvim\""
 description = "nvim tab of this workspace"
+
+[[keys.command]]
+key = "prefix+tab"           # replaces cycle_pane_next
+type = "plugin_action"
+command = "thomas.last-tab.focus"
+description = "toggle to the previously focused tab (last-tab plugin)"
+
+[[keys.command]]
+key = "prefix+percent"
+type = "shell"
+command = "\"$HOME/.local/bin/hflip\""
+description = "toggle two panes between side by side and stacked (hflip)"
+
+[[keys.command]]
+key = "prefix+p"             # replaces previous_tab (alt+left), as tmux's prefix+p
+type = "popup"
+command = "GPG_TTY=$(tty) \"$HOME/.local/bin/open-pass\" copy"
+description = "copy a pass entry's first line to the clipboard (open-pass)"
+width = "80%"
+height = "70%"
+
+[[keys.command]]
+key = "prefix+shift+p"       # replaces rename_pane (prefix+ctrl+p), as tmux's prefix+P
+type = "popup"
+command = "GPG_TTY=$(tty) \"$HOME/.local/bin/open-pass\" show"
+description = "show a pass entry read-only in nvim (open-pass)"
+width = "90%"
+height = "85%"

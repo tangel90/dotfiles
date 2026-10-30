@@ -138,6 +138,15 @@ for = "unix"
 run = '''shell 'if [ -n "$HERDR_ACTIVE_PANE_ID" ]; then herdr pane split "$HERDR_ACTIVE_PANE_ID" --direction right --cwd "$PWD" --focus >/dev/null && ya emit quit; else exec "$SHELL"; fi' --block'''
 desc = "Open $SHELL here (herdr popup: in a new pane)"
 
+# A shell in the browsed directory in a new herdr tab (tmux: window), labelled
+# after the directory, via mux-open. In herdr's prefix+e popup yazi quits too,
+# so the popup closes onto the new tab.
+[[mgr.prepend_keymap]]
+on = "T"
+for = "unix"
+run = '''shell 'mux-open --label "$(basename "$PWD")" -- "$SHELL" && if [ -n "$HERDR_ACTIVE_PANE_ID" ]; then ya emit quit; fi' --orphan'''
+desc = "Open $SHELL here in a new herdr tab"
+
 # Reveal the browsed directory in Windows Explorer. Goes through wsl-reveal,
 # which converts the path with `wslpath -w` and passes it as an argument:
 # Windows cannot use a WSL path as a working directory, so a bare

@@ -86,6 +86,12 @@ if [ ! -e "$HOME/.claude/skills/herdr" ]; then
     mkdir -p "$HOME/.claude/skills/herdr"
     herdr --skill >"$HOME/.claude/skills/herdr/SKILL.md"
 fi
+# Local plugins (stowed with tools/herdr) only run once linked. last-tab
+# backs prefix+tab.
+for p in "$HOME"/.config/herdr/plugins/*/; do
+    id=$(sed -n 's/^id = "\(.*\)"/\1/p' "$p/herdr-plugin.toml")
+    herdr plugin list 2>/dev/null | grep -qF "$id" || herdr plugin link "$p"
+done
 
 say "check"
 # Tools that rewrite a file in place can turn a stow link back into a plain

@@ -16,4 +16,5 @@ Write for a reader who finds dense markdown tiring. The answer should read like 
 - Tables only when comparing several items across several attributes.
 - No emoji, no horizontal rules, no decorative symbols.
 - Code blocks for commands and code the reader will copy — always. Inline backticks for file names, commands and identifiers.
+- Every command meant for the reader to run gets its own fenced block, never only inline backticks: Claude Code's `/copy` offers each fenced block on its own. One block per thing they run in one go; full, absolute paths, no placeholders left to fill in when the real value is known; no `$ ` prompt or output inside the block.
 - Lead with the answer. Leave out recaps, closing summaries and offers of further help.

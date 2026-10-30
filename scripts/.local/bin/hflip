@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# hflip [PANE_ID]: toggle a two-pane herdr tab between side by side (A|B)
+# and stacked (A/B), like tmux's next-layout for two panes. Bound to
+# prefix+% in herdr's config.toml; herdr has no rotate action of its own.
+#
+# The second pane (right or bottom) is moved back next to the first in the
+# other direction; focus stays on whichever pane had it. Other pane counts
+# are left alone. herdr ignores a move within the pane's own tab, so it goes
+# out to a temporary tab first, which closes again once it is moved back.
+
+set -euo pipefail
+
+pane=${1:-${HERDR_ACTIVE_PANE_ID:?hflip: no pane given}}
+
+# Panes of the tab with their rects, ordered top-left first. The jq accepts
+# rects flat or under .rect, as in ha.
+layout=$(herdr pane layout --pane "$pane")
+tab=$(jq -r '.. | .tab_id? // empty' <<<"$layout" | head -n1)
+panes=$(jq -c '
+    [.. | objects | select(.pane_id? and (.rect // .).width?)
+        | (.rect // .) as $r | {id: .pane_id, focused: (.focused // false), x: $r.x, y: $r.y}]
+    | unique_by(.id) | sort_by([.y, .x])' <<<"$layout")
+(( $(jq length <<<"$panes") == 2 )) || exit 0
+
+read -r first second dir focus < <(jq -r '
+    "\(.[0].id) \(.[1].id) \(if .[0].y == .[1].y then "down" else "right" end) \(if .[1].focused then "--focus" else "--no-focus" end)"' <<<"$panes")
+herdr pane move "$second" --new-tab --no-focus >/dev/null
+herdr pane move "$second" --tab "$tab" --target-pane "$first" --split "$dir" "$focus" >/dev/null

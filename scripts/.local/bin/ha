@@ -89,6 +89,13 @@ if [ -z "$host" ]; then
     exit 0
 fi
 
+# A linked worktree's agent also works in the main checkout (sibling
+# worktrees under .claude/worktrees/), which blockReadsOutsideWorkingDirectories
+# would otherwise prompt for on every read.
+if [ "$(git rev-parse --git-dir 2>/dev/null)" != "$(git rev-parse --git-common-dir 2>/dev/null)" ]; then
+    main=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
+    [ -n "$main" ] && set -- --add-dir "$main" "$@"
+fi
 (( $# )) && set -- -- "$@"
 for _ in {1..20}; do
     out=$(herdr agent start "$name" --kind claude --pane "$pane" "$@" 2>&1) && exit 0
