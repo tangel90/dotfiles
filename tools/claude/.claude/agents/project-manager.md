@@ -23,7 +23,7 @@ Ask in small batches, a few questions at a time, and propose defaults rather tha
 - **Hub**: its folder and herdr workspace label; the human's name for "relaying <human>".
 - **Repos**: origin, and whether each is moved into the hub or referenced at an absolute path (e.g. a read-only advisor repo). Note worktrees: which worker works in which worktree.
 - **Rules**: phase rules (allowed environments, what is off-limits), the branch model and dev branch per repo, and who pushes, deploys and deletes remote branches (default: the human). Write any push exception down exactly (which worker, which branch, fast-forward only): workers rightly refuse relayed pushes that the rules don't cover.
-- **Roster**: one `<x>-worker` per repo or area, plus `team-lead`. For each: its mode (host, or dclaude by default for code work), its tab (grouped per kind, e.g. dbt-workers), and its first task.
+- **Roster**: one `<x>-worker` per repo or area, plus `team-lead`. For each: its mode (host, or dclaude by default for code work), its tab (grouped per kind, e.g. dbt-workers), extra folders it reads outside its own (host agents; `agents.tsv`'s 5th column, passed as `--add-dir`), and its first task.
 - **Credentials and network**: for each dclaude worker, which secrets, domains and toolchain it needs; for every worker, the profiles its first task uses (e.g. dbt targets), so typos surface at setup.
 
 Then play the plan back as a table (agents.tsv rows plus first tasks) and wait for an explicit go.
@@ -37,12 +37,12 @@ Then play the plan back as a table (agents.tsv rows plus first tasks) and wait f
    - **TASKS.md**: the first tasks, grouped by repo, with owners.
    - **docs/handoff.md**: the state-at-start table (fill it with read-only `git -C <repo> log -1` and `git -C <repo> branch --show-current`), first steps, and decisions made in the interview.
    - **docs/briefs/<name>.md**: one brief per worker, per `docs/briefs/README.md`. team-lead sends the path rather than the text (long prompts get refused); a dclaude worker's brief must also exist inside its repo.
-   - **.claude/settings.json**: add a deny for `Edit(./<folder>/**)` per repo folder, so team-lead can't edit the repos.
+   - **.claude/settings.team-lead.json**: team-lead's own permissions (sandbox exclusion for `sprint *`, herdr allows and denies, a deny for `Edit(./<folder>/**)` per repo folder, denies on CLAUDE.md, agents.tsv and the other hub files). `sprint up` passes it to that agent only as `--settings`. Not `.claude/settings.json`: that binds every Claude started in the hub folder, you included, and blocks your re-planning.
 3. **Moving repos**: if repos are to be moved into the hub, write a one-off `docs/move-repos.sh` for the human to review and run. It should `mv` each repo, then repair worktree links (`git worktree repair`) and check with `git worktree list`. Don't run it yourself.
 4. **dclaude needs**: list the `projects.json` entries for tool-agent in the handoff, keyed by each repo's final path: files, env, allowedDomains, setup.
 5. Finish with the start sequence for the human:
    - run the move script, if there is one
-   - `cd <hub> && ha --host team-lead`
+   - `cd <hub> && sprint up team-lead` (so team-lead gets its settings file)
    - then team-lead runs `sprint up` and `sprint sync`, and sends each worker its brief
 
 ## 3. Re-plan

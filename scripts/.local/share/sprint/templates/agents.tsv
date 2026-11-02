@@ -1,3 +1,4 @@
-# name<TAB>folder (relative to the hub, or absolute)<TAB>mode (dclaude|host)[<TAB>herdr tab]
+# name<TAB>folder (relative to the hub, or absolute)<TAB>mode (dclaude|host)[<TAB>herdr tab[<TAB>extra dirs]]
+# extra dirs: comma-separated, relative to the hub or absolute, passed as --add-dir (host agents only).
 # Workers are <x>-worker, grouped in tabs per kind. Tabs, not spaces, between fields.
 team-lead	.	host

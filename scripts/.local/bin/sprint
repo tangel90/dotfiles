@@ -10,13 +10,21 @@
 
 The hub is the nearest folder upwards with an agents.tsv (or $SPRINT_HUB):
 
-    agents.tsv    name<TAB>folder<TAB>mode[<TAB>tab], # comments. folder is
-                  relative to the hub or absolute; mode dclaude|host; tab is a
-                  herdr tab label to group agents in (ha --tab).
+    agents.tsv    name<TAB>folder<TAB>mode[<TAB>tab[<TAB>dirs]], # comments.
+                  folder is relative to the hub or absolute; mode dclaude|host;
+                  tab is a herdr tab label to group agents in (ha --tab), may
+                  be empty; dirs are extra working dirs, comma-separated,
+                  relative to the hub or absolute, passed as --add-dir (host
+                  agents only: a container can't see them).
     sessions.tsv  iso-time<TAB>name<TAB>session-id, appended by sync.
     TASKS.md      open tasks as "- [ ] ... @name".
     .sprint       key=value: workspace (herdr workspace label, default the
                   hub's folder name).
+    .claude/settings.<name>.json
+                  settings for that agent only, passed as --settings (host
+                  agents). Put team-lead's denies here rather than in the
+                  hub's .claude/settings.json, which binds every Claude
+                  started in the hub folder, project-manager included.
 
 Agents start through ha in the hub's herdr workspace, created if missing. A
 session resumes only if its history is still filed under the agent's folder:
@@ -86,7 +94,8 @@ def roster(hub):
         if mode not in ("dclaude", "host"):
             die(f"agents.tsv: {name}: mode must be dclaude or host, not {mode!r}")
         tab = f[3] if len(f) > 3 and f[3] else None
-        rows.append({"name": name, "dir": (hub / folder).resolve(), "folder": folder, "mode": mode, "tab": tab})
+        extra = [(hub / d.strip()).resolve() for d in f[4].split(",") if d.strip()] if len(f) > 4 else []
+        rows.append({"name": name, "dir": (hub / folder).resolve(), "folder": folder, "mode": mode, "tab": tab, "extra": extra})
     return rows
 
 
@@ -203,6 +212,20 @@ def cmd_up(hub, names):
             continue
         args = ["ha", *(["--host"] if row["mode"] == "host" else []), "--workspace", ws]
         args += [*(["--tab", row["tab"]] if row["tab"] else []), row["name"]]
+        if row["extra"] and row["mode"] == "host":
+            for d in row["extra"]:
+                if not d.is_dir():
+                    print(f"{row['name']}: extra dir {d} missing, skipped", file=sys.stderr)
+                    continue
+                args += ["--add-dir", str(d)]
+        elif row["extra"]:
+            print(f"{row['name']}: extra dirs ignored, dclaude can't see host paths", file=sys.stderr)
+        own = hub / ".claude" / f"settings.{row['name']}.json"
+        if own.is_file():
+            if row["mode"] == "host":
+                args += ["--settings", str(own)]
+            else:
+                print(f"{row['name']}: {own.name} ignored, dclaude can't see host paths", file=sys.stderr)
         sid = last.get(row["name"])
         if sid and history(row, sid):
             args += ["--resume", sid]

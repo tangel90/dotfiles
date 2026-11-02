@@ -19,6 +19,18 @@
       "Bash(herdr workspace list*)"
     ],
     "ask": ["Bash(herdr pane read *)", "Bash(herdr agent read *)"],
+    "deny": [
+      "Bash(pass)",
+      "Bash(pass *)",
+      "Bash(drp-run *)",
+      "Read(~/.password-store/**)",
+      "Read(**/auth/auth.py)",
+      "Read(**/auth/auth/auth.py)",
+      "Read(**/auth.zip)",
+      "Read(**/secrets)",
+      "Read(**/secrets/**)",
+      "Read(//home/thomas/projects/DRP/auth_bkp/**)"
+    ],
     "defaultMode": "auto"
   },
   "hooks": {
