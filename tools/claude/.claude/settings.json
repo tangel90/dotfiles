@@ -23,7 +23,10 @@
       "Bash(pass)",
       "Bash(pass *)",
       "Bash(drp-run *)",
+      "Bash(*/drp-run *)",
       "Read(~/.password-store/**)",
+      "Read(~/.config/dclaude/oauth-token)",
+      "Read(**/.oauth-token)",
       "Read(**/auth/auth.py)",
       "Read(**/auth/auth/auth.py)",
       "Read(**/auth.zip)",
@@ -150,7 +153,7 @@
       "**CI/CD deploy targets**: None configured",
       "**Network posture**: None configured",
       "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine with open internet",
-      "**Source control**: This repo (`snowflake-reporting` / `report-data-store-dbt`) and its remotes — `origin` (gitlab-trianel.gitlabhosting.com:eit-reporting/report-data-store-dbt.git) and `bitbucket` (con.trianel.com/drp/snowflake_dbt.git) — no additional orgs configured",
+      "**Source control**: This repo (`~/projects/report-data-store/dbt-core` / `report-data-store-dbt-core`) and its remotes — `origin` (gitlab-trianel.gitlabhosting.com:eit-reporting/report-data-store-dbt-core.git) and `bitbucket` (con.trianel.com/drp/snowflake_dbt.git) — no additional orgs configured",
       "**Trusted internal domains**: con.trianel.com, gitlab-trianel.gitlabhosting.com (this repo's own remote hosts)",
       "**Trusted cloud buckets**: None configured",
       "**Key internal services**: Snowflake account used via `snow` CLI (`dev` connection/profile) and dbt; Postgres `smorrebrod` service (`PGSERVICE=smorrebrod-local`) used by `scripts/refresh_from_postgres.sh`",
@@ -162,7 +165,7 @@
       "**Protected IaC scopes**: `../snowflake-iac` role/warehouse grants (`sql/10_role/`, `sql/40_grants/`) and any `prod`/`production`-segment environment deploy there",
       "### User-specific",
       "**Primary use of Claude Code**: software development (dbt + Snowflake DataVault 2.0 reporting pipeline)",
-      "**Trusted repo**: This repo (snowflake-reporting / report-data-store-dbt) and its configured remotes (origin on gitlab-trianel.gitlabhosting.com, bitbucket on con.trianel.com) — treat as private/internal",
+      "**Trusted repo**: This repo (~/projects/report-data-store/dbt-core / report-data-store-dbt-core) and its configured remotes (origin on gitlab-trianel.gitlabhosting.com, bitbucket on con.trianel.com) — treat as private/internal",
       "**Org-specific CLIs**: `dbt`, `snow` (Snowflake CLI), `sqlfluff`"
     ]
   },

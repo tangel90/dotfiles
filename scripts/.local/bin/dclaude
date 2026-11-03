@@ -112,9 +112,20 @@ mounts=(
     --mount "type=bind,source=$(dirname "$sock"),target=/herdr"
 )
 
-# The one deliberate write-through: a token refresh inside the container must
-# reach the host, or the next refresh on either side fails.
-if [ -f "$HOME/.claude/.credentials.json" ]; then
+# Login. Preferred: a long-lived token of the containers' own (`claude
+# setup-token`, saved to ~/.config/dclaude/oauth-token, 0600), copied into the
+# state dir and exported as CLAUDE_CODE_OAUTH_TOKEN at exec. It never
+# refreshes, so nothing is shared with the host's login. Sharing the host's
+# .credentials.json instead (the fallback) races on refresh-token rotation and
+# breaks once the single-file mount goes stale (a Docker Desktop restart, an
+# atomic rewrite): one side's refresh token dies, and it needs /login again.
+token_file=${DCLAUDE_TOKEN_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/dclaude/oauth-token}
+if [ -s "$token_file" ]; then
+    install -m 600 "$token_file" "$state/.oauth-token"
+    [ -s "$state/.credentials.json" ] || rm -f "$state/.credentials.json"
+elif [ -f "$HOME/.claude/.credentials.json" ]; then
+    rm -f "$state/.oauth-token"
+    echo "dclaude: sharing the host login; for a stable container login: claude setup-token, saved to $token_file (0600)" >&2
     touch "$state/.credentials.json"
     mounts+=(--mount "type=bind,source=$HOME/.claude/.credentials.json,target=$HOME/.claude/.credentials.json")
 fi
@@ -321,6 +332,9 @@ export HERDR_AGENT=claude
 exec devcontainer exec "${dc_args[@]}" "${env_args[@]}" sh -c '
     host=$1; shift
     PATH=/opt/dclaude/bin:$PATH; export PATH
+    if [ -s "$CLAUDE_CONFIG_DIR/.oauth-token" ]; then
+        CLAUDE_CODE_OAUTH_TOKEN=$(cat "$CLAUDE_CONFIG_DIR/.oauth-token"); export CLAUDE_CODE_OAUTH_TOKEN
+    fi
     if [ "$HOME/.claude" != "$CLAUDE_CONFIG_DIR" ] && [ -d "$CLAUDE_CONFIG_DIR/themes" ]; then
         mkdir -p "$HOME/.claude" && ln -sfn "$CLAUDE_CONFIG_DIR/themes" "$HOME/.claude/themes"
     fi

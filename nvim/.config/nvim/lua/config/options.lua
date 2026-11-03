@@ -46,7 +46,7 @@ vim.opt.cursorline = true
 
 vim.g.OmniSharp_server_use_net6 = 1
 
-vim.g.snow_session_cmd = 'SNOW_SESSION_FIFO=%s /home/thomas/dev/snowflake-reporting/scripts/snow_session.py tst'
+vim.g.snow_session_cmd = 'SNOW_SESSION_FIFO=%s /home/thomas/projects/report-data-store/dbt-core/scripts/snow_session.py tst'
 
 vim.g.deprecation_warnings = false
 -- Set filetype to `bigfile` for files larger than 1.5 MB
