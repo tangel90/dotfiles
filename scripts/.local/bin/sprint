@@ -17,6 +17,9 @@ The hub is the nearest folder upwards with an agents.tsv (or $SPRINT_HUB):
                   relative to the hub or absolute, passed as --add-dir (host
                   agents only: a container can't see them).
     sessions.tsv  iso-time<TAB>name<TAB>session-id, appended by sync.
+    tickets/      one ticket per file (<ID>-<slug>.md): "# ID: title", then
+                  Status:/Owner: header lines; open = not done or wontfix.
+                  Replaces TASKS.md, which is read only without tickets/.
     TASKS.md      open tasks as "- [ ] ... @name".
     .sprint       key=value: workspace (herdr workspace label, default the
                   hub's folder name).
@@ -25,6 +28,11 @@ The hub is the nearest folder upwards with an agents.tsv (or $SPRINT_HUB):
                   agents). Put team-lead's denies here rather than in the
                   hub's .claude/settings.json, which binds every Claude
                   started in the hub folder, project-manager included.
+    .claude/plugins/<plugin>/
+                  hub plugins (a .claude-plugin/plugin.json each, e.g. the
+                  hub's skills), loaded into every host agent with
+                  --plugin-dir. dclaude agents can't see them: the lead acts
+                  for them (e.g. updates their tickets).
 
 Agents start through ha in the hub's herdr workspace, created if missing. A
 session resumes only if its history is still filed under the agent's folder:
@@ -155,11 +163,34 @@ def cmd_sync(hub, quiet=False):
             print("sessions up to date")
 
 
+def open_tickets(d):
+    """Open tickets as (owner, line); top-level files only (tickets/rejected/ is history)."""
+    out = []
+    for f in sorted(d.glob("*.md")):
+        head = {}
+        title = f.stem
+        for line in f.read_text(errors="replace").splitlines():
+            if line.startswith("## "):
+                break
+            if line.startswith("# "):
+                title = line[2:].strip()
+            elif ":" in line:
+                k, v = line.split(":", 1)
+                head[k.strip().lower()] = v.strip()
+        status = head.get("status", "?")
+        if status not in ("done", "wontfix"):
+            out.append((head.get("owner", "-"), f"{title} ({status})"))
+    return out
+
+
 def cmd_status(hub):
     snap = snapshot()
     agents, last = live(snap), sessions(hub)
-    tasks = (hub / "TASKS.md").read_text().splitlines() if (hub / "TASKS.md").is_file() else []
-    open_tasks = [t.strip() for t in tasks if re.match(r"\s*- \[ \]", t)]
+    if (hub / "tickets").is_dir():
+        open_tasks = [f"{line} @{owner}" for owner, line in open_tickets(hub / "tickets")]
+    else:
+        tasks = (hub / "TASKS.md").read_text().splitlines() if (hub / "TASKS.md").is_file() else []
+        open_tasks = [t.strip() for t in tasks if re.match(r"\s*- \[ \]", t)]
     names = set()
     for row in roster(hub):
         names.add(row["name"])
@@ -220,6 +251,11 @@ def cmd_up(hub, names):
                 args += ["--add-dir", str(d)]
         elif row["extra"]:
             print(f"{row['name']}: extra dirs ignored, dclaude can't see host paths", file=sys.stderr)
+        for plugin in sorted((hub / ".claude" / "plugins").glob("*/.claude-plugin/plugin.json")):
+            if row["mode"] == "host":
+                args += ["--plugin-dir", str(plugin.parent.parent)]
+            else:
+                print(f"{row['name']}: plugin {plugin.parent.parent.name} not loaded, dclaude can't see host paths", file=sys.stderr)
         own = hub / ".claude" / f"settings.{row['name']}.json"
         if own.is_file():
             if row["mode"] == "host":
