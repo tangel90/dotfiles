@@ -79,6 +79,8 @@ setopt hist_ignore_all_dups
 setopt hist_save_no_dups
 setopt hist_ignore_dups
 setopt hist_find_no_dups
+# "# ..." at the prompt is a comment, so pasted commands with trailing comments run.
+setopt interactivecomments
 
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
@@ -106,7 +108,6 @@ alias la="exa --long --header --all --sort=type --icons --no-permissions --no-us
 # Google throttles translate-shell by IP ("Rate limiting"); bing has no such
 # limit here. Override per call with `trans -e google ...` when needed.
 alias trans="trans -e bing"
-alias grep="rg"
 alias cat="bat"
 alias vim="nvim"
 alias vimdev='NVIM_APPNAME=nvim-dev nvim'
