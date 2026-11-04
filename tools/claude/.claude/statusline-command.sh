@@ -98,7 +98,8 @@ fi
 # ui.sidebar.agents), only when they change: the status line refreshes far
 # more often than that.
 if [ -n "$ctx_used$model" ] && [ "${HERDR_ENV:-}" = 1 ] && [ -n "${HERDR_PANE_ID:-}" ] && command -v herdr >/dev/null; then
-    ctx_val=${ctx_used:+$(printf "%.0f" "$ctx_used")%}
+    # Zero-padded ("07%"), so herdr's text rules can band by leading digits.
+    ctx_val=${ctx_used:+$(printf "%02.0f" "$ctx_used")%}
     meta_last="${XDG_RUNTIME_DIR:-/tmp}/claude-ctx-${HERDR_PANE_ID//[^A-Za-z0-9]/_}"
     if [ "$(cat "$meta_last" 2>/dev/null)" != "$ctx_val|$model" ]; then
         herdr pane report-metadata "$HERDR_PANE_ID" --source claude-statusline \

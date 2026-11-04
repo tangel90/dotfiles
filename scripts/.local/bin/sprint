@@ -4,6 +4,13 @@
     sprint status            live state, pane and session per agent, open tasks
     sprint up [NAME...]      start missing agents (all, or NAME...), resuming
                              their last recorded session where it still exists
+    sprint restart NAME [--fresh] [--model M]
+                             exit the agent (/exit), close its pane, start it
+                             again (resuming unless --fresh; --model for this
+                             session only) and record the session
+    sprint settings [--check] [NAME...]
+                             print each agent's combined settings; --check
+                             lists hub rules the shared role sets already cover
     sprint sync [-q]         record changed sessions in sessions.tsv
     sprint init [LABEL]      scaffold a hub in the current folder from the
                              templates (existing files are kept)
@@ -24,10 +31,18 @@ The hub is the nearest folder upwards with an agents.tsv (or $SPRINT_HUB):
     .sprint       key=value: workspace (herdr workspace label, default the
                   hub's folder name).
     .claude/settings.<name>.json
-                  settings for that agent only, passed as --settings (host
-                  agents). Put team-lead's denies here rather than in the
-                  hub's .claude/settings.json, which binds every Claude
-                  started in the hub folder, project-manager included.
+                  settings for that agent only (e.g. {"model": "sonnet"}).
+
+Settings (host agents): sprint combines, in this order, the shared role set
+(lead for the row with folder ".", else worker; from
+~/.local/share/sprint/roles/, one source for every hub), the hub's
+.claude/settings.json (hub-specific rules only) and .claude/settings.<name>.json,
+writes the result to ~/.local/state/sprint/<hub>/<name>.json and passes it as
+--settings. Lists are united, objects merged, later scalars win. {{HUB_PATH}}
+in any of them becomes the hub's absolute path; path rules need it as
+Edit(/{{HUB_PATH}}/...) (a // rule is absolute; ./ would resolve from each
+agent's own folder, a single / from the generated file's). Changing a
+role set or hub file takes effect at the agent's next start (sprint restart).
     .claude/plugins/<plugin>/
                   hub plugins (a .claude-plugin/plugin.json each, e.g. the
                   hub's skills), loaded into every host agent with
@@ -163,6 +178,99 @@ def cmd_sync(hub, quiet=False):
             print("sessions up to date")
 
 
+ROLES = TEMPLATES.parent / "roles"
+STATE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "sprint"
+
+
+def role(row):
+    return "lead" if row["folder"] in (".", "./") else "worker"
+
+
+def merge(a, b):
+    if isinstance(a, dict) and isinstance(b, dict):
+        out = dict(a)
+        for k, v in b.items():
+            out[k] = merge(out[k], v) if k in out else v
+        return out
+    if isinstance(a, list) and isinstance(b, list):
+        return a + [x for x in b if x not in a]
+    return b
+
+
+def load_json(path, hub):
+    if not path.is_file():
+        return {}
+    text = path.read_text().replace("{{HUB_PATH}}", str(hub))
+    try:
+        return json.loads(text)
+    except ValueError as e:
+        die(f"{path}: {e}")
+
+
+def agent_settings(hub, row):
+    parts = [ROLES / f"{role(row)}.json", hub / ".claude" / "settings.json", hub / ".claude" / f"settings.{row['name']}.json"]
+    combined = {}
+    for p in parts:
+        combined = merge(combined, load_json(p, hub))
+    return combined
+
+
+def write_settings(hub, row):
+    out = STATE / mangle(hub).strip("-") / f"{row['name']}.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(agent_settings(hub, row), indent=2) + "\n")
+    return out
+
+
+def cmd_settings(hub, args):
+    check = "--check" in args
+    names = [a for a in args if a != "--check"]
+    rows = [r for r in roster(hub) if not names or r["name"] in names]
+    if check:
+        hub_set = load_json(hub / ".claude" / "settings.json", hub)
+        for name in ("lead", "worker"):
+            shared = load_json(ROLES / f"{name}.json", hub)
+            for kind in ("allow", "ask", "deny"):
+                dup = [r for r in hub_set.get("permissions", {}).get(kind, []) if r in shared.get("permissions", {}).get(kind, [])]
+                for r in dup:
+                    print(f"{kind:<5} {r}    (in {name}.json: remove from the hub's settings.json)")
+        return
+    for row in rows:
+        print(f"== {row['name']} ({role(row)}, {row['mode']})")
+        print(json.dumps(agent_settings(hub, row), indent=2))
+
+
+def cmd_restart(hub, args):
+    fresh = "--fresh" in args
+    model = None
+    if "--model" in args:
+        i = args.index("--model")
+        model = args[i + 1] if i + 1 < len(args) else die("--model needs a model")
+        args = args[:i] + args[i + 2:]
+    names = [a for a in args if a != "--fresh"]
+    if len(names) != 1:
+        die("usage: sprint restart NAME [--fresh] [--model M]")
+    name = names[0]
+    if name not in {r["name"] for r in roster(hub)}:
+        die(f"not in agents.tsv: {name}")
+    cmd_sync(hub, quiet=True)
+    agent = live(snapshot()).get(name)
+    if agent:
+        if agent.get("agent_status") == "working":
+            die(f"{name} is working; restart it once it's idle")
+        pane = agent["pane_id"]
+        herdr("agent", "prompt", name, "/exit")
+        for _ in range(60):
+            time.sleep(0.5)
+            if name not in live(snapshot()):
+                break
+        else:
+            print(f"{name}: still up after /exit, closing its pane anyway", file=sys.stderr)
+        herdr("pane", "close", pane)
+        print(f"{name}: stopped")
+    cmd_up(hub, [name], fresh=fresh, model=model)
+
+
 def open_tickets(d):
     """Open tickets as (owner, line); top-level files only (tickets/rejected/ is history)."""
     out = []
@@ -220,7 +328,7 @@ def workspace(snap, label, hub):
     return created["workspace"]["workspace_id"]
 
 
-def cmd_up(hub, names):
+def cmd_up(hub, names, fresh=False, model=None):
     snap = snapshot()
     if not snap:
         die("herdr is not reachable")
@@ -256,14 +364,16 @@ def cmd_up(hub, names):
                 args += ["--plugin-dir", str(plugin.parent.parent)]
             else:
                 print(f"{row['name']}: plugin {plugin.parent.parent.name} not loaded, dclaude can't see host paths", file=sys.stderr)
-        own = hub / ".claude" / f"settings.{row['name']}.json"
-        if own.is_file():
-            if row["mode"] == "host":
-                args += ["--settings", str(own)]
-            else:
-                print(f"{row['name']}: {own.name} ignored, dclaude can't see host paths", file=sys.stderr)
+        if row["mode"] == "host":
+            args += ["--settings", str(write_settings(hub, row))]
+        elif (hub / ".claude" / f"settings.{row['name']}.json").is_file():
+            print(f"{row['name']}: settings.{row['name']}.json ignored, dclaude can't see host paths", file=sys.stderr)
+        if model:
+            args += ["--model", model]
         sid = last.get(row["name"])
-        if sid and history(row, sid):
+        if fresh:
+            print(f"{row['name']}: starting fresh (--fresh)")
+        elif sid and history(row, sid):
             args += ["--resume", sid]
             print(f"{row['name']}: resuming {sid[:8]}")
         else:
@@ -315,6 +425,10 @@ def main():
         cmd_status(find_hub())
     elif cmd == "up":
         cmd_up(find_hub(), rest)
+    elif cmd == "restart":
+        cmd_restart(find_hub(), rest)
+    elif cmd == "settings":
+        cmd_settings(find_hub(), rest)
     elif cmd == "sync" and rest == ["--watch"]:
         hub = find_hub()
         for _ in range(40):
@@ -323,7 +437,7 @@ def main():
     elif cmd == "sync":
         cmd_sync(find_hub(), quiet=rest == ["-q"])
     else:
-        die(f"unknown command {cmd!r} (status, up, sync, init)")
+        die(f"unknown command {cmd!r} (status, up, restart, settings, sync, init)")
 
 
 if __name__ == "__main__":

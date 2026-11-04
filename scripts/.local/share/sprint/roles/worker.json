@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "additionalDirectories": ["{{HUB_PATH}}/tickets"],
+    "allow": [
+      "Edit(/{{HUB_PATH}}/tickets/**)"
+    ],
+    "deny": [
+      "EnterWorktree",
+      "Bash(sprint *)",
+      "Bash(herdr pane run *)",
+      "Bash(herdr pane send-text *)",
+      "Bash(herdr pane send-keys *)",
+      "Bash(herdr agent send-keys *)",
+      "Bash(herdr agent start *)",
+      "Bash(* close *)",
+      "Bash(herdr server *)",
+      "Bash(herdr worktree *)"
+    ]
+  }
+}
