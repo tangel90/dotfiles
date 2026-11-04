@@ -35,13 +35,15 @@ The hub is the nearest folder upwards with an agents.tsv (or $SPRINT_HUB):
 
 Settings (host agents): sprint combines, in this order, the shared role set
 (lead for the row with folder ".", else worker; from
-~/.local/share/sprint/roles/, one source for every hub), the hub's
-.claude/settings.json (hub-specific rules only) and .claude/settings.<name>.json,
-writes the result to ~/.local/state/sprint/<hub>/<name>.json and passes it as
---settings. Lists are united, objects merged, later scalars win. {{HUB_PATH}}
-in any of them becomes the hub's absolute path; path rules need it as
-Edit(/{{HUB_PATH}}/...) (a // rule is absolute; ./ would resolve from each
-agent's own folder, a single / from the generated file's). Changing a
+~/.local/share/sprint/roles/, one source for every hub), for workers the
+hub's .claude/settings.workers.json (hub-wide worker rules), and
+.claude/settings.<name>.json; writes the result to
+~/.local/state/sprint/<hub>/<name>.json and passes it as --settings. The
+hub's .claude/settings.json is the lead's: Claude loads it natively in the
+hub folder, and it never reaches workers. Lists are united, objects merged,
+later scalars win. {{HUB_PATH}} becomes the hub's absolute path, and a rule
+from a hub file starting with a single / (relative to the hub, as in project
+settings) is made absolute, so it keeps its meaning in the generated file. Changing a
 role set or hub file takes effect at the agent's next start (sprint restart).
     .claude/plugins/<plugin>/
                   hub plugins (a .claude-plugin/plugin.json each, e.g. the
@@ -197,21 +199,31 @@ def merge(a, b):
     return b
 
 
-def load_json(path, hub):
+def load_json(path, hub, anchor=False):
     if not path.is_file():
         return {}
     text = path.read_text().replace("{{HUB_PATH}}", str(hub))
     try:
-        return json.loads(text)
+        data = json.loads(text)
     except ValueError as e:
         die(f"{path}: {e}")
+    if anchor:
+        # Tool(/x) is relative to the hub in a hub settings file; keep that
+        # meaning in the generated file elsewhere: Tool(//<hub>/x).
+        perms = data.get("permissions", {})
+        for kind in ("allow", "ask", "deny"):
+            perms[kind] = [re.sub(r"^(\w+)\(/(?!/)", lambda m: f"{m.group(1)}(/{hub}/", r) for r in perms.get(kind, [])]
+    return data
 
 
 def agent_settings(hub, row):
-    parts = [ROLES / f"{role(row)}.json", hub / ".claude" / "settings.json", hub / ".claude" / f"settings.{row['name']}.json"]
+    parts = [(ROLES / f"{role(row)}.json", False)]
+    if role(row) == "worker":
+        parts.append((hub / ".claude" / "settings.workers.json", True))
+    parts.append((hub / ".claude" / f"settings.{row['name']}.json", True))
     combined = {}
-    for p in parts:
-        combined = merge(combined, load_json(p, hub))
+    for p, anchor in parts:
+        combined = merge(combined, load_json(p, hub, anchor))
     return combined
 
 
@@ -227,13 +239,13 @@ def cmd_settings(hub, args):
     names = [a for a in args if a != "--check"]
     rows = [r for r in roster(hub) if not names or r["name"] in names]
     if check:
-        hub_set = load_json(hub / ".claude" / "settings.json", hub)
-        for name in ("lead", "worker"):
+        for name, hub_file in (("lead", "settings.json"), ("worker", "settings.workers.json")):
+            hub_set = load_json(hub / ".claude" / hub_file, hub, anchor=True)
             shared = load_json(ROLES / f"{name}.json", hub)
             for kind in ("allow", "ask", "deny"):
                 dup = [r for r in hub_set.get("permissions", {}).get(kind, []) if r in shared.get("permissions", {}).get(kind, [])]
                 for r in dup:
-                    print(f"{kind:<5} {r}    (in {name}.json: remove from the hub's settings.json)")
+                    print(f"{kind:<5} {r}    (in {name}.json: remove from .claude/{hub_file})")
         return
     for row in rows:
         print(f"== {row['name']} ({role(row)}, {row['mode']})")
