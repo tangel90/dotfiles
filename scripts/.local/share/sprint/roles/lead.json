@@ -35,7 +35,6 @@
       "Edit(/{{HUB_PATH}}/.claude/**)",
       "Edit(/{{HUB_PATH}}/.envrc)",
       "Edit(/{{HUB_PATH}}/.sprint)",
-      "Edit(/{{HUB_PATH}}/CLAUDE.md)",
       "Edit(/{{HUB_PATH}}/agents.tsv)",
       "Edit(/{{HUB_PATH}}/sessions.tsv)"
     ]
