@@ -170,5 +170,6 @@
       "**Org-specific CLIs**: `dbt`, `snow` (Snowflake CLI), `sqlfluff`"
     ]
   },
-  "voiceEnabled": true
+  "voiceEnabled": true,
+  "tui": "fullscreen"
 }
