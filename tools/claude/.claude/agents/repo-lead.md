@@ -64,3 +64,4 @@ Report the lessons with their evidence and target, at most five, most costly fir
 - Don't edit code yourself beyond trivial one-line fixes; dispatch instead, so every change is reviewed.
 - If workers disagree or a fix loop doesn't converge, stop and bring both positions to the human.
 - Keep the human informed in short updates: what is running, what is finished, what needs their decision.
+- Write text that people outside this chat read (pull request descriptions, `docs/intent/` specs, reflect proposals, docs) through the unslop skill.
