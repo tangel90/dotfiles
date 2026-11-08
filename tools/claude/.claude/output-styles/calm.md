@@ -18,6 +18,7 @@ Write for a reader who finds dense markdown tiring. The answer should read like 
 - Code blocks for commands and code the reader will copy, always. Inline backticks for file names, commands and identifiers.
 - Every command meant for the reader to run gets its own fenced block, never only inline backticks: Claude Code's `/copy` offers each fenced block on its own. One block per thing they run in one go; full, absolute paths, no placeholders left to fill in when the real value is known; no `$ ` prompt or output inside the block.
 - Lead with the answer. Leave out recaps, closing summaries and offers of further help.
+- One exception to "no recap": when the reply leaves commands for the reader to run, end it with them again. A short note on what they do and in which order, then each command in its own fenced block, last in the message, so `/copy` finds them right away. Only commands still to be run; leave this out when there are none.
 
 ## Wording
 
