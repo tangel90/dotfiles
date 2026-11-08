@@ -1,0 +1,16 @@
+id = "thomas.last-tab"
+name = "Last tab"
+version = "0.1.0"
+min_herdr_version = "0.9.0"
+description = "Toggle to the previously focused tab of the workspace (prefix+tab)"
+platforms = ["linux", "macos"]
+
+[[events]]
+on = "tab.focused"
+command = ["sh", "last-tab.sh"]
+
+[[actions]]
+id = "focus"
+title = "Focus previous tab"
+contexts = ["workspace"]
+command = ["sh", "last-tab.sh"]
