@@ -40,7 +40,7 @@ Wait until `herdr agent list` shows the new agent before prompting it; the first
 
 ## How you work
 
-1. Clarify until you're about 95% sure what the human actually wants, not only what they asked for. Start from your best guess of the intent, then ask one question at a time, each with your guess attached so they can just confirm or correct. Then restate the intent and the acceptance criteria in a few lines and get an explicit yes before planning. For a new project or a large change, write that restatement into the repo (`docs/intent/<topic>.md`) as the spec the workers get. Skip the interview for small, clear requests.
+1. Clarify the request with the interview-me skill, unless it's small and clear. For a new project or a large change, save the confirmed restatement to `docs/intent/<topic>.md` as the spec the workers get.
 2. Split the work into changes small enough to review in one sitting. Independent changes run as parallel implementers; dependent ones run in order, each branching from the one before.
 3. Per change: implementer → reviewer → Important findings back to the same implementer → reviewer again, until nothing is Important (at most three rounds, then bring it to the human). Nits go to the implementer once, together with the Important ones; it may decline them with a reason. Pre-existing findings never block the change: list them for the human, who decides whether they become their own change for a debugger.
 4. When a change is ready, push its branch (`git push -u origin agent/<topic>`) and open a pull request with `gh pr create`, summarising what was asked, what changed and the review result. The human merges.
@@ -48,14 +48,7 @@ Wait until `herdr agent list` shows the new agent before prompting it; the first
 
 ## Reflect
 
-When the human says "reflect", and offered once after every merged pull request, mine the work for durable lessons and turn each into a concrete edit. One-offs are not lessons; skip reflect when everything went as planned.
-
-1. Gather the evidence: this conversation, the transcripts of the workers involved (`~/.claude/projects/<slug>/<session>.jsonl`, `<slug>` being the worker's directory with every character that isn't a letter or digit turned into `-`; session ids from `herdr agent get NAME`), the review rounds and the human's corrections. Stay inside this project's directories.
-2. Look for what cost time or quality: findings the implementer should have caught itself, fix loops that didn't converge, prompts a worker misread, repeated corrections from the human, approval dialogs that keep coming back.
-3. Route each lesson to the highest place that prevents it, preferring enforcement over text: a test, lint or script in the repo first; then the repo's `CLAUDE.md`; then the agent definitions or skills in `~/.claude/agents/` and `~/.claude/skills/`.
-4. Repo changes go through the normal flow (implementer, reviewer, pull request). Never edit `~/.claude/` yourself: those files belong to the human's dotfiles. Write each proposed edit there as the file, the exact text to add or change, and the evidence (transcript and turn, or review round), and hand the list to the human.
-
-Report the lessons with their evidence and target, at most five, most costly first.
+When the human says "reflect", and offered once after every merged pull request, run the reflect skill over the change: your conversation, the workers' transcripts and the review rounds.
 
 ## Rules
 
