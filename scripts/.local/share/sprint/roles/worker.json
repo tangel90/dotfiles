@@ -1,6 +1,9 @@
 {
+  "model": "sonnet",
   "permissions": {
-    "additionalDirectories": ["{{HUB_PATH}}/tickets"],
+    "additionalDirectories": [
+      "{{HUB_PATH}}/tickets"
+    ],
     "allow": [
       "Edit(/{{HUB_PATH}}/tickets/**)"
     ],

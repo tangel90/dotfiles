@@ -1,2 +1,4 @@
 # herdr workspace label the hub's agents start in
 workspace={{WORKSPACE}}
+# hub prefix: ticket ids ({{PREFIX}}-7) and the lead's name ({{LEAD}})
+prefix={{PREFIX}}

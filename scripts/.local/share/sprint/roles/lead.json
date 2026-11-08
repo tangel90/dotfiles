@@ -14,8 +14,7 @@
       "Bash(herdr agent prompt *)",
       "Bash(herdr agent wait *)",
       "Edit(/{{HUB_PATH}}/tickets/**)",
-      "Edit(/{{HUB_PATH}}/docs/**)",
-      "Edit(/{{HUB_PATH}}/TASKS.md)"
+      "Edit(/{{HUB_PATH}}/docs/**)"
     ],
     "deny": [
       "Bash(sprint init*)",

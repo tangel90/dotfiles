@@ -12,8 +12,12 @@
                              print each agent's combined settings; --check
                              lists hub rules the shared role sets already cover
     sprint sync [-q]         record changed sessions in sessions.tsv
-    sprint init [LABEL]      scaffold a hub in the current folder from the
-                             templates (existing files are kept)
+    sprint init [LABEL] [--prefix P]
+                             scaffold a hub in the current folder from the
+                             templates (existing files are kept); P is the
+                             ticket prefix and names the lead <p>-lead,
+                             default the initials of the folder name
+                             (report-data-store: RDS, rds-lead)
 
 The hub is the nearest folder upwards with an agents.tsv (or $SPRINT_HUB):
 
@@ -27,7 +31,7 @@ The hub is the nearest folder upwards with an agents.tsv (or $SPRINT_HUB):
     tickets/      one ticket per file (<ID>-<slug>.md): "# ID: title", then
                   Status:/Owner: header lines; open = not done or wontfix.
                   Replaces TASKS.md, which is read only without tickets/.
-    TASKS.md      open tasks as "- [ ] ... @name".
+    TASKS.md      open tasks as "- [ ] ... @name" (older hubs).
     .sprint       key=value: workspace (herdr workspace label, default the
                   hub's folder name).
     .claude/settings.<name>.json
@@ -39,6 +43,12 @@ Settings (host agents): sprint combines, in this order, the shared role set
 hub's .claude/settings.workers.json (hub-wide worker rules), and
 .claude/settings.<name>.json; writes the result to
 ~/.local/state/sprint/<hub>/<name>.json and passes it as --settings. The
+lead also gets the shared lead rules (~/.local/share/sprint/lead.md, one
+source for every hub; {{LEAD}}, {{PREFIX}}, {{HUMAN}} filled in) with
+--append-system-prompt-file: lead-only, unlike an @import in the hub's
+CLAUDE.md, which workers in hub subfolders would load too. Claude records the
+system prompt per conversation, so changed rules reach a lead at its next
+fresh conversation (sprint restart LEAD --fresh), not on a resume. The
 hub's .claude/settings.json is the lead's: Claude loads it natively in the
 hub folder, and it never reaches workers. Lists are united, objects merged,
 later scalars win. {{HUB_PATH}} becomes the hub's absolute path, and a rule
@@ -227,6 +237,25 @@ def agent_settings(hub, row):
     return combined
 
 
+LEAD_RULES = ROLES.parent / "lead.md"
+
+
+def hub_prefix(hub):
+    return config(hub).get("prefix") or "".join(w[0] for w in re.split(r"[-_ .]+", hub.name) if w).upper() or "HUB"
+
+
+def write_lead_rules(hub, row):
+    """The shared lead rules, rendered for this hub; passed to the lead only."""
+    text = LEAD_RULES.read_text()
+    for k, v in {"{{HUB}}": hub.name, "{{HUB_PATH}}": str(hub), "{{LEAD}}": row["name"],
+                 "{{PREFIX}}": hub_prefix(hub), "{{HUMAN}}": human()}.items():
+        text = text.replace(k, v)
+    out = STATE / mangle(hub).strip("-") / f"{row['name']}.lead.md"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(text)
+    return out
+
+
 def write_settings(hub, row):
     out = STATE / mangle(hub).strip("-") / f"{row['name']}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -378,6 +407,8 @@ def cmd_up(hub, names, fresh=False, model=None):
                 print(f"{row['name']}: plugin {plugin.parent.parent.name} not loaded, dclaude can't see host paths", file=sys.stderr)
         if row["mode"] == "host":
             args += ["--settings", str(write_settings(hub, row))]
+            if role(row) == "lead" and LEAD_RULES.is_file():
+                args += ["--append-system-prompt-file", str(write_lead_rules(hub, row))]
         elif (hub / ".claude" / f"settings.{row['name']}.json").is_file():
             print(f"{row['name']}: settings.{row['name']}.json ignored, dclaude can't see host paths", file=sys.stderr)
         if model:
@@ -406,10 +437,29 @@ def cmd_up(hub, names, fresh=False, model=None):
         die(f"failed: {' '.join(failed)}")
 
 
-def cmd_init(label):
+def human():
+    """First name from git's user.name, else the login name, capitalised."""
+    out = subprocess.run(["git", "config", "user.name"], capture_output=True, text=True).stdout.split()
+    return out[0] if out else os.environ.get("USER", "human").capitalize()
+
+
+PLUGIN_INSTALL = Path.home() / "projects/hubs/.claude/skills/hub-rollout/install-plugin.sh"
+
+
+def cmd_init(args):
+    prefix = None
+    if "--prefix" in args:
+        i = args.index("--prefix")
+        prefix = args[i + 1] if i + 1 < len(args) else die("--prefix needs a value")
+        args = args[:i] + args[i + 2:]
+    label = args[0] if args else None
     hub = Path.cwd()
+    prefix = (prefix or hub_prefix(hub)).upper()
+    if not re.fullmatch(r"[A-Z][A-Z0-9]*", prefix):
+        die(f"prefix must be letters and digits, starting with a letter: {prefix!r}")
+    lead = f"{prefix.lower()}-lead"
     subs = {"{{HUB}}": hub.name, "{{HUB_PATH}}": str(hub), "{{WORKSPACE}}": label or hub.name,
-            "{{HUMAN}}": os.environ.get("USER", "human")}
+            "{{HUMAN}}": human(), "{{PREFIX}}": prefix, "{{LEAD}}": lead}
     for src in sorted(TEMPLATES.rglob("*")):
         if src.is_dir():
             continue
@@ -423,6 +473,13 @@ def cmd_init(label):
         dst.parent.mkdir(parents=True, exist_ok=True)
         dst.write_text(text)
         print(f"created {dst.relative_to(hub)}")
+    print(f"\nprefix {prefix}, lead {lead}. Next:")
+    print("  fill CLAUDE.md, agents.tsv and docs/briefs/ (project-manager does this)")
+    if PLUGIN_INSTALL.is_file():
+        print(f"  install the hub plugin (tickets skills): {PLUGIN_INSTALL} {hub}")
+    else:
+        print("  install the hub plugin (tickets skills) into .claude/plugins/hub/ (project-manager's hub-rollout)")
+    print(f"  start the lead: cd {hub} && sprint up {lead}")
 
 
 def main():
@@ -432,7 +489,7 @@ def main():
     if cmd in ("-h", "--help", "help"):
         print(__doc__.strip())
     elif cmd == "init":
-        cmd_init(rest[0] if rest else None)
+        cmd_init(rest)
     elif cmd == "status":
         cmd_status(find_hub())
     elif cmd == "up":
