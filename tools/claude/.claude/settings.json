@@ -126,7 +126,7 @@
         "/home/corni/.config/herdr/herdr.sock"
       ]
     },
-    "excludedCommands": ["herdr *", "sprint", "rds *", "bin/rds *"]
+    "excludedCommands": ["herdr *", "sprint *"]
   },
   "effortLevel": "medium",
   "voice": {
