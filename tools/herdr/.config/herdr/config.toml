@@ -1,7 +1,7 @@
 onboarding = false
 
 [ui.toast]
-delivery = "herdr"         # in-app toasts, so prefix+shift+o can jump to them
+delivery = "herdr"         # in-app toasts; prefix+a (hlast) jumps to the agent
 
 [ui]
 tab_bar_position = "bottom"
@@ -23,20 +23,23 @@ show_agent_labels_on_pane_borders = true  # agent name on split pane borders, un
 # Claude agents: name, then workspace and context use ($ctx, reported by
 # statusline-command.sh; its $model is left out as noise). No tab: ha labels
 # each agent's tab with its name, so it would repeat the agent.
-# $ctx is dim, gold from 50%, love (red) from 80%. It reads "42%", which
-# numeric rules reject, so the bands match on text: single digits ("5%".."9%")
-# first, keeping the default, before the leading-digit rules could catch them.
+# $ctx is dim, gold from 35%, love (red) from 60%. It reads "42%", which
+# numeric rules reject, so the bands match on text by leading digits; the
+# status line zero-pads single digits ("07%") so they need no rules of their
+# own (herdr allows 16). 30-34 keep the default before "3" turns gold.
 [ui.sidebar.agents.rows_by_agent]
 claude = [
   ["state_icon", "pane"],   # pane label = herdr agent name, set by ha
   ["machine", { token = "workspace", dim = true }, { token = "$ctx", dim = true, rules = [
     { equals = "100%", fg = "#eb6f92", dim = false },
-    { equals = "5%" }, { equals = "6%" }, { equals = "7%" }, { equals = "8%" }, { equals = "9%" },
+    { starts_with = "30" }, { starts_with = "31" }, { starts_with = "32" }, { starts_with = "33" }, { starts_with = "34" },
     { starts_with = "9", fg = "#eb6f92", dim = false },
     { starts_with = "8", fg = "#eb6f92", dim = false },
-    { starts_with = "7", fg = "#f6c177", dim = false },
-    { starts_with = "6", fg = "#f6c177", dim = false },
+    { starts_with = "7", fg = "#eb6f92", dim = false },
+    { starts_with = "6", fg = "#eb6f92", dim = false },
     { starts_with = "5", fg = "#f6c177", dim = false },
+    { starts_with = "4", fg = "#f6c177", dim = false },
+    { starts_with = "3", fg = "#f6c177", dim = false },
   ] }],
 ]
 
@@ -79,7 +82,8 @@ previous_workspace = "alt+up"
 switch_tab = ["prefix+1..9", "alt+1..9"]   # prefix+1..9 is the default; alt+ pairs with alt+left/right
 next_agent = "prefix+alt+n"
 previous_agent = "prefix+alt+p"
-open_notification_target = []                 # prefix+a runs hlast instead (works after the toast is gone), prefix+o hnvim
+open_notification_target = []                 # prefix+a runs hlast instead (works after the toast is gone)
+settings = "prefix+shift+s"                  # prefix+s runs hp
 split_vertical = "prefix+shift+v"            # prefix+v runs hsplit (split + hcouple)
 cycle_pane_next = []                         # was prefix+tab, now last tab (plugins/last-tab); prefix+shift+tab still cycles
 clear_pane = "prefix+ctrl+r"                # wipe screen + scrollback, e.g. after a secret was shown
@@ -120,7 +124,7 @@ width = "90%"
 height = "85%"
 
 [[keys.command]]
-key = "prefix+ctrl+w"
+key = "prefix+o"            # was open_notification_target, then hnvim (now unbound)
 type = "popup"
 command = "\"$HOME/.local/bin/hw\" --here"
 description = "open a file below the pane's directory in a new tab (hw)"
@@ -128,7 +132,7 @@ width = "90%"
 height = "85%"
 
 [[keys.command]]
-key = "prefix+alt+w"
+key = "prefix+shift+o"
 type = "popup"
 command = "\"$HOME/.local/bin/hw\""
 description = "open any file under ~ in a new tab (hw)"
@@ -144,7 +148,7 @@ width = "90%"
 height = "85%"
 
 [[keys.command]]
-key = "prefix+shift+o"      # was open_notification_target; prefix+s is herdr's Settings again
+key = "prefix+s"            # replaces settings, now prefix+shift+s
 type = "popup"
 command = "\"$HOME/.local/bin/hp\""
 description = "project picker: workspaces, chats, folders"
@@ -156,12 +160,6 @@ key = "prefix+v"            # replaces split_vertical, now prefix+shift+v
 type = "shell"
 command = "\"$HOME/.local/bin/hsplit\""
 description = "split right, coupled to the tab's agent (hcouple)"
-
-[[keys.command]]
-key = "prefix+o"            # replaces open_notification_target, now unbound (hlast on prefix+a)
-type = "shell"
-command = "\"$HOME/.local/bin/hnvim\""
-description = "nvim tab of this workspace"
 
 [[keys.command]]
 key = "prefix+tab"           # replaces cycle_pane_next
@@ -190,3 +188,11 @@ command = "GPG_TTY=$(tty) \"$HOME/.local/bin/open-pass\" show"
 description = "show a pass entry read-only in nvim (open-pass)"
 width = "90%"
 height = "85%"
+
+[[keys.command]]
+key = "prefix+backtick"
+type = "popup"
+command = "cd \"${HERDR_ACTIVE_PANE_CWD:-$HOME}\" && exec zsh -i"
+description = "scratch shell in the pane's directory"
+width = "80%"
+height = "75%"
