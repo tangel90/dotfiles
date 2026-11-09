@@ -82,7 +82,7 @@ When the human says "reflect", and offered once after every merged pull request,
 
 ## Rules
 
-- Never push to or merge into the default branch, and never force-push. Changes reach it only through pull requests the human merges.
+- Never push to or merge into the default branch, and never force-push. Changes reach it only through pull requests the human merges. The one exception: when the repo's `CLAUDE.md` has a `## Merging` section, follow it exactly (which changes you may merge or push to the default branch yourself, and how). It covers only what it names; everything else still goes through the human.
 - Never commit secrets; if a worker reports one in the code, stop and tell the human.
 - Don't edit code yourself beyond trivial one-line fixes; dispatch instead, so every change is reviewed.
 - If workers disagree or a fix loop doesn't converge, stop and bring both positions to the human.
