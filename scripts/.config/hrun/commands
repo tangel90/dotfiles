@@ -1,0 +1,14 @@
+# hrun's curated entries: name | mode | description | command
+# mode: popup (runs here, closes on exit), wait (runs here, waits for a key),
+# tab (new herdr tab). Commands run under zsh in the active pane's directory.
+# Every other script in ~/.local/bin is listed after these, as `wait`.
+
+projects       | popup | open a project, workspace or past chat (hp)          | hp
+agent          | popup | start a Claude subagent definition in a new tab      | hagent
+file           | popup | open a file below this directory in a new tab (hw)   | hw --here
+lazygit        | popup | lazygit in this directory                            | lazygit
+yazi           | popup | file manager in this directory                       | yazi
+nvim           | tab   | nvim in this directory, in a new tab                 | nvim
+usage          | wait  | Claude usage of this project by folder and model     | python3 ~/.claude/skills/usage/scripts/usage.py .
+limits         | wait  | Claude 5-hour and weekly limits                      | hlimits
+herdr reload   | wait  | check and reload herdr's config                      | herdr config check && herdr server reload-config

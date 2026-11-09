@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+"""hrun: pick a command with fzf and run it, the herdr counterpart of tmux's
+script-runner (prefix+R). Bound to prefix+shift+r in herdr's config.toml, as a
+popup.
+
+The list has two parts:
+
+1. Curated entries from ~/.config/hrun/commands (stowed from
+   scripts/.config/hrun/commands), one per line:
+
+       name | mode | description | command
+
+   `command` is the rest of the line and runs under zsh in the active pane's
+   directory. `mode` says what happens with it:
+
+       popup  run it in this popup; the popup closes when it exits (TUIs)
+       wait   run it here and wait for a key, so its output stays readable
+       tab    run it in a new herdr tab (mux-open), labelled with `name`
+
+2. Every other script this repo stows into ~/.local/bin (not installed
+   binaries, not the tmux-* ones), mode `wait`, described by the first comment
+   line of the script.
+
+Blank lines and lines starting with # in the commands file are ignored.
+"""
+
+import os
+import shlex
+import subprocess
+import sys
+from pathlib import Path
+
+HOME = Path.home()
+BIN = HOME / ".local/bin"
+COMMANDS = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "hrun/commands"
+MODES = ("popup", "wait", "tab")
+SKIP = {"hrun", "script-runner"}
+
+
+def curated():
+    entries = []
+    if not COMMANDS.is_file():
+        return entries
+    for n, line in enumerate(COMMANDS.read_text().splitlines(), 1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        parts = [p.strip() for p in line.split("|", 3)]
+        if len(parts) != 4 or parts[1] not in MODES or not parts[3]:
+            print(f"hrun: {COMMANDS}:{n}: expected 'name | {'/'.join(MODES)} | description | command'", file=sys.stderr)
+            continue
+        entries.append(tuple(parts))
+    return entries
+
+
+def describe(path):
+    try:
+        with open(path, errors="replace") as f:
+            head = [next(f, "") for _ in range(8)]
+    except OSError:
+        return ""
+    for line in head[1:]:
+        line = line.strip()
+        if line.startswith("#") and line.strip("# "):
+            return line.lstrip("# ").strip()
+        if line.startswith('"""') and line.strip('" '):
+            return line.strip('" ').strip()
+    return ""
+
+
+def scripts(taken):
+    entries = []
+    for p in sorted(BIN.iterdir()):
+        if p.name in SKIP or p.name in taken or p.name.startswith("tmux-") or not p.is_file() or not os.access(p, os.X_OK):
+            continue
+        # Only this repo's scripts (stowed links), not installed binaries.
+        if "/scripts/.local/bin/" not in str(p.resolve()):
+            continue
+        entries.append((p.name, "wait", describe(p), shlex.quote(str(p))))
+    return entries
+
+
+def pick(entries):
+    width = max(len(e[0]) for e in entries)
+    # Fields: index, the visible row, the command (hidden, shown in the preview).
+    lines = [f"{i}\t{e[0]:<{width}}  {e[1]:<5}  {e[2]}\t{e[3]}" for i, e in enumerate(entries)]
+    res = subprocess.run(
+        ["fzf", "--delimiter", "\t", "--with-nth", "2", "--no-sort", "--prompt", "run> ",
+         "--preview", "echo {3}", "--preview-window", "down,3,wrap"],
+        input="\n".join(lines), stdout=subprocess.PIPE, text=True,
+    )
+    if res.returncode != 0 or not res.stdout.strip():
+        return None
+    return entries[int(res.stdout.split("\t", 1)[0])]
+
+
+def main():
+    cwd = os.environ.get("HERDR_ACTIVE_PANE_CWD") or os.getcwd()
+    try:
+        os.chdir(cwd)
+    except OSError:
+        os.chdir(HOME)
+        cwd = str(HOME)
+    entries = curated()
+    entries += scripts({e[0] for e in entries})
+    if not entries:
+        sys.exit("hrun: nothing to run")
+    choice = pick(entries)
+    if not choice:
+        return
+    name, mode, _, command = choice
+    if mode == "tab":
+        os.execvp(str(BIN / "mux-open"), ["mux-open", "--label", name, "--cwd", cwd, "--", "zsh", "-ic", command])
+    if mode == "popup":
+        os.execvp("zsh", ["zsh", "-ic", command])
+    code = subprocess.run(["zsh", "-ic", command]).returncode
+    print(f"\n[{name} exited {code}] press any key", end="", flush=True)
+    subprocess.run(["zsh", "-c", "read -sk1"])
+
+
+if __name__ == "__main__":
+    main()
