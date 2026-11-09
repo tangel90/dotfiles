@@ -1,7 +1,7 @@
 onboarding = false
 
 [ui.toast]
-delivery = "herdr"         # in-app toasts; prefix+a (hlast) jumps to the agent
+delivery = "herdr"         # in-app toasts; prefix+a (default) jumps to the toast's agent
 
 [ui]
 tab_bar_position = "bottom"
@@ -82,7 +82,6 @@ previous_workspace = "alt+up"
 switch_tab = ["prefix+1..9", "alt+1..9"]   # prefix+1..9 is the default; alt+ pairs with alt+left/right
 next_agent = "prefix+alt+n"
 previous_agent = "prefix+alt+p"
-open_notification_target = []                 # prefix+a runs hlast instead (works after the toast is gone)
 settings = "prefix+shift+s"                  # prefix+s runs hp
 split_vertical = "prefix+shift+v"            # prefix+v runs hsplit (split + hcouple)
 cycle_pane_next = []                         # was prefix+tab, now last tab (plugins/last-tab); prefix+shift+tab still cycles
@@ -100,12 +99,6 @@ key = "prefix+m"
 type = "shell"
 command = "\"$HOME/.local/bin/hbreak\""
 description = "move pane to new tab"
-
-[[keys.command]]
-key = "prefix+a"
-type = "shell"
-command = "\"$HOME/.local/bin/hlast\""
-description = "focus agent that finished last / needs input"
 
 [[keys.command]]
 key = "prefix+i"
