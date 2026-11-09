@@ -1,4 +1,7 @@
 # herdr workspace label the hub's agents start in
 workspace={{WORKSPACE}}
-# hub prefix: ticket ids ({{PREFIX}}-7) and the lead's name ({{LEAD}})
+# hub prefix for local ticket ids ({{PREFIX}}-7). Letters and digits only, no
+# hyphens, and different from every Jira project key the hub mirrors (mirrors
+# are JIRA-<KEY>-<n>). sprint init also named the lead {{LEAD}} after it; the
+# lead's name now comes from agents.tsv, so renaming one doesn't change the other.
 prefix={{PREFIX}}
