@@ -2,11 +2,33 @@
 .venv/
 Trash/
 debug/
+data/
+archive/
 __pycache__/
+.config_backup/
 .envrc
 .env
+*.csv
+*secret*
+!.secrets.baseline
+
+.tmux-run
+.tmux-start
 
 settings.local.json
+CLAUDE.local.md
+
+reporting_counter*
+trianel_soptim*
+
+.gitconfig
+.gitmodules
+.vscode
+.profile
+.ripgreprc
+.bashrc
+.bash_profile
+.mcp.json
 
 **/.claude/.cc-writes/
 **/.claude/worktrees/
