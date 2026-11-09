@@ -100,4 +100,4 @@ On a new machine: clone, then run `scripts/.local/bin/setup-agents`. It checks p
 
 ## Install / bootstrap
 
-`installer.sh` is **Arch/pacman-only** despite the README also documenting Debian/Ubuntu/WSL recipes. On non-Arch systems follow the README sections instead of running the script. The agent setup has its own distro-independent script, `setup-agents` (above).
+`installer.sh [--check] [--groups core,nvim,extra] [--nvim] [--yes]` installs the missing commands listed in `packages.tsv` (command, group, Arch package, apt package, note) with pacman or apt, prints the note for tools a distro doesn't package, and with `--nvim` runs Lazy sync and `MasonToolsInstallSync` headless. Groups: `core` (shell and scripts), `nvim` (Neovim, the cargo/go/node/tree-sitter its plugin builds and mason need), `extra` (opt-in desktop tools such as `pass`, which must stay off servers). When a config starts needing a new tool, add it to `packages.tsv`. Then `setup-agents` (above) stows the configs and installs the agent tooling. The older README sections are manual notes.

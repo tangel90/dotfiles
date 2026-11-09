@@ -1,0 +1,39 @@
+# Tools this repo's configs expect, read by installer.sh.
+# Columns (tab-separated): command  group  arch-package  apt-package  note
+# group: core (shell and scripts), nvim (Neovim, its plugin builds and mason),
+#        extra (opt-in desktop tools; never needed on a server)
+# "-" means the distro has no fitting package: installer.sh prints the note.
+# A command with several packages lists them space-separated.
+git	core	git	git
+zsh	core	zsh	zsh
+stow	core	stow	stow
+curl	core	curl	curl
+jq	core	jq	jq
+python3	core	python	python3 python3-venv
+fzf	core	fzf	-	apt's fzf is too old for `fzf --zsh` (needs 0.48+): git clone --depth 1 https://github.com/junegunn/fzf ~/.fzf && ~/.fzf/install --bin, then link ~/.fzf/bin/fzf into ~/.local/bin
+rg	core	ripgrep	ripgrep
+fd	core	fd	fd-find	Debian/Ubuntu name it fdfind: ln -s $(command -v fdfind) ~/.local/bin/fd
+bat	core	bat	bat	Debian/Ubuntu name it batcat: ln -s $(command -v batcat) ~/.local/bin/bat
+eza	core	eza	eza
+zoxide	core	zoxide	zoxide
+direnv	core	direnv	direnv
+lazygit	core	lazygit	-	https://github.com/jesseduffield/lazygit#installation
+yazi	core	yazi	-	https://yazi-rs.github.io/docs/installation
+gpg	core	gnupg	gnupg
+tmux	core	tmux	tmux
+gh	core	github-cli	gh
+nvim	nvim	neovim	-	apt's neovim is too old: use the release tarball, see README "Build Neovim"
+gcc	nvim	base-devel	build-essential
+make	nvim	base-devel	build-essential
+unzip	nvim	unzip	unzip
+tree-sitter	nvim	tree-sitter-cli	-	npm install -g tree-sitter-cli
+cargo	nvim	rust	cargo	blink.cmp builds its fuzzy matcher with cargo
+go	nvim	go	golang-go	mason builds gopls, jq-lsp and delve with go
+node	nvim	nodejs	nodejs	mason's pyright, prettier, markdownlint need node and npm
+npm	nvim	npm	npm
+pass	extra	pass	pass	desktop only: never on a server
+glow	extra	glow	-	https://github.com/charmbracelet/glow#installation
+tldr	extra	tldr	tldr
+trans	extra	translate-shell	translate-shell
+vd	extra	visidata	visidata
+uv	extra	uv	-	curl -LsSf https://astral.sh/uv/install.sh | sh

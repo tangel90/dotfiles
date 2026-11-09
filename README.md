@@ -1,30 +1,14 @@
 # dotfiles
 
-packages:
+## New machine
 
-zsh
-neovim
-lazygit
-powerlevel10k
-bat
-zoxide
-fzf
-exa
-stow
-ripgrep
-fd
-tmux
-cargo
-go
-nvm
-zig
-jq
-direnv
-glow
-unzip
-yazi
-pass
-tldr
+```sh
+git clone git@github.com:tangel90/dotfiles.git ~/dotfiles && cd ~/dotfiles
+./installer.sh --nvim               # missing tools (packages.tsv), then nvim plugins + mason tools
+scripts/.local/bin/setup-agents     # stow the configs, Claude, herdr, devcontainer CLI
+```
+
+`packages.tsv` is the list of tools the configs expect, grouped `core`, `nvim` and `extra` (opt-in desktop tools, `--groups core,nvim,extra`). The installer handles pacman and apt, installs only missing commands, and prints how to get the ones a distro doesn't package. `./installer.sh --check` only reports. The sections below are older manual notes.
 
 ## change to zsh
 

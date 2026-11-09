@@ -103,9 +103,9 @@ alias dd='direnv deny'
 alias e="yazi-cwd"
 alias fd="fd --follow --hidden --exclude .git"
 alias lg=gpg-unlock-lazygit
-alias lt="exa --tree --level=2"
-alias ll="exa --long --header --sort=type --icons --no-permissions --no-user"
-alias la="exa --long --header --all --sort=type --icons --no-permissions --no-user" 
+alias lt="eza --tree --level=2"
+alias ll="eza --long --header --sort=type --icons --no-permissions --no-user"
+alias la="eza --long --header --all --sort=type --icons --no-permissions --no-user" 
 # Google throttles translate-shell by IP ("Rate limiting"); bing has no such
 # limit here. Override per call with `trans -e google ...` when needed.
 alias trans="trans -e bing"
