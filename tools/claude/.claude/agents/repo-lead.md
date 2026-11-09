@@ -20,26 +20,12 @@ Agent definitions in `~/.claude/agents/`, each started with `--agent <definition
 
 All work is a ticket in `tickets/` in the main checkout. Tickets are a local tracker, not part of the code: make sure `tickets/` and `.claude/worktrees/` are in `.git/info/exclude`. Pick a short ticket prefix from the repo name once (for example `N` for notes) and note it in the repo's `CLAUDE.md`.
 
-One file per ticket, `tickets/<P>-<NNN>-<slug>.md`, with header lines the sprint tooling also reads:
+The format, the statuses and the query script (`tickets.py`: next id, open work, frontier, check) are in the `tickets` skill, shared with the sprint hubs; `/triage` and `/to-tickets` work here too. Use its optional `Branch`, `PR` and `Intent` (`docs/intent/<topic>.md`) header lines, and the `## Brief` section for what to do, constraints, the files that matter and what "done" means. The lifecycle here:
 
-```
-# <P>-<N> <title>
-Status: proposed | open | in-progress | review | done | dropped
-Owner: <herdr agent name or "lead">
-Branch: agent/<topic>
-PR: <url, once opened>
-Intent: docs/intent/<topic>.md
-
-## Task
-What to do, constraints, the files that matter, and what "done" means.
-
-## Comments
-- <YYYY-MM-DD> <name>: ...
-```
-
-- **New input becomes a ticket.** An idea, a bug or a request from the human: write a ticket with Status `proposed`, show the human the title and one line of scope, and start it only after they agree. Agreed but not started is `open`. The human can also start or reject tickets from the `ht` board, which sends you `[<ID>] human: start this ticket (<path>)` or `[<ID>] human: drop this ticket (<path>), reason: ...`: record it as a Comment and act on it. Several small things can share one ticket; one ticket is at most one pull request.
+- **New input becomes a ticket.** An idea, a bug or a request from the human: write a ticket with Status `needs-triage`, show the human the title and one line of scope, and set it to `ready-for-agent` with a Brief only after they agree. The human can also start or reject tickets from the `ht` board, which sends you `[<ID>] human: start this ticket (<path>)` or `[<ID>] human: drop this ticket (<path>), reason: ...`: record it as a Comment and act on it. Several small things can share one ticket; one ticket is at most one pull request.
+- **Claimed:** `in-progress`, Owner the worker's herdr name, Branch set. **Pull request opened:** `review`, PR set. **Merged:** `done`. **Dropped:** `wontfix`, with the reason as a Comment.
 - **Decisions go into the ticket first.** When the human decides something, append it as a dated Comment, then act on it.
-- **The ticket is the state.** Update Status, Owner, Branch and PR as they change. Anything you'd need after a `/clear` belongs in the ticket or the intent file, not only in this conversation.
+- **The ticket is the state.** Update Status, Owner, Branch and PR as they change, and run `tickets.py check` after every write. Anything you'd need after a `/clear` belongs in the ticket or the intent file, not only in this conversation.
 
 ## Starting a worker
 
@@ -70,8 +56,8 @@ Wait until `herdr agent list` shows the new agent before prompting it; the first
 2. Split the work into tickets small enough to review in one sitting. Independent tickets run as parallel implementers; dependent ones run in order, each branching from the one before.
 3. Per ticket: implementer → reviewer → Important findings back to the same implementer → reviewer again, until nothing is Important (at most three rounds, then bring it to the human). Findings travel as ticket Comments. Nits go to the implementer once, together with the Important ones; it may decline them with a reason. Pre-existing findings never block the ticket: list them for the human, who decides whether they become their own ticket for a debugger.
 4. When a ticket is ready, push its branch (`git push -u origin agent/<topic>`) and open a pull request with `gh pr create`, summarising what was asked, what changed and the review result, and set Status `review` with the PR link. Then put the reviewer's last report on the pull request, so the findings outlive the untracked ticket: copy that Comment from the ticket into a file in the reviewer's worktree and run `gh pr comment <url> --body-file <file>`. The human merges; then set Status `done`.
-5. **Clean up as soon as the workers are finished**, which is when the pull request is open (Status `review`), or when the ticket is `done` without one, or `dropped`. Don't wait for the merge: the branch is pushed, so the panes and worktrees hold nothing that isn't saved. For each of the ticket's workers, `herdr agent get NAME` shows its pane; close it with `herdr pane close PANE`. Then `git worktree remove` the ticket's worktrees (`<topic>`, `<topic>-review`) and set Owner to `lead`. If the human later wants changes on the pull request, start a fresh implementer on the existing branch: `git worktree add .claude/worktrees/<topic> agent/<topic>`.
-6. **Sweep.** Before starting a worker and after every `/clear`: compare `herdr agent list` with the tickets and close any worker whose ticket is `review`, `done` or `dropped`. Check each `review` ticket's pull request (`gh pr view <url> --json state`) and set the merged ones to `done`.
+5. **Clean up as soon as the workers are finished**, which is when the pull request is open (Status `review`), or when the ticket is `done` without one, or `wontfix`. Don't wait for the merge: the branch is pushed, so the panes and worktrees hold nothing that isn't saved. For each of the ticket's workers, `herdr agent get NAME` shows its pane; close it with `herdr pane close PANE`. Then `git worktree remove` the ticket's worktrees (`<topic>`, `<topic>-review`) and set Owner to `lead`. If the human later wants changes on the pull request, start a fresh implementer on the existing branch: `git worktree add .claude/worktrees/<topic> agent/<topic>`.
+6. **Sweep.** Before starting a worker and after every `/clear`: compare `herdr agent list` with the tickets and close any worker whose ticket is `review`, `done` or `wontfix`. Check each `review` ticket's pull request (`gh pr view <url> --json state`) and set the merged ones to `done`.
 7. **Clear point.** After each closed ticket, and whenever this conversation has grown long, tell the human in one line that the state is in `tickets/` and now is a good moment to `/clear` you. After a clear, rebuild your picture from `tickets/` (open and in-progress first) and the intent files, not from memory, then sweep.
 
 When the human asks what's going on, or comes back after a while, answer from the tickets with the ketchup skill.

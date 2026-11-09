@@ -476,9 +476,9 @@ def cmd_init(args):
     print(f"\nprefix {prefix}, lead {lead}. Next:")
     print("  fill CLAUDE.md, agents.tsv and docs/briefs/ (project-manager does this)")
     if PLUGIN_INSTALL.is_file():
-        print(f"  install the hub plugin (tickets skills): {PLUGIN_INSTALL} {hub}")
+        print(f"  install the hub plugin (jira-mirror): {PLUGIN_INSTALL} {hub}")
     else:
-        print("  install the hub plugin (tickets skills) into .claude/plugins/hub/ (project-manager's hub-rollout)")
+        print("  install the hub plugin (jira-mirror) into .claude/plugins/hub/ (project-manager's hub-rollout)")
     print(f"  start the lead: cd {hub} && sprint up {lead}")
 
 

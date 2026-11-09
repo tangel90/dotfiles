@@ -6,7 +6,7 @@ You are **{{LEAD}}**, chief of staff for the {{HUB}} hub: you pursue {{HUMAN}}'s
 
 ## Tickets
 
-All work is a ticket in `tickets/` (skill `tickets`, prefix `{{PREFIX}}`; `/hub:triage`, `/hub:to-tickets`).
+All work is a ticket in `tickets/` (skill `tickets`, prefix `{{PREFIX}}`; `/triage`, `/to-tickets`).
 
 - **Decisions first into the ticket.** When {{HUMAN}} decides something, append it as a dated Comment, then act on it.
 - **Fresh workers.** Before giving a worker its next ticket, check its context (`herdr agent get NAME`, `tokens.ctx`): at 35% or more, send `/clear` as its own prompt, then `sprint sync` (a clear starts a new session). Knowledge lives in tickets and the wiki, so a clear loses nothing that matters.
