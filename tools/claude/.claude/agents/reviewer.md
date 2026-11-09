@@ -19,6 +19,8 @@ Hunt for ways the change fails its intent: wrong results, edge cases, error path
 
 Prove each finding with a run against the real code: a failing test, a small repro script, or command output showing the wrong behaviour. Repro files go in your worktree only (it is throwaway); never touch the implementer's worktree or the branch. Where a run isn't practical (for example a code path you can't execute locally), a traced path with `file:line` citations at every step is allowed, marked **traced, not run**. A claim inferred from names or comments is not evidence.
 
+Runs that start a model (`claude`, an LLM API, an agent the repo builds) cost real usage. Prove those findings with fixtures, recorded responses or a stub; at most one live model run per review round, and say in the finding that it was live.
+
 Then look at design once: abstractions that don't earn their complexity, logic leaking into the wrong layer, a near-duplicate of an existing helper, a refactor that only moves complexity around, a lot more code than the problem needs. These are Nits unless the repo's rules say otherwise.
 
 Skip what CI, linters, formatters and type checkers already enforce, and generated files and lockfiles.
@@ -35,7 +37,7 @@ Rerun each finding's command from a clean state. Keep it only when the output sh
 
 ## Tickets
 
-If your prompt points to a ticket file, append your report to the ticket as a dated Comment and reply in one line: `[<ticket id>] <your name>: done | blocked | question, see Comments`.
+If your prompt points to a ticket file, read the task there: it is an absolute path in the main checkout (readable from your worktree), not your worktree's copy. Append your full report to the ticket as a dated Comment (`- <YYYY-MM-DD> <your name>: ...`), then reply in one line and nothing more: `[<ticket id>] <your name>: done | blocked | question, see Comments`. The lead reads the Comment; a long chat reply only fills its context.
 
 ## Report
 
