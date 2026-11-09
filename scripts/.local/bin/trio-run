@@ -1,0 +1,40 @@
+#!/bin/bash -p
+# trio-run [jira] issue list|view ...: read-only Jira for agents, through
+# trio's Python API (trio's CLI has no JSON output). Prints JSON, or trio's
+# own text layout with --text. `trio-run --help` for the options.
+#
+# The guard rails live here, not in the caller:
+#   - only `issue list` and `issue view`; trio's write commands, boards and
+#     MCP server are unreachable (agents are denied trio, jira and
+#     trio-mcp-server in the user settings)
+#   - projects limited to ~/.config/trio-run/projects (keys, whitespace-
+#     separated); --jql is wrapped as `project in (<allowed>) AND (<jql>)` and
+#     results from other projects are dropped
+#   - the Jira token comes from pass (token/jira/trio, first line) into this one
+#     process; trio and pass run with a clean environment, so no
+#     TRIO_JIRA_BASE_URL, proxy, CA bundle or PYTHON* variable from the caller
+#     can redirect it. bash -p ignores BASH_ENV and inherited functions.
+#
+# Excluded from Claude's sandbox (it needs pass and the network), so it stays
+# small: change the rules here, in ~/.local/share/trio-run/trio_run.py.
+
+set -euo pipefail
+
+die() { echo "trio-run: $*" >&2; exit 2; }
+
+home=$HOME
+path="$home/.local/bin:/usr/local/bin:/usr/bin:/bin"
+trio=$(PATH=$path command -v trio) || die "trio is not installed: uv tool install \"trio-cli[jira] @ git+https://con.trianel.com/bitbucket/scm/tr/trio.git\""
+py=$(dirname "$(readlink -f "$trio")")/python
+[ -x "$py" ] || die "no python next to $trio"
+script="$home/.local/share/trio-run/trio_run.py"
+[ -f "$script" ] || die "$script missing (stow -R --no-folding -d ~/dotfiles -t ~ scripts)"
+
+# Help and argument errors need no token.
+case " $* " in *" -h "*|*" --help "*) exec env -i HOME="$home" PATH="$path" "$py" -I "$script" "$@" ;; esac
+
+token=$(env -i HOME="$home" PATH="$path" GNUPGHOME="${GNUPGHOME:-$home/.gnupg}" GPG_TTY="${GPG_TTY:-}" \
+    pass show token/jira/trio 2>/dev/null | head -n 1) || true
+[ -n "$token" ] || die "no Jira token: pass show token/jira/trio failed (entry missing, or gpg-agent locked: run pass show token/jira/trio once yourself)"
+
+exec env -i HOME="$home" PATH="$path" LANG="${LANG:-C.UTF-8}" TRIO_JIRA_TOKEN="$token" "$py" -I "$script" "$@"

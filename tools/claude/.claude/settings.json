@@ -16,7 +16,8 @@
       "Bash(herdr agent start *)",
       "Bash(herdr wait *)",
       "Bash(herdr tab list*)",
-      "Bash(herdr workspace list*)"
+      "Bash(herdr workspace list*)",
+      "Bash(trio-run *)"
     ],
     "ask": ["Bash(herdr pane read *)", "Bash(herdr agent read *)"],
     "deny": [
@@ -32,7 +33,14 @@
       "Read(**/auth.zip)",
       "Read(**/secrets)",
       "Read(**/secrets/**)",
-      "Read(//home/thomas/projects/DRP/auth_bkp/**)"
+      "Read(//home/thomas/projects/DRP/auth_bkp/**)",
+      "Bash(trio)",
+      "Bash(trio *)",
+      "Bash(*/bin/trio *)",
+      "Bash(jira)",
+      "Bash(jira *)",
+      "Bash(trio-mcp-server*)",
+      "Read(~/.config/trio/**)"
     ],
     "defaultMode": "auto"
   },
@@ -126,7 +134,7 @@
         "/home/corni/.config/herdr/herdr.sock"
       ]
     },
-    "excludedCommands": ["herdr *", "sprint *"]
+    "excludedCommands": ["herdr *", "sprint *", "trio-run *"]
   },
   "outputStyle": "Calm",
   "effortLevel": "medium",
