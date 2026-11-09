@@ -1,6 +1,7 @@
 # multiplexer init: herdr (launches or attaches its persistent session), tmux
-# where herdr isn't installed. HERDR_ENV/TMUX keep panes from nesting.
-if [ "$PS1" != "" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ "$TMUX" = "" ] && [ "$KUBECONFIG" = "" ] && [ "$HERDR_ENV" != "1" ]; then
+# where herdr isn't installed. HERDR_ENV/TMUX keep panes from nesting; HC_TERMINAL_ID
+# skips it in herdr-core (the herdr desktop app), which is a multiplexer itself.
+if [ "$PS1" != "" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ "$TMUX" = "" ] && [ "$KUBECONFIG" = "" ] && [ "$HERDR_ENV" != "1" ] && [ -z "$HC_TERMINAL_ID" ]; then
     if command -v herdr &> /dev/null; then
         herdr
     elif command -v tmux &> /dev/null; then
