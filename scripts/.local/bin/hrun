@@ -84,7 +84,7 @@ def pick(entries):
     # Fields: index, the visible row, the command (hidden, shown in the preview).
     lines = [f"{i}\t{e[0]:<{width}}  {e[1]:<5}  {e[2]}\t{e[3]}" for i, e in enumerate(entries)]
     res = subprocess.run(
-        ["fzf", "--delimiter", "\t", "--with-nth", "2", "--no-sort", "--prompt", "run> ",
+        ["fzf", "--height=100%", "--delimiter", "\t", "--with-nth", "2", "--no-sort", "--prompt", "run> ",
          "--preview", "echo {3}", "--preview-window", "down,3,wrap"],
         input="\n".join(lines), stdout=subprocess.PIPE, text=True,
     )

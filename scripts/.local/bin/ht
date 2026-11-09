@@ -1,0 +1,231 @@
+#!/usr/bin/env python3
+"""ht: ticket board, an fzf list of the repo-lead tickets on this machine.
+Listed in hrun (prefix+shift+r) as "tickets".
+
+Tickets are the files tickets/<P>-<NNN>-<slug>.md that repo-lead keeps in a
+repo root (see tools/claude/.claude/agents/repo-lead.md); ht reads their
+"# <ID> <title>", "Status:" and "Owner:" lines. Repos are the open herdr
+workspaces' roots plus ~/*/ and ~/projects/*/ when they have a tickets/ folder.
+
+Keys:
+    alt-a  active (everything not done or dropped; the start view)
+    alt-t  triage: proposed and open
+    alt-p  in progress     alt-r  review     alt-d  done and dropped
+    alt-w  active, only the repo of the pane ht was opened from
+    enter  read the ticket in nvim
+    ctrl-s start: ask the repo's lead to start it
+    ctrl-x reject: ask for a reason, then ask the lead to drop it
+    ctrl-g go to the ticket's owner agent (or the lead) and close the board
+
+Start and reject never edit the ticket: they prompt the repo's lead (the
+herdr agent in that repo whose name ends in "-lead"), which owns the state and
+records the decision in the ticket's Comments.
+
+    ht list [--view active|triage|progress|review|closed] [--repo PATH]
+    ht act start|drop|focus FILE
+"""
+
+import json
+import os
+import re
+import shlex
+import subprocess
+import sys
+from pathlib import Path
+
+HOME = Path.home()
+ORDER = ["proposed", "open", "in-progress", "review", "done", "dropped"]
+VIEWS = {
+    "active": {"proposed", "open", "in-progress", "review"},
+    "triage": {"proposed", "open"},
+    "progress": {"in-progress"},
+    "review": {"review"},
+    "closed": {"done", "dropped"},
+}
+TICKET = re.compile(r"^[A-Z][A-Z0-9]*-\d+-.*\.md$")
+COLOR = {"proposed": "35", "open": "33", "in-progress": "36", "review": "34", "done": "2", "dropped": "2"}
+SELF = shlex.quote(str(Path(__file__).resolve()))
+
+
+def herdr(*args):
+    try:
+        out = subprocess.run(["herdr", *args], capture_output=True, text=True, timeout=5)
+        return json.loads(out.stdout)["result"]
+    except Exception:
+        return {}
+
+
+def repos():
+    roots = set()
+    for ws in herdr("workspace", "list").get("workspaces", []):
+        wt = ws.get("worktree") or {}
+        for key in ("repo_root", "checkout_path"):
+            if wt.get(key):
+                roots.add(Path(wt[key]))
+    for pattern in ("*/tickets", "projects/*/tickets"):
+        roots.update(p.parent for p in HOME.glob(pattern) if p.is_dir())
+    return sorted(r for r in roots if (r / "tickets").is_dir())
+
+
+def parse(path):
+    t = {"path": path, "id": "-".join(path.stem.split("-", 2)[:2]), "title": path.stem, "status": "?", "owner": ""}
+    try:
+        lines = path.read_text(errors="replace").splitlines()[:12]
+    except OSError:
+        return None
+    heading = False
+    for line in lines:
+        key, _, value = line.partition(":")
+        if line.startswith("# ") and not heading:
+            heading = True
+            tid, _, title = line[2:].strip().partition(" ")
+            t["id"], t["title"] = tid, title or t["title"]
+        elif key.lower() == "status" and value.strip():
+            t["status"] = value.split()[0].lower()
+        elif key.lower() == "owner":
+            t["owner"] = value.strip()
+    return t
+
+
+def tickets(view, repo=None):
+    rows = []
+    for root in [repo] if repo else repos():
+        for p in sorted((root / "tickets").glob("*.md")):
+            if not TICKET.match(p.name):
+                continue
+            t = parse(p)
+            if t and (t["status"] in VIEWS[view] or (view == "active" and t["status"] not in ORDER)):
+                t["repo"] = root.name
+                rows.append(t)
+    rank = {s: i for i, s in enumerate(ORDER)}
+    rows.sort(key=lambda t: (rank.get(t["status"], -1), t["repo"], t["id"]))
+    return rows
+
+
+def repo_of(path):
+    try:
+        out = subprocess.run(["git", "-C", str(path), "rev-parse", "--show-toplevel"], capture_output=True, text=True)
+        top = Path(out.stdout.strip()) if out.returncode == 0 else None
+    except OSError:
+        top = None
+    # A worktree under .claude/worktrees/ belongs to the main checkout's tickets.
+    if top and ".claude/worktrees" in str(top):
+        top = Path(str(top).split("/.claude/worktrees")[0])
+    return top
+
+
+def cmd_list(argv):
+    view, repo = "active", None
+    while argv:
+        a = argv.pop(0)
+        if a == "--view":
+            view = argv.pop(0)
+        elif a == "--repo":
+            repo = repo_of(argv.pop(0))
+            if not repo or not (repo / "tickets").is_dir():
+                print("\t(no tickets/ in this repo)")
+                return
+    rows = tickets(view, repo)
+    if not rows:
+        print(f"\t(no {view} tickets)")
+    rw = max((len(t["repo"]) for t in rows), default=0)
+    iw = max((len(t["id"]) for t in rows), default=0)
+    for t in rows:
+        st = f"\033[{COLOR.get(t['status'], '31')}m{t['status']:<11}\033[0m"
+        owner = f"  \033[2m{t['owner']}\033[0m" if t["owner"] and t["owner"] != "lead" else ""
+        print(f"{t['path']}\t{t['repo']:<{rw}}  {t['id']:<{iw}}  {st}  {t['title']}{owner}")
+
+
+def agents():
+    return herdr("agent", "list").get("agents", [])
+
+
+def lead_for(root):
+    for a in agents():
+        name = a.get("name") or ""
+        cwd = a.get("cwd") or ""
+        if name.endswith("-lead") and (cwd == str(root) or cwd.startswith(str(root) + "/")):
+            return name
+    return None
+
+
+def say(msg):
+    print(msg)
+    try:
+        subprocess.run(["sleep", "1.5"])
+    except KeyboardInterrupt:
+        pass
+
+
+def cmd_act(argv):
+    if len(argv) != 2 or argv[0] not in ("start", "drop", "focus"):
+        sys.exit("usage: ht act start|drop|focus FILE")
+    action, path = argv[0], Path(argv[1])
+    if not path.is_file():
+        return say("no ticket selected")
+    t = parse(path)
+    root = path.parent.parent
+    lead = lead_for(root)
+    if action == "focus":
+        names = {a.get("name") for a in agents()}
+        target = t["owner"] if t["owner"] in names else lead
+        if target:
+            herdr("agent", "focus", target)
+        else:
+            say(f"no agent for {t['id']} and no *-lead running in {root}")
+        return
+    if not lead:
+        return say(f"no *-lead agent running in {root}; start one there with: ha --host {root.name}-lead --agent repo-lead")
+    if action == "start":
+        msg = f"[{t['id']}] human: start this ticket ({path}). Note the decision in its Comments."
+    else:
+        with open("/dev/tty") as tty:
+            print(f"Reject {t['id']} {t['title']}\nreason (empty cancels): ", end="", flush=True)
+            reason = tty.readline().strip()
+        if not reason:
+            return say("cancelled")
+        msg = f"[{t['id']}] human: drop this ticket ({path}), reason: {reason}. Set Status dropped and note it in its Comments."
+    res = herdr("agent", "prompt", lead, msg)
+    say(f"sent to {lead}" if res else f"could not prompt {lead}")
+
+
+def board():
+    cwd = os.environ.get("HERDR_ACTIVE_PANE_CWD") or os.getcwd()
+    view = lambda v: f"reload({SELF} list --view {v})+change-header({header(v)})"
+    def header(v):
+        return f"{v} · alt a/t/p/r/d/w views · enter read · ctrl-s start · ctrl-x reject · ctrl-g go to agent"
+    keep = f"reload({SELF} list --view active)"
+    subprocess.run(
+        ["fzf", "--height=100%", "--ansi", "--delimiter", "\t", "--with-nth", "2", "--no-sort", "--layout", "reverse",
+         "--prompt", "tickets> ", "--header", header("active"),
+         "--preview", "test -f {1} && (bat --style=plain --color=always --language=md {1} 2>/dev/null || cat {1})",
+         "--preview-window", "right,55%,wrap",
+         "--bind", f"start:{keep}",
+         "--bind", "alt-a:" + view("active"),
+         "--bind", "alt-t:" + view("triage"),
+         "--bind", "alt-p:" + view("progress"),
+         "--bind", "alt-r:" + view("review"),
+         "--bind", "alt-d:" + view("closed"),
+         "--bind", f"alt-w:reload({SELF} list --repo {shlex.quote(cwd)})+change-header(this repo · {header('active')})",
+         "--bind", "enter:execute(test -f {1} && nvim -R {1})",
+         "--bind", f"ctrl-s:execute({SELF} act start {{1}})",
+         "--bind", f"ctrl-x:execute({SELF} act drop {{1}})",
+         "--bind", f"ctrl-g:execute-silent({SELF} act focus {{1}})+abort"],
+        input="",
+    )
+
+
+def main():
+    argv = sys.argv[1:]
+    if argv[:1] == ["list"]:
+        cmd_list(argv[1:])
+    elif argv[:1] == ["act"]:
+        cmd_act(argv[1:])
+    elif not argv:
+        board()
+    else:
+        sys.exit(__doc__)
+
+
+if __name__ == "__main__":
+    main()

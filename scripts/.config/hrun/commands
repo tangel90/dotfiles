@@ -3,6 +3,7 @@
 # tab (new herdr tab). Commands run under zsh in the active pane's directory.
 # Every other script in ~/.local/bin is listed after these, as `wait`.
 
+tickets        | popup | ticket board: triage, start, reject (ht)             | ht
 projects       | popup | open a project, workspace or past chat (hp)          | hp
 agent          | popup | start a Claude subagent definition in a new tab      | hagent
 file           | popup | open a file below this directory in a new tab (hw)   | hw --here

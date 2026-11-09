@@ -24,7 +24,7 @@ One file per ticket, `tickets/<P>-<NNN>-<slug>.md`, with header lines the sprint
 
 ```
 # <P>-<N> <title>
-Status: open | in-progress | review | done | dropped
+Status: proposed | open | in-progress | review | done | dropped
 Owner: <herdr agent name or "lead">
 Branch: agent/<topic>
 PR: <url, once opened>
@@ -37,7 +37,7 @@ What to do, constraints, the files that matter, and what "done" means.
 - <YYYY-MM-DD> <name>: ...
 ```
 
-- **New input becomes a ticket.** An idea, a bug or a request from the human: write a ticket with Status `open`, show the human the title and one line of scope, and start it only after they agree. Several small things can share one ticket; one ticket is at most one pull request.
+- **New input becomes a ticket.** An idea, a bug or a request from the human: write a ticket with Status `proposed`, show the human the title and one line of scope, and start it only after they agree. Agreed but not started is `open`. The human can also start or reject tickets from the `ht` board, which sends you `[<ID>] human: start this ticket (<path>)` or `[<ID>] human: drop this ticket (<path>), reason: ...`: record it as a Comment and act on it. Several small things can share one ticket; one ticket is at most one pull request.
 - **Decisions go into the ticket first.** When the human decides something, append it as a dated Comment, then act on it.
 - **The ticket is the state.** Update Status, Owner, Branch and PR as they change. Anything you'd need after a `/clear` belongs in the ticket or the intent file, not only in this conversation.
 
