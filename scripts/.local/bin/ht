@@ -8,10 +8,10 @@ repo root (see tools/claude/.claude/agents/repo-lead.md); ht reads their
 workspaces' roots plus ~/*/ and ~/projects/*/ when they have a tickets/ folder.
 
 Keys:
-    alt-a  active (everything not done or dropped; the start view)
-    alt-t  triage: proposed and open
-    alt-p  in progress     alt-r  review     alt-d  done and dropped
-    alt-w  active, only the repo of the pane ht was opened from
+    tab / shift-tab  next / previous view: active (not done or dropped, the
+           start view), triage (proposed and open), progress, review, closed
+           (done and dropped), here (active, only the repo of the pane ht
+           was opened from)
     enter  read the ticket in nvim
     ctrl-s start: ask the repo's lead to start it
     ctrl-x reject: ask for a reason, then ask the lead to drop it
@@ -189,30 +189,54 @@ def cmd_act(argv):
     say(f"sent to {lead}" if res else f"could not prompt {lead}")
 
 
+# tab / shift-tab walk through these; "here" is "active" for the pane's repo only.
+CYCLE = ["active", "triage", "progress", "review", "closed", "here"]
+
+
+def header(view):
+    tabs = "  ".join(f"[{v}]" if v == view else v for v in CYCLE)
+    return f"{tabs}   ·  tab view · enter read · ctrl-s start · ctrl-x reject · ctrl-g agent"
+
+
+def cmd_cycle(argv):
+    """Print the fzf actions for the next/previous/same view; state in $HT_STATE."""
+    state = Path(os.environ["HT_STATE"])
+    try:
+        cur = CYCLE.index(state.read_text().strip())
+    except (OSError, ValueError):
+        cur = 0
+    step = {"next": 1, "prev": -1}.get(argv[0] if argv else "", 0)
+    view = CYCLE[(cur + step) % len(CYCLE)]
+    state.write_text(view)
+    if view == "here":
+        cwd = os.environ.get("HERDR_ACTIVE_PANE_CWD") or os.getcwd()
+        listing = f"{SELF} list --repo {shlex.quote(cwd)}"
+    else:
+        listing = f"{SELF} list --view {view}"
+    print(f"reload({listing})+change-header({header(view)})")
+
+
 def board():
-    cwd = os.environ.get("HERDR_ACTIVE_PANE_CWD") or os.getcwd()
-    view = lambda v: f"reload({SELF} list --view {v})+change-header({header(v)})"
-    def header(v):
-        return f"{v} · alt a/t/p/r/d/w views · enter read · ctrl-s start · ctrl-x reject · ctrl-g go to agent"
-    keep = f"reload({SELF} list --view active)"
-    subprocess.run(
-        ["fzf", "--height=100%", "--ansi", "--delimiter", "\t", "--with-nth", "2", "--no-sort", "--layout", "reverse",
-         "--prompt", "tickets> ", "--header", header("active"),
-         "--preview", "test -f {1} && (bat --style=plain --color=always --language=md {1} 2>/dev/null || cat {1})",
-         "--preview-window", "right,55%,wrap",
-         "--bind", f"start:{keep}",
-         "--bind", "alt-a:" + view("active"),
-         "--bind", "alt-t:" + view("triage"),
-         "--bind", "alt-p:" + view("progress"),
-         "--bind", "alt-r:" + view("review"),
-         "--bind", "alt-d:" + view("closed"),
-         "--bind", f"alt-w:reload({SELF} list --repo {shlex.quote(cwd)})+change-header(this repo · {header('active')})",
-         "--bind", "enter:execute(test -f {1} && nvim -R {1})",
-         "--bind", f"ctrl-s:execute({SELF} act start {{1}})",
-         "--bind", f"ctrl-x:execute({SELF} act drop {{1}})",
-         "--bind", f"ctrl-g:execute-silent({SELF} act focus {{1}})+abort"],
-        input="",
-    )
+    state = Path(os.environ.get("XDG_RUNTIME_DIR") or "/tmp") / f"ht-{os.getpid()}"
+    state.write_text("active")
+    env = dict(os.environ, HT_STATE=str(state))
+    try:
+        subprocess.run(
+            ["fzf", "--height=100%", "--ansi", "--delimiter", "\t", "--with-nth", "2", "--no-sort", "--layout", "reverse",
+             "--prompt", "tickets> ", "--header", header("active"), "--header-first",
+             "--preview", "test -f {1} && (bat --style=plain --color=always --language=md {1} 2>/dev/null || command cat {1})",
+             "--preview-window", "right,55%,wrap",
+             "--bind", f"start:transform({SELF} cycle same)",
+             "--bind", f"tab:transform({SELF} cycle next)",
+             "--bind", f"shift-tab:transform({SELF} cycle prev)",
+             "--bind", "enter:execute(test -f {1} && nvim -R {1})",
+             "--bind", f"ctrl-s:execute({SELF} act start {{1}})+transform({SELF} cycle same)",
+             "--bind", f"ctrl-x:execute({SELF} act drop {{1}})+transform({SELF} cycle same)",
+             "--bind", f"ctrl-g:execute-silent({SELF} act focus {{1}})+abort"],
+            input="", env=env,
+        )
+    finally:
+        state.unlink(missing_ok=True)
 
 
 def main():
@@ -221,6 +245,8 @@ def main():
         cmd_list(argv[1:])
     elif argv[:1] == ["act"]:
         cmd_act(argv[1:])
+    elif argv[:1] == ["cycle"]:
+        cmd_cycle(argv[1:])
     elif not argv:
         board()
     else:
