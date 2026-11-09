@@ -68,7 +68,7 @@ fi
 pkgs=("${!want[@]}")
 if (( ${#pkgs[@]} )); then
     case $pm in
-        arch) install=(sudo pacman -S --needed "${pkgs[@]}") ;;
+        arch) install=(sudo pacman -S --needed --noconfirm "${pkgs[@]}") ;;
         apt) install=(sudo apt-get install -y "${pkgs[@]}") ;;
     esac
     echo "to install: ${install[*]}"
