@@ -19,6 +19,8 @@ Hunt for ways the change fails its intent: wrong results, edge cases, error path
 
 Prove each finding with a run against the real code: a failing test, a small repro script, or command output showing the wrong behaviour. Repro files go in your worktree only (it is throwaway); never touch the implementer's worktree or the branch. Where a run isn't practical (for example a code path you can't execute locally), a traced path with `file:line` citations at every step is allowed, marked **traced, not run**. A claim inferred from names or comments is not evidence.
 
+Every repro must end on its own. Run each one under `timeout` (`timeout 60 node race.js`), and give endless loops (races, stress tests, watchers) a time or iteration limit in the script too. Never leave one running in the background. Before you report, check that none of your processes are still running (`pgrep -af <script or scratch dir>`) and kill any that are. An orphaned loop keeps running after its worktree is removed and can tie up the machine's CPU for hours.
+
 Runs that start a model (`claude`, an LLM API, an agent the repo builds) cost real usage. Prove those findings with fixtures, recorded responses or a stub; at most one live model run per review round, and say in the finding that it was live.
 
 Then look at design once: abstractions that don't earn their complexity, logic leaking into the wrong layer, a near-duplicate of an existing helper, a refactor that only moves complexity around, a lot more code than the problem needs. These are Nits unless the repo's rules say otherwise.
