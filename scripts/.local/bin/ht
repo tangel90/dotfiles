@@ -2,25 +2,28 @@
 """ht: ticket board, a filterable list of the repo-lead tickets on this machine.
 Listed in hrun (prefix+shift+r) as "tickets".
 
-Tickets are the files tickets/<P>-<NNN>-<slug>.md that repo-lead keeps in a
-repo root (see tools/claude/.claude/agents/repo-lead.md); ht reads their
+Tickets are the files tickets/<P>-<NNN>-<slug>.md that repo-lead (or a sprint
+hub) keeps, in the format of the tickets skill
+(tools/claude/.claude/skills/tickets/SKILL.md); ht reads their
 "# <ID> <title>", "Status:" and "Owner:" lines. Repos are the open herdr
 workspaces' roots plus ~/*/ and ~/projects/*/ when they have a tickets/ folder.
 
 The query filters; every word must match:
 
     !x     status: the first of these names starting with x
-           active (default: not done or dropped), all, triage (proposed and
-           open), review, progress (in-progress), proposed, open, closed
-           (done and dropped), done, dropped
-           so !r review, !t triage, !c closed, !a active, !al all
+           active (default: not done or wontfix), all, triage (needs-triage
+           and needs-info), review, ready (ready-for-agent and
+           ready-for-human), progress (in-progress), human (ready-for-human),
+           closed (done and wontfix), done, wontfix
+           so !r review, !rea ready, !t triage, !h human, !c closed,
+           !a active, !al all
     @x     owner contains x            #x   repo contains x
     #.     only the repo of the pane ht was opened from
     word   ID or title contains it (case-insensitive)
 
 Keys: enter read the ticket in nvim · ctrl-s start · ctrl-x reject (asks
 for a reason) · ctrl-g go to the owner agent (or the lead) · ctrl-/ show or
-hide the Task section.
+hide the Brief section.
 
 Start and reject never edit the ticket: they prompt the repo's lead (the
 herdr agent in that repo whose name ends in "-lead"), which owns the state and
@@ -38,23 +41,24 @@ import sys
 from pathlib import Path
 
 HOME = Path.home()
-ORDER = ["proposed", "open", "in-progress", "review", "done", "dropped"]
+ORDER = ["needs-triage", "needs-info", "ready-for-human", "ready-for-agent", "in-progress", "review", "done", "wontfix"]
 VIEWS = {  # order decides which name a !prefix picks
-    "active": {"proposed", "open", "in-progress", "review"},
+    "active": set(ORDER[:6]),
     "all": set(ORDER),
-    "triage": {"proposed", "open"},
+    "triage": {"needs-triage", "needs-info"},
     "review": {"review"},
+    "ready": {"ready-for-agent", "ready-for-human"},
     "progress": {"in-progress"},
-    "proposed": {"proposed"},
-    "open": {"open"},
-    "closed": {"done", "dropped"},
+    "human": {"ready-for-human"},
+    "closed": {"done", "wontfix"},
     "done": {"done"},
-    "dropped": {"dropped"},
+    "wontfix": {"wontfix"},
 }
 TICKET = re.compile(r"^[A-Z][A-Z0-9]*-\d+-.*\.md$")
-COLOR = {"proposed": "35", "open": "33", "in-progress": "36", "review": "34", "done": "2", "dropped": "2"}
+COLOR = {"needs-triage": "35", "needs-info": "35", "ready-for-human": "33", "ready-for-agent": "33",
+         "in-progress": "36", "review": "34", "done": "2", "wontfix": "2"}
 SELF = shlex.quote(str(Path(__file__).resolve()))
-HELP = "!status @owner #repo #. word · enter read · ctrl-s start · ctrl-x reject · ctrl-g agent · ctrl-/ task"
+HELP = "!status @owner #repo #. word · enter read · ctrl-s start · ctrl-x reject · ctrl-g agent · ctrl-/ brief"
 
 
 def herdr(*args):
@@ -149,13 +153,13 @@ def cmd_list(query):
     rw = max((len(t["repo"]) for t in rows), default=0)
     iw = max((len(t["id"]) for t in rows), default=0)
     for t in rows:
-        st = f"\033[{COLOR.get(t['status'], '31')}m{t['status']:<11}\033[0m"
+        st = f"\033[{COLOR.get(t['status'], '31')}m{t['status']:<15}\033[0m"
         owner = f"  \033[2m@{t['owner']}\033[0m" if t["owner"] and t["owner"] != "lead" else ""
         print(f"{t['path']}\t{t['repo']:<{rw}}  {t['id']:<{iw}}  {st}  {t['title']}{owner}")
 
 
 def cmd_task(argv):
-    """Print the ticket's header lines and its Task section, not the Comments."""
+    """Print the ticket's header lines and its Brief (or older Task) section, not the Comments."""
     try:
         lines = Path(argv[0]).read_text(errors="replace").splitlines()
     except (IndexError, OSError):
@@ -165,7 +169,7 @@ def cmd_task(argv):
         if line.startswith("## "):
             section = line[3:].strip().lower()
             continue
-        if section in ("header", "task"):
+        if section in ("header", "brief", "task"):
             out.append(line)
     print("\n".join(out).strip())
 
@@ -218,7 +222,7 @@ def cmd_act(argv):
             reason = tty.readline().strip()
         if not reason:
             return say("cancelled")
-        msg = f"[{t['id']}] human: drop this ticket ({path}), reason: {reason}. Set Status dropped and note it in its Comments."
+        msg = f"[{t['id']}] human: drop this ticket ({path}), reason: {reason}. Set Status wontfix and note it in its Comments."
     res = herdr("agent", "prompt", lead, msg)
     say(f"sent to {lead}" if res else f"could not prompt {lead}")
 
