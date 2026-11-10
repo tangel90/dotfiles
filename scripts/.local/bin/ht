@@ -19,13 +19,20 @@ The query filters; every word must match:
            !a active, !al all
     @x     owner contains x            #x   repo contains x
     #.     only the repo of the pane ht was opened from
+    >14d   last action more than 14 days ago (<3d: less than 3 days)
     word   ID or title contains it (case-insensitive)
 
-Keys: enter read the ticket in nvim · ctrl-s start · ctrl-x reject (asks
-for a reason) · ctrl-g go to the owner agent (or the lead) · ctrl-/ show or
-hide the Brief section.
+Columns after the status: last action and created, as ages (3d), from the
+newest and oldest dated Comment ("- YYYY-MM-DD who: ..."). A ticket without
+a dated Comment shows its file's modification age instead, marked "~"
+(renames and the Jira mirror touch files, so it is a guess).
 
-Start and reject never edit the ticket: they prompt the repo's lead (the
+Keys: enter read the ticket in nvim · ctrl-s start · ctrl-x reject (asks
+for a reason) · ctrl-d done, on your own tickets only (Owner thomas; asks for
+a note: what was done, which commit) · ctrl-g go to the owner agent (or the
+lead) · ctrl-/ show or hide the Brief section.
+
+Start, reject and done never edit the ticket: they prompt the repo's lead (the
 herdr agent in that repo whose name ends in "-lead"), which owns the state and
 records the decision in the ticket's Comments.
 
@@ -38,6 +45,7 @@ import re
 import shlex
 import subprocess
 import sys
+from datetime import date
 from pathlib import Path
 
 HOME = Path.home()
@@ -58,7 +66,23 @@ TICKET = re.compile(r"^[A-Z][A-Z0-9]*-\d+-.*\.md$")
 COLOR = {"needs-triage": "35", "needs-info": "35", "ready-for-human": "33", "ready-for-agent": "33",
          "in-progress": "36", "review": "34", "done": "2", "wontfix": "2"}
 SELF = shlex.quote(str(Path(__file__).resolve()))
-HELP = "!status @owner #repo #. word · enter read · ctrl-s start · ctrl-x reject · ctrl-g agent · ctrl-/ brief"
+HELP = "!status @owner #repo #. >14d word · enter read · ctrl-s start · ctrl-x reject · ctrl-d done (yours) · ctrl-g agent · ctrl-/ brief"
+DATED = re.compile(r"^- (\d{4}-\d{2}-\d{2})\b")
+
+
+def human_names():
+    """Owner values that mean the human: thomas/human, the login and git first name."""
+    names = {"human", "thomas", os.environ.get("USER", "").lower()}
+    try:
+        out = subprocess.run(["git", "config", "user.name"], capture_output=True, text=True).stdout.split()
+        names.update(n.lower() for n in out[:1])
+    except OSError:
+        pass
+    return names - {""}
+
+
+def age(day):
+    return f"{max(0, (date.today() - day).days)}d"
 
 
 def herdr(*args):
@@ -84,11 +108,22 @@ def repos():
 def parse(path):
     t = {"path": path, "id": "-".join(path.stem.split("-", 2)[:2]), "title": path.stem, "status": "?", "owner": ""}
     try:
-        lines = path.read_text(errors="replace").splitlines()[:12]
+        lines = path.read_text(errors="replace").splitlines()
+        mtime = date.fromtimestamp(path.stat().st_mtime)
     except OSError:
         return None
-    heading = False
+    dates, section = [], ""
     for line in lines:
+        if line.startswith("## "):
+            section = line[3:].strip().lower()
+        elif section == "comments" and (m := DATED.match(line)):
+            try:
+                dates.append(date.fromisoformat(m.group(1)))
+            except ValueError:
+                pass
+    t["last"], t["created"], t["guess"] = (max(dates), min(dates), False) if dates else (mtime, mtime, True)
+    heading = False
+    for line in lines[:12]:
         key, _, value = line.partition(":")
         if line.startswith("# ") and not heading:
             heading = True
@@ -128,6 +163,12 @@ def matcher(query):
             tests.append(lambda t, h=here: h is not None and t["root"].resolve() == h.resolve())
         elif sigil == "#":
             tests.append(lambda t, r=rest: r in t["repo"].lower())
+        elif sigil in "<>" and re.fullmatch(r"\d+d?", rest):
+            n = int(rest.rstrip("d"))
+            if sigil == ">":
+                tests.append(lambda t, n=n: (date.today() - t["last"]).days > n)
+            else:
+                tests.append(lambda t, n=n: (date.today() - t["last"]).days < n)
         else:
             tests.append(lambda t, w=word: w in t["id"].lower() or w in t["title"].lower())
     active = statuses is VIEWS["active"]
@@ -155,7 +196,9 @@ def cmd_list(query):
     for t in rows:
         st = f"\033[{COLOR.get(t['status'], '31')}m{t['status']:<15}\033[0m"
         owner = f"  \033[2m@{t['owner']}\033[0m" if t["owner"] and t["owner"] != "lead" else ""
-        print(f"{t['path']}\t{t['repo']:<{rw}}  {t['id']:<{iw}}  {st}  {t['title']}{owner}")
+        mark = "~" if t["guess"] else " "
+        ages = f"\033[2m{mark}{age(t['last']):>4} {mark}{age(t['created']):>4}\033[0m"
+        print(f"{t['path']}\t{t['repo']:<{rw}}  {t['id']:<{iw}}  {st}  {ages}  {t['title']}{owner}")
 
 
 def cmd_task(argv):
@@ -196,8 +239,8 @@ def say(msg):
 
 
 def cmd_act(argv):
-    if len(argv) != 2 or argv[0] not in ("start", "drop", "focus"):
-        sys.exit("usage: ht act start|drop|focus FILE")
+    if len(argv) != 2 or argv[0] not in ("start", "drop", "done", "focus"):
+        sys.exit("usage: ht act start|drop|done|focus FILE")
     action, path = argv[0], Path(argv[1])
     if not path.is_file():
         return say("no ticket selected")
@@ -212,10 +255,19 @@ def cmd_act(argv):
         else:
             say(f"no agent for {t['id']} and no *-lead running in {root}")
         return
+    if action == "done" and t["owner"].lower() not in human_names():
+        return say(f"{t['id']} is owned by {t['owner'] or 'nobody'}, not you: ctrl-d only closes your own tickets")
     if not lead:
         return say(f"no *-lead agent running in {root}; start one there with: ha --host {root.name}-lead --agent repo-lead")
     if action == "start":
         msg = f"[{t['id']}] human: start this ticket ({path}). Note the decision in its Comments."
+    elif action == "done":
+        with open("/dev/tty") as tty:
+            print(f"Done {t['id']} {t['title']}\nnote, what was done and which commit (empty cancels): ", end="", flush=True)
+            note = tty.readline().strip()
+        if not note:
+            return say("cancelled")
+        msg = f"[{t['id']}] human: done ({note}) ({path}). Set Status done and record it in Comments."
     else:
         with open("/dev/tty") as tty:
             print(f"Reject {t['id']} {t['title']}\nreason (empty cancels): ", end="", flush=True)
@@ -239,6 +291,7 @@ def board():
          "--bind", "enter:execute(test -f {1} && nvim -R {1})",
          "--bind", f"ctrl-s:execute({SELF} act start {{1}})+{reload}",
          "--bind", f"ctrl-x:execute({SELF} act drop {{1}})+{reload}",
+         "--bind", f"ctrl-d:execute({SELF} act done {{1}})+{reload}",
          "--bind", f"ctrl-g:execute-silent({SELF} act focus {{1}})+abort"],
         input="",
     )
