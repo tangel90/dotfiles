@@ -27,7 +27,12 @@ newest and oldest dated Comment ("- YYYY-MM-DD who: ..."). A ticket without
 a dated Comment shows its file's modification age instead, marked "~"
 (renames and the Jira mirror touch files, so it is a guess).
 
-Keys: enter read the ticket in nvim · ctrl-s start · ctrl-x reject (asks
+The board starts in key mode, like herdr's prefix+g popup: j/k move, single
+keys set the filter (h human, t triage, r review, p progress, a active,
+c closed, l all; m toggles only mine, o toggles last action over 14 days), q or
+esc quits. / switches to search: type the query, esc goes back to key mode.
+
+Keys in both modes: enter read the ticket in nvim · ctrl-s start · ctrl-x reject (asks
 for a reason) · ctrl-d done, on your own tickets only (Owner thomas; asks for
 a note: what was done, which commit) · ctrl-g go to the owner agent (or the
 lead) · ctrl-/ show or hide the Brief section.
@@ -36,7 +41,8 @@ Start, reject and done never edit the ticket: they prompt the repo's lead (the
 herdr agent in that repo whose name ends in "-lead"), which owns the state and
 records the decision in the ticket's Comments.
 
-    ht list [QUERY]       ht task FILE       ht act start|drop|focus FILE
+    ht list [QUERY]       ht task FILE       ht act start|drop|done|focus FILE
+    ht query KEY [QUERY]  the query after a filter key (used by the board)
 """
 
 import json
@@ -66,7 +72,11 @@ TICKET = re.compile(r"^[A-Z][A-Z0-9]*-\d+-.*\.md$")
 COLOR = {"needs-triage": "35", "needs-info": "35", "ready-for-human": "33", "ready-for-agent": "33",
          "in-progress": "36", "review": "34", "done": "2", "wontfix": "2"}
 SELF = shlex.quote(str(Path(__file__).resolve()))
-HELP = "!status @owner #repo #. >14d word · enter read · ctrl-s start · ctrl-x reject · ctrl-d done (yours) · ctrl-g agent · ctrl-/ brief"
+HELP = ("j/k move · h human · t triage · r review · p progress · a active · c closed · l all · m mine · o >14d · / search · q quit\n"
+        "enter read · ctrl-s start · ctrl-x reject · ctrl-d done (yours) · ctrl-g agent · ctrl-/ brief")
+STATUS_KEYS = {"h": "!human", "t": "!triage", "r": "!review", "p": "!progress", "a": "", "c": "!closed", "l": "!all"}
+OLD = ">14d"
+MODE_KEYS = "j,k,q,/,m,o," + ",".join(STATUS_KEYS)
 DATED = re.compile(r"^- (\d{4}-\d{2}-\d{2})\b")
 
 
@@ -279,14 +289,36 @@ def cmd_act(argv):
     say(f"sent to {lead}" if res else f"could not prompt {lead}")
 
 
+def cmd_query(argv):
+    """Print the query a filter key turns QUERY into: status keys replace the
+    !token, m toggles @<you>, o toggles >14d; other words stay."""
+    key, words = (argv[0] if argv else ""), (" ".join(argv[1:])).split()
+    me = "@" + next(iter(sorted(n for n in human_names() if n != "human")), "thomas")
+    if key in STATUS_KEYS:
+        words = [w for w in words if not w.startswith("!")] + ([STATUS_KEYS[key]] if STATUS_KEYS[key] else [])
+    elif key == "m":
+        words = [w for w in words if w != me] if me in words else words + [me]
+    elif key == "o":
+        words = [w for w in words if w != OLD] if OLD in words else words + [OLD]
+    print(" ".join(words))
+
+
 def board():
     # --disabled: fzf doesn't filter; every keystroke reloads `ht list {q}`.
+    # Key mode until / (the prompt shows the mode): its keys are unbound for
+    # search and rebound by esc, which quits from key mode.
     reload = f"reload({SELF} list {{q}})"
+    filters = [f"{k}:transform-query({SELF} query {k} {{q}})+{reload}" for k in [*STATUS_KEYS, "m", "o"]]
+    esc = (f'[ "$FZF_PROMPT" = "search> " ] && echo "rebind({MODE_KEYS})+change-prompt(tickets> )" || echo abort')
     subprocess.run(
         ["fzf", "--height=100%", "--ansi", "--disabled", "--delimiter", "\t", "--with-nth", "2", "--no-sort",
          "--layout", "reverse", "--prompt", "tickets> ", "--header", HELP,
          "--preview", f"test -f {{1}} && {SELF} task {{1}}", "--preview-window", "down,40%,wrap,hidden",
          "--bind", f"start:{reload}", "--bind", f"change:{reload}",
+         "--bind", "j:down", "--bind", "k:up", "--bind", "q:abort",
+         *[x for f in filters for x in ("--bind", f)],
+         "--bind", f"/:unbind({MODE_KEYS})+change-prompt(search> )",
+         "--bind", f"esc:transform:{esc}",
          "--bind", "ctrl-/:toggle-preview",
          "--bind", "enter:execute(test -f {1} && nvim -R {1})",
          "--bind", f"ctrl-s:execute({SELF} act start {{1}})+{reload}",
@@ -305,6 +337,8 @@ def main():
         cmd_task(argv[1:])
     elif argv[:1] == ["act"]:
         cmd_act(argv[1:])
+    elif argv[:1] == ["query"]:
+        cmd_query(argv[1:])
     elif not argv:
         board()
     else:
