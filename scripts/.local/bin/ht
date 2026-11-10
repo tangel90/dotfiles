@@ -29,8 +29,11 @@ a dated Comment shows its file's modification age instead, marked "~"
 
 The board starts in key mode, like herdr's prefix+g popup: j/k move, single
 keys set the filter (h human, t triage, r review, p progress, a active,
-c closed, l all; m toggles only mine, o toggles last action over 14 days), q or
-esc quits. / switches to search: type the query, esc goes back to key mode.
+c closed, l all; m toggles only mine, o toggles last action over 14 days;
+. toggles the repo of the pane ht was opened from, w cycles through the repos
+with tickets, listed in the header), q or esc quits. / switches to search:
+type the query, esc goes back to key mode; # does the same with "#" typed,
+for a repo name. Filters combine.
 
 Keys in both modes: enter read the ticket in nvim · ctrl-s start · ctrl-x reject (asks
 for a reason) · ctrl-d done, on your own tickets only (Owner thomas; asks for
@@ -72,11 +75,12 @@ TICKET = re.compile(r"^[A-Z][A-Z0-9]*-\d+-.*\.md$")
 COLOR = {"needs-triage": "35", "needs-info": "35", "ready-for-human": "33", "ready-for-agent": "33",
          "in-progress": "36", "review": "34", "done": "2", "wontfix": "2"}
 SELF = shlex.quote(str(Path(__file__).resolve()))
-HELP = ("j/k move · h human · t triage · r review · p progress · a active · c closed · l all · m mine · o >14d · / search · q quit\n"
+HELP = ("j/k move · h human · t triage · r review · p progress · a active · c closed · l all · m mine · o >14d\n"
+        ". this repo · w next repo · # repo search · / search · q quit\n"
         "enter read · ctrl-s start · ctrl-x reject · ctrl-d done (yours) · ctrl-g agent · ctrl-/ brief")
 STATUS_KEYS = {"h": "!human", "t": "!triage", "r": "!review", "p": "!progress", "a": "", "c": "!closed", "l": "!all"}
 OLD = ">14d"
-MODE_KEYS = "j,k,q,/,m,o," + ",".join(STATUS_KEYS)
+MODE_KEYS = "j,k,q,/,#,.,w,m,o," + ",".join(STATUS_KEYS)
 DATED = re.compile(r"^- (\d{4}-\d{2}-\d{2})\b")
 
 
@@ -300,7 +304,28 @@ def cmd_query(argv):
         words = [w for w in words if w != me] if me in words else words + [me]
     elif key == "o":
         words = [w for w in words if w != OLD] if OLD in words else words + [OLD]
+    elif key == ".":
+        here = "#." in words
+        words = [w for w in words if not w.startswith("#")] + ([] if here else ["#."])
+    elif key == "w":
+        names = sorted({r.name for r in repos()})
+        cur = next((w[1:] for w in words if w.startswith("#") and w != "#."), None)
+        words = [w for w in words if not w.startswith("#")]
+        nxt = names[0] if cur not in names else (names[names.index(cur) + 1] if names.index(cur) + 1 < len(names) else None)
+        if names and nxt:
+            words.append("#" + nxt)
+    elif key == "#":
+        words = [w for w in words if not w.startswith("#")] + ["#"]
     print(" ".join(words))
+
+
+def cmd_header(query):
+    """The key map plus the repos with tickets, the one in the query marked."""
+    words = query.split()
+    cur = next((w[1:] for w in words if w.startswith("#") and w not in ("#", "#.")), None)
+    names = sorted({r.name for r in repos()})
+    shown = "this pane's repo" if "#." in words else " ".join(f"[{n}]" if n == cur else n for n in names) or "(none)"
+    print(f"{HELP}\nrepos: {shown}")
 
 
 def board():
@@ -308,16 +333,18 @@ def board():
     # Key mode until / (the prompt shows the mode): its keys are unbound for
     # search and rebound by esc, which quits from key mode.
     reload = f"reload({SELF} list {{q}})"
-    filters = [f"{k}:transform-query({SELF} query {k} {{q}})+{reload}" for k in [*STATUS_KEYS, "m", "o"]]
+    header = f"transform-header({SELF} header {{q}})"
+    filters = [f"{k}:transform-query({SELF} query {k} {{q}})+{reload}+{header}" for k in [*STATUS_KEYS, "m", "o", ".", "w"]]
     esc = (f'[ "$FZF_PROMPT" = "search> " ] && echo "rebind({MODE_KEYS})+change-prompt(tickets> )" || echo abort')
     subprocess.run(
         ["fzf", "--height=100%", "--ansi", "--disabled", "--delimiter", "\t", "--with-nth", "2", "--no-sort",
          "--layout", "reverse", "--prompt", "tickets> ", "--header", HELP,
          "--preview", f"test -f {{1}} && {SELF} task {{1}}", "--preview-window", "down,40%,wrap,hidden",
-         "--bind", f"start:{reload}", "--bind", f"change:{reload}",
+         "--bind", f"start:{reload}+{header}", "--bind", f"change:{reload}+{header}",
          "--bind", "j:down", "--bind", "k:up", "--bind", "q:abort",
          *[x for f in filters for x in ("--bind", f)],
          "--bind", f"/:unbind({MODE_KEYS})+change-prompt(search> )",
+         "--bind", f"#:unbind({MODE_KEYS})+change-prompt(search> )+transform-query({SELF} query '#' {{q}})+{reload}+{header}",
          "--bind", f"esc:transform:{esc}",
          "--bind", "ctrl-/:toggle-preview",
          "--bind", "enter:execute(test -f {1} && nvim -R {1})",
@@ -339,6 +366,8 @@ def main():
         cmd_act(argv[1:])
     elif argv[:1] == ["query"]:
         cmd_query(argv[1:])
+    elif argv[:1] == ["header"]:
+        cmd_header(" ".join(argv[1:]))
     elif not argv:
         board()
     else:
