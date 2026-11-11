@@ -623,3 +623,16 @@ Sheet.bindkey("gz.", "plot-numerics")  # original terminal scatter (all numerics
 ### consults sheet bindings.
 Sheet.bindkey("^D", "go-pagedown")
 Sheet.bindkey("^U", "go-pageup")
+
+### q closes the current sheet, but not the last one: that takes gq
+### (quit-all), so a stray q doesn't drop out of vd. vd.sheets is the sheet
+### stack across both panes; the built-in quit-sheet stays reachable by name.
+@BaseSheet.api
+def quit_sheet_unless_last(sheet):
+    if len(vd.sheets) <= 1:
+        vd.status("last sheet: gq quits")
+        return
+    vd.quit(sheet)
+
+
+BaseSheet.addCommand("q", "quit-sheet-unless-last", "quit_sheet_unless_last()", "quit current sheet, unless it is the last one (gq quits)")

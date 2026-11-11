@@ -19,7 +19,6 @@
       "Bash(herdr workspace list*)",
       "Bash(trio-run *)"
     ],
-    "ask": ["Bash(herdr pane read *)", "Bash(herdr agent read *)"],
     "deny": [
       "Bash(pass)",
       "Bash(pass *)",
@@ -41,6 +40,10 @@
       "Bash(jira *)",
       "Bash(trio-mcp-server*)",
       "Read(~/.config/trio/**)"
+    ],
+    "ask": [
+      "Bash(herdr pane read *)",
+      "Bash(herdr agent read *)"
     ],
     "defaultMode": "auto"
   },
@@ -127,6 +130,7 @@
     "type": "command",
     "command": "bash \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/statusline-command.sh\""
   },
+  "outputStyle": "Calm",
   "sandbox": {
     "network": {
       "allowUnixSockets": [
@@ -134,10 +138,14 @@
         "/home/corni/.config/herdr/herdr.sock"
       ]
     },
-    "excludedCommands": ["herdr *", "sprint *", "trio-run *"]
+    "excludedCommands": [
+      "herdr *",
+      "sprint *",
+      "trio-run *"
+    ]
   },
-  "outputStyle": "Calm",
   "effortLevel": "medium",
+  "tui": "fullscreen",
   "voice": {
     "enabled": true,
     "mode": "hold"
@@ -179,5 +187,5 @@
     ]
   },
   "voiceEnabled": true,
-  "tui": "fullscreen"
+  "autoCompactEnabled": false
 }
