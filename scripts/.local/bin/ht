@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """ht: ticket board, a filterable list of the repo-lead tickets on this machine.
-Listed in hrun (prefix+shift+r) as "tickets".
+On prefix+t (a herdr popup in the pane's directory), and listed in hrun
+(prefix+shift+r) as "tickets".
 
 Tickets are the files tickets/<P>-<NNN>-<slug>.md that repo-lead (or a sprint
 hub) keeps, in the format of the tickets skill

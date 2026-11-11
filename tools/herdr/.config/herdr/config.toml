@@ -12,7 +12,7 @@ tab_bar_right = [
   { type = "command", command = "~/.local/bin/hlimits", interval_seconds = 10, timeout_seconds = 2 },
   { type = "datetime", format = "%H:%M" },
 ]
-prompt_new_tab_name = false  # prefix+t opens the tab straight away
+prompt_new_tab_name = false  # prefix+c opens the tab straight away
 confirm_close = false        # closing the last pane closes the workspace without asking
 # On WSL "auto" draws herdr's own steady block cursor, dropping the pane's
 # cursor shape (nvim's insert-mode bar). Native passes it to the terminal; may
@@ -73,7 +73,8 @@ teal = "#9ccfd8"           # foam
 prefix = "ctrl+k"
 close_pane = "prefix+q"     # match tmux kill-pane
 detach = "prefix+d"         # match tmux; default was prefix+q
-new_tab = "prefix+t"        # default was prefix+c
+new_tab = "prefix+c"        # herdr's default again; prefix+t opens the ticket board (ht)
+rename_tab = "prefix+shift+c"  # default was prefix+shift+t
 next_tab = ["prefix+n", "alt+right"]   # alt+left/right: no prefix needed
 previous_tab = "alt+left"                # prefix+p is open-pass, as in tmux
 rename_pane = "prefix+ctrl+p"            # prefix+shift+p is open-pass show
@@ -100,6 +101,14 @@ key = "prefix+m"
 type = "shell"
 command = "\"$HOME/.local/bin/hbreak\""
 description = "move pane to new tab"
+
+[[keys.command]]
+key = "prefix+t"            # replaces new_tab (now prefix+c)
+type = "popup"
+command = "cd \"${HERDR_ACTIVE_PANE_CWD:-$HOME}\" && exec \"$HOME/.local/bin/ht\""
+description = "ticket board (ht), started in the pane's directory so . means its repo"
+width = "90%"
+height = "85%"
 
 [[keys.command]]
 key = "prefix+i"
