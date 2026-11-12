@@ -75,7 +75,7 @@ close_pane = "prefix+q"     # match tmux kill-pane
 detach = "prefix+d"         # match tmux; default was prefix+q
 new_tab = "prefix+c"        # herdr's default again; prefix+t opens the ticket board (ht)
 rename_tab = "prefix+shift+c"  # default was prefix+shift+t
-next_tab = ["prefix+n", "alt+right"]   # alt+left/right: no prefix needed
+next_tab = "alt+right"                   # prefix+n opens nvim in a new tab; alt+left/right need no prefix
 previous_tab = "alt+left"                # prefix+p is open-pass, as in tmux
 rename_pane = "prefix+ctrl+p"            # prefix+shift+p is open-pass show
 next_workspace = "alt+down"          # alt+down/up: workspaces, pairs with alt+left/right tabs
@@ -101,6 +101,12 @@ key = "prefix+m"
 type = "shell"
 command = "\"$HOME/.local/bin/hbreak\""
 description = "move pane to new tab"
+
+[[keys.command]]
+key = "prefix+n"            # replaces next_tab (alt+right only)
+type = "shell"
+command = "\"$HOME/.local/bin/mux-open\" --label nvim --cwd \"${HERDR_ACTIVE_PANE_CWD:-$HOME}\" -- nvim"
+description = "nvim in a new tab, in the pane's directory"
 
 [[keys.command]]
 key = "prefix+t"            # replaces new_tab (now prefix+c)
