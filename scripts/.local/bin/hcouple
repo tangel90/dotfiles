@@ -59,7 +59,11 @@ send() {
     local dir=$1 sid=$2 agent=$3 status=$4 command=$5 pane first output
     pane=$(this_pane pane_id)
     first=$(printf '%s\n' "$command" | sed -n '/[^[:space:]]/{s/^[[:space:]]*//;s/[[:space:]]*$//;p;q}')
-    output=$(herdr pane read "$pane" --source recent-unwrapped --lines 2000 | awk -v c="$first" '
+    # The command reaches awk through the environment, not -v: -v expands
+    # backslash escapes, so a command containing '\n' (tr -d '\n') never
+    # matched its own line in the pane and the output was lost.
+    output=$(herdr pane read "$pane" --source recent-unwrapped --lines 2000 | HCOUPLE_FIRST=$first awk '
+        BEGIN { c = ENVIRON["HCOUPLE_FIRST"] }
         { line[NR] = $0; s = $0; sub(/[ \t]+$/, "", s)
           if (c == "" || length(s) < length(c) || substr(s, length(s) - length(c) + 1) != c) next
           # The typed line is the prompt symbol, then the command; without
