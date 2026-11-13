@@ -108,9 +108,44 @@ if [ -n "$ctx_used$model" ] && [ "${HERDR_ENV:-}" = 1 ] && [ -n "${HERDR_PANE_ID
     fi
 fi
 
-# Inside herdr the tab bar (hlimits) and the agent sidebar ($ctx) show all of
-# this, so print nothing and keep only the reporting above.
-[ "${HERDR_ENV:-}" = 1 ] && exit 0
+# ── prompt cache ──────────────────────────────────────────────────────────────
+# The API has no TTL readout, so estimate it: each request refreshes the cache
+# for its TTL (1h normally, 5m in usage overage), as recorded in the
+# transcript's last request. Shown as the clock time it goes cold; after that
+# the next prompt re-reads the whole context uncached. The status line only
+# redraws on activity, so an idle session keeps showing the deadline.
+cache_part=""
+transcript=$(echo "$input" | jq -r '.transcript_path // empty')
+if [ -f "$transcript" ]; then
+    last=$(tail -n 300 "$transcript" | jq -r 'select(.type == "assistant" and .message.usage != null)
+        | "\(.timestamp) \(.message.usage.cache_creation.ephemeral_5m_input_tokens // 0) \(.message.usage.cache_creation.ephemeral_1h_input_tokens // 0)"' 2>/dev/null | tail -n 1)
+    if [ -n "$last" ]; then
+        read -r ts c5 c1 <<<"$last"
+        ttl=3600
+        [ "$c5" -gt 0 ] && [ "$c1" -eq 0 ] && ttl=300
+        if t=$(date -d "$ts" +%s 2>/dev/null); then
+            expires=$(( t + ttl ))
+            if [ "$expires" -gt "$(date +%s)" ]; then
+                cache_part=$(printf "${subtle}cache ${foam}%s${reset}" "$(date -d "@$expires" +%H:%M)")
+                [ "$ttl" = 300 ] && cache_part="${cache_part}$(printf "${muted} (5m)${reset}")"
+            else
+                cache_part=$(printf "${subtle}cache ${love}cold${reset}")
+            fi
+        fi
+    fi
+fi
+
+# Inside herdr the tab bar (hlimits) and the agent sidebar ($ctx) show the
+# rest, so print only the model and the cache and keep the reporting above.
+if [ "${HERDR_ENV:-}" = 1 ]; then
+    herdr_line=""
+    [ -n "$model" ] && herdr_line=$(printf "${muted}%s${reset}" "$model")
+    if [ -n "$cache_part" ]; then
+        herdr_line="${herdr_line:+$herdr_line$(printf "${muted} | ${reset}")}$cache_part"
+    fi
+    [ -n "$herdr_line" ] && printf "%b\n" "$herdr_line"
+    exit 0
+fi
 
 # ── pick color based on percentage ───────────────────────────────────────────
 bar_color() {
@@ -169,6 +204,8 @@ if [ -n "$week_pct" ]; then
         line2+=("$(printf "${subtle}7d ${color}${pct_int}%%${reset}")")
     fi
 fi
+
+[ -n "$cache_part" ] && line2+=("$cache_part")
 
 # join helper: joins an array with sep into a variable
 join_parts() {
