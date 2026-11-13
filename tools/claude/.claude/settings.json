@@ -16,8 +16,7 @@
       "Bash(herdr agent start *)",
       "Bash(herdr wait *)",
       "Bash(herdr tab list*)",
-      "Bash(herdr workspace list*)",
-      "Bash(trio-run *)"
+      "Bash(herdr workspace list*)"
     ],
     "deny": [
       "Bash(pass)",
@@ -140,8 +139,7 @@
     },
     "excludedCommands": [
       "herdr *",
-      "sprint *",
-      "trio-run *"
+      "sprint *"
     ]
   },
   "effortLevel": "medium",
