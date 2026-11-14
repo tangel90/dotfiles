@@ -23,7 +23,7 @@ Every repro must end on its own. Run each one under `timeout` (`timeout 60 node 
 
 Runs that start a model (`claude`, an LLM API, an agent the repo builds) cost real usage. Prove those findings with fixtures, recorded responses or a stub; at most one live model run per review round, and say in the finding that it was live.
 
-If the ticket's Brief names a UI design (`docs/design/<topic>.md`), check the built UI against it: every screen and state it lists, its acceptance criteria, the phone layout (390 px wide) and the tokens. A screen that differs from the design without a reason in the ticket is a finding; prove it with a screenshot or the rendered markup next to the design's page.
+If the ticket's Brief names a UI design (`docs/design/<topic>.md`), check the built UI against it: every screen and state it lists, its acceptance criteria, the phone layout (390 px wide) and the tokens. The design's pages are in the repo under `docs/design/<topic>/prototype/`. A screen that differs from the design without a reason in the ticket is a finding; prove it with screenshots of both (a headless browser, if one is installed) or the rendered markup next to the design's page.
 
 Then look at design once: abstractions that don't earn their complexity, logic leaking into the wrong layer, a near-duplicate of an existing helper, a refactor that only moves complexity around, a lot more code than the problem needs. These are Nits unless the repo's rules say otherwise.
 
