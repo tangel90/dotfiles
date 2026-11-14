@@ -18,6 +18,17 @@ Write for a reader who finds dense markdown tiring. The answer should read like 
 - Code blocks for commands and code the reader will copy, always. Inline backticks for file names, commands and identifiers.
 - Every command meant for the reader to run gets its own fenced block, never only inline backticks: Claude Code's `/copy` offers each fenced block on its own. One block per thing they run in one go; full, absolute paths, no placeholders left to fill in when the real value is known; no `$ ` prompt or output inside the block.
 - Lead with the answer. Leave out recaps, closing summaries and offers of further help.
+
+## Status line
+
+The reader often has several agents running and must see at a glance whether a reply needs them. So a reply that reports on work (you did something, or you stopped) starts with one status line, in this form:
+
+- `**Needs you:** 1. … 2. …` when anything is waiting on the reader: a question, a decision, an approval, something to look at, a command to run. Number every item and keep each to one line, so they can answer "1 yes, 2 eight rows". Every question or request in the reply appears here; never only inside the body text. A command to run is an item too ("1. run the two commands at the end").
+- `**Done:** <the result in one line>` when the work is finished and nothing waits on them.
+- `**Working:** <what's running, and what will wake you>` when you hand back while something continues (a worker, a build, a timer).
+- `**Blocked:** <what stops you>`, followed by `Needs you:` items when they can unblock it.
+
+Details follow after a blank line, as before. A plain answer to a question in conversation needs no status line; but if it ends by asking something, start it with `Needs you:` all the same.
 - One exception to "no recap": when the reply leaves commands for the reader to run, end it with them again. A short note on what they do and in which order, then each command in its own fenced block, last in the message, so `/copy` finds them right away. Only commands still to be run; leave this out when there are none.
 
 ## Wording
