@@ -18,6 +18,7 @@ confirm_close = false        # closing the last pane closes the workspace withou
 # cursor shape (nvim's insert-mode bar). Native passes it to the terminal; may
 # bring back occasional cursor flicker during heavy output.
 host_cursor = "native"
+pane_borders = "always"   # frame lone panes too, so every agent pane shows its name
 show_agent_labels_on_pane_borders = true  # agent name on split pane borders, unless the pane has a manual label
 
 # Claude agents: name, then workspace and context use ($ctx, reported by
