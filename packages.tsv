@@ -34,6 +34,6 @@ npm	nvim	npm	npm
 pass	extra	pass	pass	desktop only: never on a server
 glow	extra	glow	-	https://github.com/charmbracelet/glow#installation
 tldr	extra	tldr	tldr
-trans	extra	translate-shell	translate-shell
+trans	core	translate-shell	translate-shell	used through the alias in .zshrc (bing engine)
 vd	extra	visidata	visidata
 uv	extra	uv	-	curl -LsSf https://astral.sh/uv/install.sh | sh
