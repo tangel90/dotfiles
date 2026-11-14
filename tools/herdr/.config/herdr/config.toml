@@ -1,7 +1,7 @@
 onboarding = false
 
 [ui.toast]
-delivery = "herdr"         # in-app toasts; prefix+a (default) jumps to the toast's agent
+delivery = "herdr"         # in-app toasts; prefix+a jumps to the toast's agent (open_notification_target)
 
 [ui]
 tab_bar_position = "bottom"
@@ -81,6 +81,7 @@ rename_pane = "prefix+ctrl+p"            # prefix+shift+p is open-pass show
 next_workspace = "alt+down"          # alt+down/up: workspaces, pairs with alt+left/right tabs
 previous_workspace = "alt+up"
 switch_tab = ["prefix+1..9", "alt+1..9"]   # prefix+1..9 is the default; alt+ pairs with alt+left/right
+open_notification_target = "prefix+a"   # jump to the toast's agent, any machine; default prefix+o is hw
 next_agent = "prefix+alt+n"
 previous_agent = "prefix+alt+p"
 settings = "prefix+shift+s"                  # prefix+s runs hp
@@ -133,7 +134,7 @@ width = "90%"
 height = "85%"
 
 [[keys.command]]
-key = "prefix+o"            # was open_notification_target, then hnvim (now unbound)
+key = "prefix+o"            # open_notification_target moved to prefix+a; hnvim is unbound
 type = "popup"
 command = "\"$HOME/.local/bin/hw\" --here"
 description = "open a file below the pane's directory in a new tab (hw)"
