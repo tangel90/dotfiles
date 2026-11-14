@@ -198,22 +198,15 @@ function hcouple() {
     HCOUPLE=(${=picked})  # config dir, session id, agent name
     echo "hcouple: ${HCOUPLE[3]} sees what you run here, from its next turn on (hcouple off to stop)"
 }
-_hcouple_preexec() {
-    _hcouple_cmd=$1
-    if [[ $1 == yank || $1 == yank\ * ]]; then _yank_self=$1; else _yank_last=$1; fi
-}
+_hcouple_preexec() { _hcouple_cmd=$1 }
 
-# yank: copy the full output of the previous command to the clipboard, read
-# back from herdr's copy of this pane (no rerun, no copy mode, any length).
-# Works without hcouple. powerlevel10k's transient prompt collapses finished
-# prompts to one "❯ command" line, so nothing above the yank line is cut.
+# yank: copy the previous command's full output, read back from herdr's copy
+# of this pane. powerlevel10k's transient prompt leaves each finished prompt
+# as one "❯ command" line, so the output is what lies between the last two.
 function yank() {
-    [[ ${HERDR_ENV:-} == 1 ]] || { echo "yank: only inside a herdr pane" >&2; return 1; }
-    [[ -n $_yank_last ]] || { echo "yank: no previous command" >&2; return 1; }
-    local out
-    out=$(command hcouple output "$_yank_last" "$_yank_self") || { echo "yank: output of '$_yank_last' not found on screen" >&2; return 1; }
-    print -rn -- "$out" | clipboard-copy
-    echo "yank: copied ${#${(f)out}} lines of: $_yank_last"
+    herdr pane read "$HERDR_PANE_ID" --source recent-unwrapped --lines 20000 |
+        awk '/^❯ /{a = b; b = NR} {l[NR] = $0} END {for (i = a + 1; i < b; i++) print l[i]}' |
+        clipboard-copy
 }
 _hcouple_precmd() {
     local st=$?

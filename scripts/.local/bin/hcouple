@@ -9,8 +9,6 @@
 # which calls this script:
 #     hcouple pick [NAME]                 print "DIR SID NAME" for the agent
 #     hcouple send DIR SID AGENT STATUS COMMAND  log one finished command
-#     hcouple output COMMAND SELF [PROMPT_LINES]  print COMMAND's full output
-#                                         (the zsh function yank copies it)
 #
 # Each finished command, with its exit status and output, is appended to
 # DIR/hcouple/SID.log, where DIR is the Claude config dir the agent runs with —
@@ -57,35 +55,6 @@ pick() {
     fi
 }
 
-# output CMD SELF PROMPT_LINES: the full output of CMD, the command run before
-# SELF (the yank line being run now), as herdr shows it in this pane. Used by
-# the zsh function yank. Everything between CMD's typed line and SELF's is
-# output, minus the PROMPT_LINES lines of the prompt drawn above SELF
-# (powerlevel10k's info line); trailing blank lines are dropped.
-output() {
-    local command=$1 self=$2 plines=${3:-0} pane first
-    pane=$(this_pane pane_id)
-    first=$(printf '%s\n' "$command" | sed -n '/[^[:space:]]/{s/^[[:space:]]*//;s/[[:space:]]*$//;p;q}')
-    herdr pane read "$pane" --source recent-unwrapped --lines 20000 |
-        HCOUPLE_FIRST=$first HCOUPLE_SELF=$self HCOUPLE_PLINES=$plines awk '
-        function typed(s, c,   p) {   # is s the prompt symbol, then command c?
-            sub(/[ \t]+$/, "", s)
-            if (c == "" || length(s) < length(c) || substr(s, length(s) - length(c) + 1) != c) return 0
-            p = substr(s, 1, length(s) - length(c)); sub(/[ \t]+$/, "", p)
-            return p ~ /(❯|❮|[$#%>])$/
-        }
-        BEGIN { c = ENVIRON["HCOUPLE_FIRST"]; y = ENVIRON["HCOUPLE_SELF"]; pl = ENVIRON["HCOUPLE_PLINES"] + 0 }
-        { line[NR] = $0 }
-        END {
-            for (i = NR; i >= 1 && !stop; i--) if (typed(line[i], y)) stop = i
-            if (!stop) stop = NR + 1
-            for (i = stop - 1; i >= 1 && !start; i--) if (typed(line[i], c)) start = i
-            if (!start) exit 1
-            for (i = start + 1; i < stop - pl; i++) print line[i]
-        }' |
-        sed -e :a -e '/^[[:space:]]*$/{$d;N;ba' -e '}'
-}
-
 send() {
     local dir=$1 sid=$2 agent=$3 status=$4 command=$5 pane first output
     pane=$(this_pane pane_id)
@@ -122,6 +91,5 @@ case ${1:-} in
     pick) shift; pick "$@" ;;
     # Four args: a shell coupled before the agent was passed along; log only.
     send) shift; [ $# -eq 4 ] && set -- "$1" "$2" "" "$3" "$4"; [ $# -eq 5 ] || exit 2; send "$@" ;;
-    output) shift; [ $# -ge 2 ] || exit 2; output "$@" ;;
     *) sed -n '5,8p' "$0" | sed 's/^#//' >&2; exit 2 ;;
 esac
