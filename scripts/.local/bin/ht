@@ -20,6 +20,8 @@ The query filters; every word must match:
            !a active, !al all
     @x     owner contains x            #x   repo contains x
     #.     only the repo of the pane ht was opened from
+    ~x     intent contains x: the stem of the ticket's Intent file
+           (docs/intent/notes-workflow.md -> notes-workflow); ~- no intent
     >14d   last action more than 14 days ago (<3d: less than 3 days)
     word   ID or title contains it (case-insensitive)
 
@@ -32,7 +34,8 @@ The board starts in key mode, like herdr's prefix+g popup: j/k move, single
 keys set the filter (h human, t triage, r review, p progress, a active,
 c closed, l all; m toggles only mine, o toggles last action over 14 days;
 . toggles the repo of the pane ht was opened from, w cycles through the repos
-with tickets, listed in the header while a repo filter is on), q or esc
+with tickets, listed in the header while a repo filter is on; i cycles the
+intents the same way, ~ opens search with "~" typed), q or esc
 quits. The header shows only the main filter keys; ? shows every key in the
 preview pane (? again, or ctrl-/ for the brief, switches back). / switches to search:
 type the query, esc goes back to key mode; # does the same with "#" typed,
@@ -83,14 +86,15 @@ KEYS = """\
 filter    h human · t triage · r review · p progress · a active · l all
           c closed · m only mine · o last action over 14 days
 repo      . this pane's repo · w next repo · # repo search
-search    / type a query (!status @owner #repo >14d words) · esc back
+intent    i next intent (spec) · ~ intent search
+search    / type a query (!status @owner #repo ~intent >14d words) · esc back
 move      j/k · q or esc quit
 ticket    enter read in nvim · ctrl-s start · ctrl-x reject
           ctrl-d done (your own) · ctrl-g go to its agent
 show      ctrl-/ the ticket's brief · ? these keys"""
 STATUS_KEYS = {"h": "!human", "t": "!triage", "r": "!review", "p": "!progress", "a": "", "c": "!closed", "l": "!all"}
 OLD = ">14d"
-MODE_KEYS = "j,k,q,/,#,.,w,m,o,?," + ",".join(STATUS_KEYS)
+MODE_KEYS = "j,k,q,/,#,.,w,i,~,m,o,?," + ",".join(STATUS_KEYS)
 KEYS_LABEL = " keys "
 DATED = re.compile(r"^- (\d{4}-\d{2}-\d{2})\b")
 
@@ -131,7 +135,8 @@ def repos():
 
 
 def parse(path):
-    t = {"path": path, "id": "-".join(path.stem.split("-", 2)[:2]), "title": path.stem, "status": "?", "owner": ""}
+    t = {"path": path, "id": "-".join(path.stem.split("-", 2)[:2]), "title": path.stem, "status": "?", "owner": "",
+         "intent": ""}
     try:
         lines = path.read_text(errors="replace").splitlines()
         mtime = date.fromtimestamp(path.stat().st_mtime)
@@ -158,7 +163,24 @@ def parse(path):
             t["status"] = value.split()[0].lower()
         elif key.lower() == "owner":
             t["owner"] = value.strip()
+        elif key.lower() == "intent":
+            t["intent"] = intent_name(value)
     return t
+
+
+def intent_name(value):
+    """docs/intent/notes-workflow.md -> notes-workflow; "none", "-" and the like -> ""."""
+    v = value.strip()
+    return Path(v.split()[0]).stem if v.endswith(".md") else ""
+
+
+def tickets():
+    """Every ticket in every repo, parsed, with its repo."""
+    for root in repos():
+        for p in sorted((root / "tickets").glob("*.md")):
+            if TICKET.match(p.name) and (t := parse(p)):
+                t["root"], t["repo"] = root, root.name
+                yield t
 
 
 def repo_of(path):
@@ -188,6 +210,9 @@ def matcher(query):
             tests.append(lambda t, h=here: h is not None and t["root"].resolve() == h.resolve())
         elif sigil == "#":
             tests.append(lambda t, r=rest: r in t["repo"].lower())
+        elif sigil == "~":
+            # ~name: the intent contains name; ~- : tickets without an intent
+            tests.append(lambda t, r=rest: not t["intent"] if r == "-" else r in t["intent"].lower())
         elif sigil in "<>" and re.fullmatch(r"\d+d?", rest):
             n = int(rest.rstrip("d"))
             if sigil == ">":
@@ -202,16 +227,7 @@ def matcher(query):
 
 def cmd_list(query):
     keep = matcher(query)
-    rows = []
-    for root in repos():
-        for p in sorted((root / "tickets").glob("*.md")):
-            if not TICKET.match(p.name):
-                continue
-            t = parse(p)
-            if t:
-                t["root"], t["repo"] = root, root.name
-                if keep(t):
-                    rows.append(t)
+    rows = [t for t in tickets() if keep(t)]
     rank = {s: i for i, s in enumerate(ORDER)}
     rows.sort(key=lambda t: (rank.get(t["status"], -1), t["repo"], t["id"]))
     if not rows:
@@ -221,6 +237,7 @@ def cmd_list(query):
     for t in rows:
         st = f"\033[{COLOR.get(t['status'], '31')}m{t['status']:<15}\033[0m"
         owner = f"  \033[2m@{t['owner']}\033[0m" if t["owner"] and t["owner"] != "lead" else ""
+        owner = (f"  \033[2;3m~{t['intent']}\033[0m" if t["intent"] else "") + owner
         mark = "~" if t["guess"] else " "
         ages = f"\033[2m{mark}{age(t['last']):>4} {mark}{age(t['created']):>4}\033[0m"
         print(f"{t['path']}\t{t['repo']:<{rw}}  {t['id']:<{iw}}  {st}  {ages}  {t['title']}{owner}")
@@ -327,6 +344,15 @@ def cmd_query(argv):
             words.append("#" + nxt)
     elif key == "#":
         words = [w for w in words if not w.startswith("#")] + ["#"]
+    elif key == "i":
+        names = sorted({t["intent"] for t in tickets() if t["intent"]})
+        cur = next((w[1:] for w in words if w.startswith("~") and w != "~-"), None)
+        words = [w for w in words if not w.startswith("~")]
+        nxt = names[0] if cur not in names else (names[names.index(cur) + 1] if names.index(cur) + 1 < len(names) else None)
+        if names and nxt:
+            words.append("~" + nxt)
+    elif key == "~":
+        words = [w for w in words if not w.startswith("~")] + ["~"]
     print(" ".join(words))
 
 
@@ -335,13 +361,17 @@ def cmd_header(query):
     tickets, the current one marked (w cycles through them)."""
     words = query.split()
     cur = next((w[1:] for w in words if w.startswith("#") and w not in ("#", "#.")), None)
+    lines = [HELP]
     if "#." in words:
-        print(f"{HELP}\nrepo: this pane's repo")
+        lines.append("repo: this pane's repo")
     elif cur is not None:
         names = sorted({r.name for r in repos()})
-        print(f"{HELP}\nrepos: " + " ".join(f"[{n}]" if n == cur else n for n in names))
-    else:
-        print(HELP)
+        lines.append("repos: " + " ".join(f"[{n}]" if n == cur else n for n in names))
+    icur = next((w[1:] for w in words if w.startswith("~") and w not in ("~", "~-")), None)
+    if icur is not None:
+        names = sorted({t["intent"] for t in tickets() if t["intent"]})
+        lines.append("intents: " + " ".join(f"[{n}]" if n == icur else n for n in names))
+    print("\n".join(lines))
 
 
 def board():
@@ -350,7 +380,7 @@ def board():
     # search and rebound by esc, which quits from key mode.
     reload = f"reload({SELF} list {{q}})"
     header = f"transform-header({SELF} header {{q}})"
-    filters = [f"{k}:transform-query({SELF} query {k} {{q}})+{reload}+{header}" for k in [*STATUS_KEYS, "m", "o", ".", "w"]]
+    filters = [f"{k}:transform-query({SELF} query {k} {{q}})+{reload}+{header}" for k in [*STATUS_KEYS, "m", "o", ".", "w", "i"]]
     esc = (f'[ "$FZF_PROMPT" = "search> " ] && echo "rebind({MODE_KEYS})+change-prompt(tickets> )" || echo abort')
     # The preview pane shows either the ticket's brief or, labelled " keys ",
     # the key list; ? and ctrl-/ switch between them or close the pane.
@@ -369,6 +399,7 @@ def board():
          *[x for f in filters for x in ("--bind", f)],
          "--bind", f"/:unbind({MODE_KEYS})+change-prompt(search> )",
          "--bind", f"#:unbind({MODE_KEYS})+change-prompt(search> )+transform-query({SELF} query '#' {{q}})+{reload}+{header}",
+         "--bind", f"~:unbind({MODE_KEYS})+change-prompt(search> )+transform-query({SELF} query '~' {{q}})+{reload}+{header}",
          "--bind", f"esc:transform:{esc}",
          "--bind", f"?:transform:{show_keys}",
          "--bind", f"ctrl-/:transform:{show_brief}",
