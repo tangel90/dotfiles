@@ -163,7 +163,7 @@ def herdr_agents():
 
 def my_name():
     pane = os.environ.get("HERDR_PANE_ID", "")
-    return next((a.get("name") for a in herdr_agents() if a.get("pane_id") == pane and a.get("name")), "lead")
+    return next((a.get("name") for a in herdr_agents() if a.get("pane_id") == pane and a.get("name")), None)
 
 
 def branch_exists(root, branch):
@@ -241,6 +241,9 @@ def cmd_start(a):
     if any(x.get("name") == name for x in herdr_agents()):
         sys.exit(f"lead: an agent named {name} is already running; prompt it, or close it first")
     lead = my_name()
+    # Without a named lead (run from a plain shell), workers must not go
+    # looking for one: they would pick whichever lead is running.
+    lead_note = f"Lead: {lead}." if lead else "No lead: report only as the Comment, prompt nobody."
 
     if a.role == "reviewer":
         branch = f"agent/{a.topic}"
@@ -253,7 +256,7 @@ def cmd_start(a):
             run(["git", "worktree", "add", "--detach", str(wt), branch], cwd=root)
         sha = quiet(["git", "rev-parse", "--short", branch], cwd=root)[1]
         msg = (f"[{tid}] review {branch} ({sha}) against {ticket}. "
-               f"Report as a Comment there, reply in one line. Lead: {lead}.")
+               f"Report as a Comment there, reply in one line. {lead_note}")
     else:
         branch = f"agent/{br_pre}{a.topic}"
         wt = root / ".claude/worktrees" / f"{wt_pre}{a.topic}"
@@ -263,7 +266,7 @@ def cmd_start(a):
             run(["git", "worktree", "add", str(wt), branch], cwd=root)
         else:
             run(["git", "worktree", "add", str(wt), "-b", branch], cwd=root)
-        msg = f"[{tid}] work on {ticket}. Report as a Comment there, reply in one line. Lead: {lead}."
+        msg = f"[{tid}] work on {ticket}. Report as a Comment there, reply in one line. {lead_note}"
 
     if a.engine == "opencode":
         agent_file = Path.home() / ".config/opencode/agents" / f"{a.role}.md"
@@ -370,7 +373,7 @@ def cmd_ship(a):
             run(["git", "worktree", "remove", str(wt)], cwd=root)
 
     set_fields(ticket, {"Status": "done" if merging else "review", "PR": url, "Owner": "lead"})
-    add_comment(ticket, my_name(), f"shipped: PR {url}" + (f", squash-merged as {merged}" if merged else ", merged" if merging else ", waiting for Thomas to merge")
+    add_comment(ticket, my_name() or "lead", f"shipped: PR {url}" + (f", squash-merged as {merged}" if merged else ", merged" if merging else ", waiting for Thomas to merge")
                 + "; workers closed, worktrees removed.")
     check_ticket(root, ticket)
     say(f"{tid} shipped. Good moment to /clear the lead: the state is in tickets/.")
