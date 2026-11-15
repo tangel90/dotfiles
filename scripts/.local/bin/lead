@@ -190,6 +190,33 @@ def write_opencode_config(root, wt, role):
         say(f"+ add .opencode/ to {exclude}")
 
 
+def agent_status(name):
+    return next((x.get("agent_status") for x in herdr_agents() if x.get("name") == name), None)
+
+
+def send_pointer(name, msg):
+    """Send the pointer once the agent is ready, and make sure it arrived.
+    herdr lists an agent before its interface takes input (status "unknown";
+    OpenCode in particular), and a prompt sent then is lost. So wait for
+    idle, send, and check that the agent starts working; resend once."""
+    for _ in range(90):
+        if agent_status(name) in ("idle", "done"):
+            break
+        time.sleep(1)
+    else:
+        sys.exit(f"lead: {name} never became idle; check its pane, then prompt it by hand")
+    time.sleep(2)
+    for attempt in (1, 2):
+        run(["herdr", "agent", "prompt", name, msg], capture=True)
+        for _ in range(20):
+            time.sleep(1)
+            if agent_status(name) == "working":
+                say(f"+ {name} is working")
+                return
+        say(f"+ {name} didn't start working after the pointer (attempt {attempt})")
+    sys.exit(f"lead: {name} didn't take the pointer; check its pane, then prompt it by hand")
+
+
 def cmd_start(a):
     root = repo_root()
     tid, ticket = find_ticket(root, a.id)
@@ -249,7 +276,10 @@ def cmd_start(a):
         if not pane:
             sys.exit(f"lead: {name} did not show up in herdr agent list within 60 s; check its pane")
     say(f"+ herdr lists {name}")
-    run(["herdr", "agent", "prompt", name, msg], capture=True)
+    if DRY:
+        run(["herdr", "agent", "prompt", name, msg], capture=True)
+    else:
+        send_pointer(name, msg)
 
     if a.role != "reviewer":
         set_fields(ticket, {"Status": "in-progress", "Owner": name, "Branch": branch})
