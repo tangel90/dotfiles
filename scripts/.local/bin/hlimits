@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # hlimits: print the 5-hour usage windows for herdr's tab bar
-# (ui.tab_bar_right), one bar per service with a mark in front:
-# ✳ Claude and ◇ OpenCode Go, e.g. "✳ ████░░░░░░ 42% ↻1h20 · ◇ █░░░░░░░░░ 7% ↻3h05".
+# (ui.tab_bar_right), one entry per service with a mark in front:
+# ✳ Claude and ◇ OpenCode Go, e.g. "✳ 42% ↻1h20 · ◇ 7% ↻3h05".
 # The weekly windows are left out.
 #
 # Claude only hands its rate limits to the status line, so
@@ -13,14 +13,13 @@ set -euo pipefail
 
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/claude-limits.json"
 
-# Each service prints "<mark> <bar> <n>% ↻<time left>"; the parts are joined.
+# Each service prints "<mark> <n>% ↻<time left>"; the parts are joined.
 render='
     def left($s): if $s >= 86400 then "\($s / 86400 | floor)d"
                   else "\($s / 3600 | floor)h\($s % 3600 / 60 | floor | tostring | if length < 2 then "0" + . else . end)" end;
-    def bar($p): ([$p / 10 | floor, 10] | min) as $n | ("█" * $n) + ("░" * (10 - $n));
     def entry($mark; $p; $reset):
         (if ($reset // 0) <= $now then 0 else ($p // 0 | round) end) as $q
-        | "\($mark) \(bar($q)) \($q)%" + (if $q > 0 then " ↻\(left($reset - $now))" else "" end);'
+        | "\($mark) \($q)%" + (if $q > 0 then " ↻\(left($reset - $now))" else "" end);'
 now=$(date +%s)
 parts=()
 
