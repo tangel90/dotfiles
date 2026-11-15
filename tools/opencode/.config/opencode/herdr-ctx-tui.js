@@ -71,12 +71,6 @@ async function update(tokens) {
 // interface only the TUI runs in the pane (HERDR_PANE_ID) and sees its
 // session's events; a server plugin's events don't fire there.
 async function tui(api) {
-  fs.mkdirSync(path.dirname(CACHE), { recursive: true });
-  const log = (m) => { try { fs.appendFileSync(path.join(path.dirname(CACHE), "events.log"), m + "\n"); } catch {} };
-  log(`tui start pane=${PANE} keys=${Object.keys(api || {}).join(",")}`);
-  for (const t of ["message.updated", "message.part.updated", "session.updated", "session.status", "session.idle"]) {
-    api.event.on(t, (e) => log(`${t} ${JSON.stringify(e?.properties).slice(0, 300)}`));
-  }
   if (!PANE) return;
   const unsubscribe = api.event.on("message.updated", async (event) => {
     try {
