@@ -1,0 +1,6 @@
+[Unit]
+Description=Write OpenCode Go usage for the tab bar (oclimits)
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/oclimits

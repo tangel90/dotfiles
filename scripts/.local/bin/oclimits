@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# oclimits: write OpenCode's Go plan usage to ~/.cache/opencode-status/limits.json,
+# for herdr's tab bar on another machine (hlimits fetches it over the tailnet,
+# so no SSH and no key is needed there).
+#
+# The numbers come from the local OpenCode server's experimental endpoint
+# experimental.usage.limits, which needs a Console account sign-in
+# (`opencode auth login` > OpenCode Console > account). Run every few minutes
+# by oclimits.timer (tools/opencode). Writes only the go windows and the
+# time of the query, never keys or workspace ids.
+
+set -euo pipefail
+
+dir="${XDG_CACHE_HOME:-$HOME/.cache}/opencode-status"
+mkdir -p "$dir"
+out=$(opencode api experimental.usage.limits 2>/dev/null) || exit 0
+jq -c --argjson now "$(date +%s)" '
+    .data.go // empty
+    | {at: $now} + (with_entries(.value |= {percent, limited, resets_at: ((.resetsAt // 0) / 1000 | floor)}))
+' <<<"$out" > "$dir/limits.json.tmp" && [ -s "$dir/limits.json.tmp" ] && mv -f "$dir/limits.json.tmp" "$dir/limits.json"

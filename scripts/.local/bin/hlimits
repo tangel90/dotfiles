@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # hlimits: print the 5-hour usage windows for herdr's tab bar
 # (ui.tab_bar_right), one bar per service with a mark in front:
-# ✳ Claude, e.g. "✳ ████░░░░░░ 42% ↻1h20". The weekly window is left out.
+# ✳ Claude and ◇ OpenCode Go, e.g. "✳ ████░░░░░░ 42% ↻1h20 · ◇ █░░░░░░░░░ 7% ↻3h05".
+# The weekly windows are left out.
 #
 # Claude only hands its rate limits to the status line, so
 # statusline-command.sh caches them in claude-limits.json; this reads that
@@ -11,16 +12,43 @@
 set -euo pipefail
 
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/claude-limits.json"
-[ -r "$cache" ] || exit 0
 
-jq -r --argjson now "$(date +%s)" '
+# Each service prints "<mark> <bar> <n>% ↻<time left>"; the parts are joined.
+render='
     def left($s): if $s >= 86400 then "\($s / 86400 | floor)d"
                   else "\($s / 3600 | floor)h\($s % 3600 / 60 | floor | tostring | if length < 2 then "0" + . else . end)" end;
     def bar($p): ([$p / 10 | floor, 10] | min) as $n | ("█" * $n) + ("░" * (10 - $n));
-    def entry($w; $withbar):
-        if $w == null then empty
-        else (if ($w.resets_at // 0) <= $now then 0 else $w.used_percentage | round end) as $p
-            | (if $withbar then "\(bar($p)) " else "" end) + "\($p)%"
-              + (if $p > 0 then " ↻\(left($w.resets_at - $now))" else "" end) end;
-    [entry(.five_hour; true) | "✳ " + .] | join(" · ")
-' "$cache"
+    def entry($mark; $p; $reset):
+        (if ($reset // 0) <= $now then 0 else ($p // 0 | round) end) as $q
+        | "\($mark) \(bar($q)) \($q)%" + (if $q > 0 then " ↻\(left($reset - $now))" else "" end);'
+now=$(date +%s)
+parts=()
+
+# ✳ Claude: the 5-hour window, cached by statusline-command.sh.
+if [ -r "$cache" ]; then
+    p=$(jq -r --argjson now "$now" "$render"'
+        if .five_hour then entry("✳"; .five_hour.used_percentage; .five_hour.resets_at) else empty end' "$cache")
+    [ -n "$p" ] && parts+=("$p")
+fi
+
+# ◇ OpenCode Go: the rolling 5-hour window, written on the VPS by oclimits and
+# served on the tailnet. The URL is local and untracked (this repo is public):
+# ~/.config/hlimits/opencode-url. Fetched at most once a minute; a failed fetch
+# keeps the last copy.
+url_file="${XDG_CONFIG_HOME:-$HOME/.config}/hlimits/opencode-url"
+oc="${XDG_CACHE_HOME:-$HOME/.cache}/opencode-limits.json"
+if [ -r "$url_file" ]; then
+    if [ ! -e "$oc" ] || [ $(( now - $(stat -c %Y "$oc") )) -ge 60 ]; then
+        curl -fsS -m 2 "$(head -1 "$url_file")" -o "$oc.tmp" 2>/dev/null && mv -f "$oc.tmp" "$oc" || { rm -f "$oc.tmp"; touch -c "$oc"; }
+    fi
+    if [ -s "$oc" ]; then
+        p=$(jq -r --argjson now "$now" "$render"'
+            if .rolling then entry("◇"; .rolling.percent; .rolling.resets_at) else empty end' "$oc" 2>/dev/null)
+        [ -n "$p" ] && parts+=("$p")
+    fi
+fi
+
+(( ${#parts[@]} )) || exit 0
+printf '%s' "${parts[0]}"
+for x in "${parts[@]:1}"; do printf ' · %s' "$x"; done
+echo
