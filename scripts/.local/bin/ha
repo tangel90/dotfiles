@@ -7,6 +7,10 @@
 # project's devcontainer through dclaude (always a fresh session, --new), or
 # with --host as plain claude on the host.
 #
+# --kind KIND (with --host) starts another agent herdr knows instead of
+# claude, e.g. --kind opencode for the OpenCode workers; the args go to that
+# agent's executable. Default: claude.
+#
 # A new tab rather than this pane: agent start needs its pane idle at a shell
 # prompt, and this one is busy running ha. A tab rather than a split, so the
 # agent gets the full window. The fresh shell takes a moment to reach its
@@ -21,18 +25,21 @@ set -euo pipefail
 
 [ "${HERDR_ENV:-}" = 1 ] || { echo "ha: not inside a herdr pane" >&2; exit 1; }
 host=
+kind=claude
 ws=
 group=
 while [ $# -gt 0 ]; do
     case $1 in
         --host) host=1 ;;
+        --kind) kind=${2:?ha: --kind needs an agent kind}; shift ;;
         --workspace) ws=${2:?ha: --workspace needs an ID}; shift ;;
         --tab) group=${2:?ha: --tab needs a LABEL}; shift ;;
         *) break ;;
     esac
     shift
 done
-(( $# )) || { echo "usage: ha [--host] [--workspace ID] [--tab LABEL] NAME [claude args...]" >&2; exit 2; }
+(( $# )) || { echo "usage: ha [--host [--kind KIND]] [--workspace ID] [--tab LABEL] NAME [agent args...]" >&2; exit 2; }
+[ "$kind" = claude ] || [ -n "$host" ] || { echo "ha: --kind $kind needs --host (dclaude runs only claude)" >&2; exit 2; }
 
 # herdr's rule for agent names; lowercased here, and checked before a tab is
 # made for it, so a bad name doesn't leave an empty tab behind.
@@ -92,13 +99,13 @@ fi
 # A linked worktree's agent also works in the main checkout (sibling
 # worktrees under .claude/worktrees/), which blockReadsOutsideWorkingDirectories
 # would otherwise prompt for on every read.
-if [ "$(git rev-parse --git-dir 2>/dev/null)" != "$(git rev-parse --git-common-dir 2>/dev/null)" ]; then
+if [ "$kind" = claude ] && [ "$(git rev-parse --git-dir 2>/dev/null)" != "$(git rev-parse --git-common-dir 2>/dev/null)" ]; then
     main=$(git worktree list --porcelain | sed -n '1s/^worktree //p')
     [ -n "$main" ] && set -- --add-dir "$main" "$@"
 fi
 (( $# )) && set -- -- "$@"
 for _ in {1..20}; do
-    out=$(herdr agent start "$name" --kind claude --pane "$pane" "$@" 2>&1) && exit 0
+    out=$(herdr agent start "$name" --kind "$kind" --pane "$pane" "$@" 2>&1) && exit 0
     # An attempt can start and name the agent yet still exit non-zero; the
     # retry then hits agent_name_taken on our own pane.
     if [[ $out == *agent_name_taken* ]] &&

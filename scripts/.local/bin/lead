@@ -7,7 +7,7 @@ cleanup) cost more than the decisions. These run them in one go, from the
 main checkout, printing each step and stopping at the first failure. The
 lead still writes the PR body, the merge message and its Comments itself.
 
-    lead start ID TOPIC ROLE [--dry-run]
+    lead start ID TOPIC ROLE [--engine claude|opencode] [--dry-run]
         ROLE: implementer | reviewer | debugger | ux-designer
         implementer  worktree .claude/worktrees/TOPIC on agent/TOPIC, agent impl-TOPIC
         debugger     fix-TOPIC on agent/fix-TOPIC, agent dbg-TOPIC
@@ -17,6 +17,12 @@ lead still writes the PR body, the merge message and its Comments itself.
         it, sends the standard pointer, and (not for a reviewer) sets the
         ticket's Status in-progress, Owner and Branch. Prints "NAME PANE".
         Subscribing to the worker's idle notification stays with the lead.
+        --engine opencode starts an OpenCode worker instead of Claude
+        (~/.config/opencode/agents/ROLE.md picks its model): lead writes the
+        worktree's .opencode/opencode.jsonc (default_agent ROLE, the role's
+        Claude definition as instructions), keeps .opencode/ out of git, and
+        starts `opencode --standalone`. OpenCode workers prompt the lead
+        themselves when done; there's nothing to subscribe to.
 
     lead ship ID --body FILE [--merge-msg FILE] [--dry-run]
         Pushes the ticket's Branch, opens its PR (or reuses PR:), posts the
@@ -164,6 +170,26 @@ def branch_exists(root, branch):
     return quiet(["git", "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}"], cwd=root)[0] == 0
 
 
+def write_opencode_config(root, wt, role):
+    """Pick the OpenCode agent for this worktree, and give it the role's
+    Claude definition as instructions; .opencode/ stays out of git."""
+    cfg = wt / ".opencode/opencode.jsonc"
+    body = json.dumps({"default_agent": role,
+                       "instructions": [str(Path.home() / ".claude/agents" / f"{role}.md")]}, indent=2)
+    say(f"+ write {cfg}: default_agent {role}")
+    exclude = Path(quiet(["git", "rev-parse", "--git-common-dir"], cwd=root)[1])
+    exclude = (exclude if exclude.is_absolute() else root / exclude) / "info/exclude"
+    if DRY:
+        return
+    cfg.parent.mkdir(parents=True, exist_ok=True)
+    cfg.write_text(body + "\n")
+    lines = exclude.read_text().splitlines() if exclude.is_file() else []
+    if ".opencode/" not in lines:
+        exclude.parent.mkdir(parents=True, exist_ok=True)
+        exclude.write_text("\n".join(lines + [".opencode/"]) + "\n")
+        say(f"+ add .opencode/ to {exclude}")
+
+
 def cmd_start(a):
     root = repo_root()
     tid, ticket = find_ticket(root, a.id)
@@ -200,8 +226,16 @@ def cmd_start(a):
             run(["git", "worktree", "add", str(wt), "-b", branch], cwd=root)
         msg = f"[{tid}] work on {ticket}. Report as a Comment there, reply in one line. Lead: {lead}."
 
-    extra = ["--add-dir", str(Path.home() / "prototypes")] if a.role == "ux-designer" else []
-    run(["ha", "--host", "--tab", "workers", name, "--agent", a.role, *extra], cwd=wt)
+    if a.engine == "opencode":
+        agent_file = Path.home() / ".config/opencode/agents" / f"{a.role}.md"
+        if not agent_file.is_file():
+            sys.exit(f"lead: no OpenCode agent {agent_file}; --engine opencode works for: "
+                     + ", ".join(sorted(x.stem for x in agent_file.parent.glob("*.md"))))
+        write_opencode_config(root, wt, a.role)
+        run(["ha", "--host", "--kind", "opencode", "--tab", "workers", name, "--standalone"], cwd=wt)
+    else:
+        extra = ["--add-dir", str(Path.home() / "prototypes")] if a.role == "ux-designer" else []
+        run(["ha", "--host", "--tab", "workers", name, "--agent", a.role, *extra], cwd=wt)
 
     pane = None
     if not DRY:
@@ -304,6 +338,7 @@ def main():
     sub = p.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("start")
     s.add_argument("id"); s.add_argument("topic"); s.add_argument("role")
+    s.add_argument("--engine", choices=["claude", "opencode"], default="claude")
     s.add_argument("--dry-run", action="store_true")
     h = sub.add_parser("ship")
     h.add_argument("id")

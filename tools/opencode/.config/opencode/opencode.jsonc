@@ -1,0 +1,28 @@
+// OpenCode's global config (stowed from dotfiles tools/opencode). OpenCode runs
+// the cheaper worker agents (implementer, reviewer) next to the Claude leads;
+// `lead start ... --engine opencode` starts them. The agent of a session is
+// chosen per worktree: lead writes .opencode/opencode.jsonc there with
+// default_agent and the role's Claude instructions file.
+{
+  "$schema": "https://opencode.ai/config.json",
+  // Rules are checked in order and the last match wins; unmatched calls are
+  // allowed (OpenCode's base policy). These mirror Claude's settings.json:
+  // credentials are off limits, reading other panes asks, and workers never
+  // push or merge (the lead ships through `lead ship`).
+  "permissions": [
+    { "action": "shell", "resource": "pass *", "effect": "deny" },
+    { "action": "read", "resource": "~/.password-store/**", "effect": "deny" },
+    { "action": "read", "resource": "~/.local/share/opencode/auth.json", "effect": "deny" },
+    { "action": "read", "resource": "~/.claude/.credentials.json", "effect": "deny" },
+    { "action": "read", "resource": "~/.config/dclaude/**", "effect": "deny" },
+    { "action": "read", "resource": "**/.oauth-token", "effect": "deny" },
+    { "action": "read", "resource": "**/auth/auth.py", "effect": "deny" },
+    { "action": "read", "resource": "**/auth.zip", "effect": "deny" },
+    { "action": "read", "resource": "**/secrets", "effect": "deny" },
+    { "action": "read", "resource": "**/secrets/**", "effect": "deny" },
+    { "action": "shell", "resource": "herdr pane read *", "effect": "ask" },
+    { "action": "shell", "resource": "herdr agent read *", "effect": "ask" },
+    { "action": "shell", "resource": "git push *", "effect": "deny" },
+    { "action": "shell", "resource": "gh pr merge *", "effect": "deny" }
+  ]
+}
