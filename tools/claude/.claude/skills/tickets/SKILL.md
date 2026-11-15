@@ -32,6 +32,9 @@ A ticket mirrored from Jira takes `JIRA-` plus the Jira key as its id: `tickets/
 ```markdown
 # RDS-007: SerialId reaches IF_BPM
 
+Why: BPM reports can follow one deal leg across systems; today they can't join on SerialId.
+Cost: medium (one model, a backfill on DEV)
+Decide: backfill all history, or only from 2026?
 Status: in-progress
 Category: enhancement
 Owner: core-worker
@@ -55,6 +58,12 @@ The contract the worker works from (see the triage skill's AGENT-BRIEF.md): cate
 ```
 
 Header lines before the first `##`, in this order. `Status` and `Owner` are always there; the others when they apply.
+
+The first three are the ticket's bottom line up front, for the human deciding at triage, who should not have to read the Brief to know what a ticket is for:
+
+- **Why**: what the human gets when it's done, in one sentence of their own words: the situation and the benefit, not the change. "On the phone, the folders stay in view below the todos", not "limit the todo list to seven rows". Required while the ticket is `needs-triage` or `needs-info` (`check` flags it), and kept afterwards.
+- **Cost**: `small`, `medium` or `large`, with a few words on what makes it so.
+- **Decide**: what the human must decide before it can start, as a question; several are numbered (`1. … 2. …`). Leave the line out when there is nothing to decide. A question for the human never sits only in the Brief or the Comments.
 
 - **Status**, exactly one of:
   - `needs-triage`: new, not evaluated or not yet agreed with the human.

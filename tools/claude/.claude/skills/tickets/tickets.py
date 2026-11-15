@@ -18,7 +18,7 @@ from pathlib import Path
 STATUSES = ["needs-triage", "needs-info", "ready-for-agent", "ready-for-human", "in-progress", "review", "wontfix", "done"]
 CLOSED = {"wontfix", "done"}
 CATEGORIES = {"bug", "enhancement"}
-FIELDS = ["Status", "Category", "Owner", "Area", "Blocked by", "Branch", "PR", "Intent"]
+FIELDS = ["Why", "Cost", "Decide", "Status", "Category", "Owner", "Area", "Blocked by", "Branch", "PR", "Intent"]
 # local: RDS-007-slug.md; Jira mirror: JIRA-<jira key>-slug.md, e.g. JIRA-RDS-1234-slug.md
 NAME_RE = re.compile(r"^((?:JIRA-)?[A-Z][A-Z0-9]*)-(\d+)-[a-z0-9-]+\.md$")
 ID_RE = re.compile(r"^((?:JIRA-)?[A-Z][A-Z0-9]*)-0*(\d+)$")
@@ -187,6 +187,8 @@ def main():
                 bid = norm_id(b, prefix)
                 if bid and bid not in by_id and (bid.startswith("JIRA-") or bid.split("-")[0] in prefixes):
                     probs.append(f"blocker {b} has no ticket file")
+            if t["status"] in ("needs-triage", "needs-info") and not t["fields"].get("Why"):
+                probs.append(f"{t['status']} without a Why: line (what the human gets, for triage)")
             if t["status"] == "ready-for-agent" and "## Brief" not in t["path"].read_text(encoding="utf-8"):
                 probs.append("ready-for-agent without a ## Brief section")
             for p in probs:
