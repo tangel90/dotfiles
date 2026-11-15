@@ -32,7 +32,7 @@ a dated Comment shows its file's modification age instead, marked "~"
 
 The board starts in key mode, like herdr's prefix+g popup: j/k move, single
 keys set the filter (h human, t triage, r review, p progress, a active,
-c closed, l all; m toggles only mine, o toggles last action over 14 days;
+c closed, l all; m toggles only mine, d toggles last action over 14 days;
 . toggles the repo of the pane ht was opened from, w cycles through the repos
 with tickets, listed in the header while a repo filter is on; i cycles the
 intents the same way, ~ opens search with "~" typed), q or esc
@@ -41,7 +41,7 @@ preview pane (? again, or ctrl-/ for the brief, switches back). / switches to se
 type the query, esc goes back to key mode; # does the same with "#" typed,
 for a repo name. Filters combine.
 
-Keys in both modes: enter read the ticket in nvim · ctrl-s start · ctrl-x reject (asks
+Keys in both modes: enter read the ticket in nvim (in key mode also o) · ctrl-s start · ctrl-x reject (asks
 for a reason) · ctrl-d done, on your own tickets only (Owner thomas; asks for
 a note: what was done, which commit) · ctrl-g go to the owner agent (or the
 lead) · ctrl-/ show or hide the Brief section · ? all keys.
@@ -84,17 +84,17 @@ SELF = shlex.quote(str(Path(__file__).resolve()))
 HELP = "h human · t triage · r review · p progress · a active · l all · ? more keys"
 KEYS = """\
 filter    h human · t triage · r review · p progress · a active · l all
-          c closed · m only mine · o last action over 14 days
+          c closed · m only mine · d last action over 14 days
 repo      . this pane's repo · w next repo · # repo search
 intent    i next intent (spec) · ~ intent search
 search    / type a query (!status @owner #repo ~intent >14d words) · esc back
 move      j/k · q or esc quit
-ticket    enter read in nvim · ctrl-s start · ctrl-x reject
+ticket    o or enter read in nvim · ctrl-s start · ctrl-x reject
           ctrl-d done (your own) · ctrl-g go to its agent
 show      ctrl-/ the ticket's brief · ? these keys"""
 STATUS_KEYS = {"h": "!human", "t": "!triage", "r": "!review", "p": "!progress", "a": "", "c": "!closed", "l": "!all"}
 OLD = ">14d"
-MODE_KEYS = "j,k,q,/,#,.,w,i,~,m,o,?," + ",".join(STATUS_KEYS)
+MODE_KEYS = "j,k,q,/,#,.,w,i,~,m,d,o,?," + ",".join(STATUS_KEYS)
 KEYS_LABEL = " keys "
 DATED = re.compile(r"^- (\d{4}-\d{2}-\d{2})\b")
 
@@ -323,14 +323,14 @@ def cmd_act(argv):
 
 def cmd_query(argv):
     """Print the query a filter key turns QUERY into: status keys replace the
-    !token, m toggles @<you>, o toggles >14d; other words stay."""
+    !token, m toggles @<you>, d toggles >14d; other words stay."""
     key, words = (argv[0] if argv else ""), (" ".join(argv[1:])).split()
     me = "@" + next(iter(sorted(n for n in human_names() if n != "human")), "thomas")
     if key in STATUS_KEYS:
         words = [w for w in words if not w.startswith("!")] + ([STATUS_KEYS[key]] if STATUS_KEYS[key] else [])
     elif key == "m":
         words = [w for w in words if w != me] if me in words else words + [me]
-    elif key == "o":
+    elif key == "d":
         words = [w for w in words if w != OLD] if OLD in words else words + [OLD]
     elif key == ".":
         here = "#." in words
@@ -380,7 +380,7 @@ def board():
     # search and rebound by esc, which quits from key mode.
     reload = f"reload({SELF} list {{q}})"
     header = f"transform-header({SELF} header {{q}})"
-    filters = [f"{k}:transform-query({SELF} query {k} {{q}})+{reload}+{header}" for k in [*STATUS_KEYS, "m", "o", ".", "w", "i"]]
+    filters = [f"{k}:transform-query({SELF} query {k} {{q}})+{reload}+{header}" for k in [*STATUS_KEYS, "m", "d", ".", "w", "i"]]
     esc = (f'[ "$FZF_PROMPT" = "search> " ] && echo "rebind({MODE_KEYS})+change-prompt(tickets> )" || echo abort')
     # The preview pane shows either the ticket's brief or, labelled " keys ",
     # the key list; ? and ctrl-/ switch between them or close the pane.
@@ -404,6 +404,7 @@ def board():
          "--bind", f"?:transform:{show_keys}",
          "--bind", f"ctrl-/:transform:{show_brief}",
          "--bind", "enter:execute(test -f {1} && nvim -R {1})",
+         "--bind", "o:execute(test -f {1} && nvim -R {1})",
          "--bind", f"ctrl-s:execute({SELF} act start {{1}})+{reload}",
          "--bind", f"ctrl-x:execute({SELF} act drop {{1}})+{reload}",
          "--bind", f"ctrl-d:execute({SELF} act done {{1}})+{reload}",
