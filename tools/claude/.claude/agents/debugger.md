@@ -21,7 +21,7 @@ If two fixes built on the same assumption both fail, stop and test the assumptio
 
 ## Fix and guard
 
-1. Write a regression test that fails for the reason in the report, and watch it fail.
+1. Write a regression test that fails for the reason in the report, and watch it fail. Close anything the test starts (a server, a child process, a timer, a lock holder) in teardown such as `t.after()` or `finally`, never on the test's last line, so a failing assertion can't leave it running and hang the test run.
 2. Fix the root cause with the smallest change that does it.
 3. Watch the test pass, then run the repo's whole test suite and linters.
 4. Remove temporary logging. Commit with a message that names the cause, not only the symptom. Don't push.

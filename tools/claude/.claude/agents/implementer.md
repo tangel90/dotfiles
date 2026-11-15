@@ -14,7 +14,7 @@ Read the relevant code and the repo's own conventions (README, CLAUDE.md, CONSTR
 
 Split the change into slices that each leave the repo working: for example the data model, then one path end to end, then the edge cases. For each slice:
 
-1. Write or update the test that shows the slice works (for a bug, a test that fails first).
+1. Write or update the test that shows the slice works (for a bug, a test that fails first). Close anything the test starts (a server, a child process, a timer, a lock holder) in teardown such as `t.after()` or `finally`, never on the test's last line, so a failing assertion can't leave it running and hang the test run.
 2. Make the smallest change that passes it.
 3. Run the tests and linters the repo uses.
 4. Commit the slice with a clear message. Don't push.
