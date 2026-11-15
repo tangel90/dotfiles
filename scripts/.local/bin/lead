@@ -1,0 +1,319 @@
+#!/usr/bin/env python3
+"""lead: a repo lead's per-ticket bookkeeping as two calls.
+
+Every tool call a lead makes re-reads its whole conversation, so the
+mechanical steps around a ticket (worktrees, starting workers, PR, merge,
+cleanup) cost more than the decisions. These run them in one go, from the
+main checkout, printing each step and stopping at the first failure. The
+lead still writes the PR body, the merge message and its Comments itself.
+
+    lead start ID TOPIC ROLE [--dry-run]
+        ROLE: implementer | reviewer | debugger | ux-designer
+        implementer  worktree .claude/worktrees/TOPIC on agent/TOPIC, agent impl-TOPIC
+        debugger     fix-TOPIC on agent/fix-TOPIC, agent dbg-TOPIC
+        ux-designer  design-TOPIC on agent/design-TOPIC, agent ux-TOPIC (--add-dir ~/prototypes)
+        reviewer     detached TOPIC-review at agent/TOPIC, agent rev-TOPIC
+        Starts the agent with ha in the "workers" tab, waits for herdr to list
+        it, sends the standard pointer, and (not for a reviewer) sets the
+        ticket's Status in-progress, Owner and Branch. Prints "NAME PANE".
+        Subscribing to the worker's idle notification stays with the lead.
+
+    lead ship ID --body FILE [--merge-msg FILE] [--dry-run]
+        Pushes the ticket's Branch, opens its PR (or reuses PR:), posts the
+        reviewer's last Comment on it, and merges with --squash only when the
+        repo's CLAUDE.md has a "## Merging" section (then --merge-msg is
+        required: subject on line 1, body after a blank line), pulling the
+        default branch afterwards. Then closes the ticket's worker panes,
+        removes its worktrees and sets Status (done or review), PR and Owner
+        lead, with a dated Comment.
+
+Never force-pushes, never pushes to the default branch. Restarting services
+and anything that needs judgment stay with the lead.
+"""
+
+import argparse
+import datetime
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
+
+ROLES = {  # role: (agent prefix, worktree prefix, branch prefix)
+    "implementer": ("impl-", "", ""),
+    "debugger": ("dbg-", "fix-", "fix-"),
+    "ux-designer": ("ux-", "design-", "design-"),
+    "reviewer": ("rev-", None, None),
+}
+TICKETS_PY = Path.home() / ".claude/skills/tickets/tickets.py"
+DRY = False
+
+
+def say(msg):
+    print(msg, flush=True)
+
+
+def run(cmd, cwd=None, capture=False, check=True, mutate=True):
+    """Run a command, printed first. In --dry-run, commands that change
+    something are only printed; read-only ones (mutate=False) still run."""
+    say("+ " + " ".join(cmd) + (f"   (in {cwd})" if cwd else ""))
+    if DRY and mutate:
+        return ""
+    r = subprocess.run(cmd, cwd=cwd, text=True, capture_output=capture)
+    if check and r.returncode != 0:
+        if capture:
+            sys.stderr.write(r.stdout + r.stderr)
+        sys.exit(f"lead: step failed ({r.returncode}): {' '.join(cmd)}")
+    return (r.stdout or "").strip() if capture else ""
+
+
+def quiet(cmd, cwd=None):
+    r = subprocess.run(cmd, cwd=cwd, text=True, capture_output=True)
+    return r.returncode, r.stdout.strip()
+
+
+def repo_root():
+    code, top = quiet(["git", "rev-parse", "--show-toplevel"])
+    if code or "/.claude/worktrees/" in top + "/":
+        sys.exit("lead: run it from the repo's main checkout, not a worktree")
+    return Path(top)
+
+
+def find_ticket(root, tid):
+    m = re.fullmatch(r"([A-Z][A-Z0-9]*)-0*(\d+)", tid.upper())
+    if not m:
+        sys.exit(f"lead: '{tid}' is not a ticket id like N-7")
+    prefix, num = m.groups()
+    hits = sorted((root / "tickets").glob(f"{prefix}-{int(num):03d}-*.md"))
+    if len(hits) != 1:
+        sys.exit(f"lead: expected one ticket file for {tid}, found {len(hits)}")
+    return f"{prefix}-{int(num)}", hits[0]
+
+
+def header(path):
+    """The ticket's header fields (lines before the first ##)."""
+    fields = {}
+    for line in path.read_text().splitlines():
+        if line.startswith("## "):
+            break
+        k, sep, v = line.partition(":")
+        if sep and not line.startswith("#"):
+            fields[k.strip()] = v.strip()
+    return fields
+
+
+def set_fields(path, updates):
+    """Replace or add header lines; new ones go after Owner (or Status)."""
+    if DRY:
+        say(f"+ set in {path.name}: " + ", ".join(f"{k}: {v}" for k, v in updates.items()))
+        return
+    lines = path.read_text().splitlines()
+    end = next((i for i, l in enumerate(lines) if l.startswith("## ")), len(lines))
+    todo = dict(updates)
+    for i in range(end):
+        k = lines[i].partition(":")[0].strip()
+        if k in todo and not lines[i].startswith("#"):
+            lines[i] = f"{k}: {todo.pop(k)}"
+    if todo:
+        keys = [lines[i].split(":")[0] for i in range(end)]
+        anchor = keys.index("Owner") if "Owner" in keys else keys.index("Status") if "Status" in keys else 0
+        for j, (k, v) in enumerate(todo.items(), 1):
+            lines.insert(anchor + j, f"{k}: {v}")
+    path.write_text("\n".join(lines) + "\n")
+    say(f"+ set in {path.name}: " + ", ".join(f"{k}: {v}" for k, v in updates.items()))
+
+
+def add_comment(path, who, text):
+    line = f"- {datetime.date.today().isoformat()} {who}: {text}"
+    say(f"+ comment in {path.name}: {line}")
+    if DRY:
+        return
+    s = path.read_text().rstrip("\n")
+    if "\n## Comments" not in "\n" + s:
+        s += "\n\n## Comments"
+    path.write_text(s + "\n" + line + "\n")
+
+
+def check_ticket(root, path):
+    if not TICKETS_PY.is_file():
+        return
+    _, out = quiet([sys.executable, str(TICKETS_PY), "--dir", str(root / "tickets"), "check"])
+    mine = [l for l in out.splitlines() if l.startswith(path.name + ":")]
+    if mine:
+        sys.exit("lead: tickets.py check:\n" + "\n".join(mine))
+    say(f"+ tickets.py check: {path.name} ok")
+
+
+def herdr_agents():
+    code, out = quiet(["herdr", "agent", "list"])
+    try:
+        return json.loads(out)["result"]["agents"] if code == 0 else []
+    except (ValueError, KeyError):
+        return []
+
+
+def my_name():
+    pane = os.environ.get("HERDR_PANE_ID", "")
+    return next((a.get("name") for a in herdr_agents() if a.get("pane_id") == pane and a.get("name")), "lead")
+
+
+def branch_exists(root, branch):
+    return quiet(["git", "rev-parse", "--verify", "--quiet", f"refs/heads/{branch}"], cwd=root)[0] == 0
+
+
+def cmd_start(a):
+    root = repo_root()
+    tid, ticket = find_ticket(root, a.id)
+    if a.role not in ROLES:
+        sys.exit(f"lead: role must be one of {', '.join(ROLES)}")
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", a.topic):
+        sys.exit("lead: TOPIC must be lowercase letters, digits and dashes")
+    agent_pre, wt_pre, br_pre = ROLES[a.role]
+    name = agent_pre + a.topic
+    if any(x.get("name") == name for x in herdr_agents()):
+        sys.exit(f"lead: an agent named {name} is already running; prompt it, or close it first")
+    lead = my_name()
+
+    if a.role == "reviewer":
+        branch = f"agent/{a.topic}"
+        if not branch_exists(root, branch):
+            sys.exit(f"lead: no branch {branch} to review")
+        wt = root / ".claude/worktrees" / f"{a.topic}-review"
+        if wt.is_dir():
+            run(["git", "checkout", "--detach", branch], cwd=wt)
+        else:
+            run(["git", "worktree", "add", "--detach", str(wt), branch], cwd=root)
+        sha = quiet(["git", "rev-parse", "--short", branch], cwd=root)[1]
+        msg = (f"[{tid}] review {branch} ({sha}) against {ticket}. "
+               f"Report as a Comment there, reply in one line. Lead: {lead}.")
+    else:
+        branch = f"agent/{br_pre}{a.topic}"
+        wt = root / ".claude/worktrees" / f"{wt_pre}{a.topic}"
+        if wt.is_dir():
+            say(f"+ worktree {wt} exists, reusing it")
+        elif branch_exists(root, branch):
+            run(["git", "worktree", "add", str(wt), branch], cwd=root)
+        else:
+            run(["git", "worktree", "add", str(wt), "-b", branch], cwd=root)
+        msg = f"[{tid}] work on {ticket}. Report as a Comment there, reply in one line. Lead: {lead}."
+
+    extra = ["--add-dir", str(Path.home() / "prototypes")] if a.role == "ux-designer" else []
+    run(["ha", "--host", "--tab", "workers", name, "--agent", a.role, *extra], cwd=wt)
+
+    pane = None
+    if not DRY:
+        for _ in range(60):
+            pane = next((x.get("pane_id") for x in herdr_agents() if x.get("name") == name), None)
+            if pane:
+                break
+            time.sleep(1)
+        if not pane:
+            sys.exit(f"lead: {name} did not show up in herdr agent list within 60 s; check its pane")
+    say(f"+ herdr lists {name}")
+    run(["herdr", "agent", "prompt", name, msg], capture=True)
+
+    if a.role != "reviewer":
+        set_fields(ticket, {"Status": "in-progress", "Owner": name, "Branch": branch})
+        check_ticket(root, ticket)
+    say(f"{name} {pane or '(dry run)'}")
+
+
+def last_review_comment(path, topic):
+    """The last Comment written by rev-TOPIC, with its continuation lines."""
+    text = path.read_text().split("\n## Comments", 1)
+    if len(text) < 2:
+        return None
+    blocks, cur = [], None
+    for line in text[1].splitlines():
+        if re.match(r"- \d{4}-\d{2}-\d{2} ", line):
+            cur = [line]
+            blocks.append(cur)
+        elif cur is not None:
+            cur.append(line)
+    mine = [b for b in blocks if re.match(rf"- \d{{4}}-\d{{2}}-\d{{2}} rev-{re.escape(topic)}:", b[0])]
+    return "\n".join(mine[-1]).strip() if mine else None
+
+
+def cmd_ship(a):
+    root = repo_root()
+    tid, ticket = find_ticket(root, a.id)
+    f = header(ticket)
+    branch = f.get("Branch", "")
+    if not branch.startswith("agent/"):
+        sys.exit(f"lead: {ticket.name} has no Branch: agent/... line")
+    topic = branch[len("agent/"):]
+    for pre in ("fix-", "design-"):
+        if topic.startswith(pre):
+            topic = topic[len(pre):]
+    title = re.sub(r"^#\s+\S+\s+", "", ticket.read_text().splitlines()[0]).strip()
+    default = quiet(["git", "symbolic-ref", "--short", "refs/remotes/origin/HEAD"], cwd=root)[1].split("/")[-1] or "main"
+    if branch in (default, f"agent/{default}"):
+        sys.exit("lead: refusing to ship the default branch")
+    merging = "\n## Merging" in "\n" + (root / "CLAUDE.md").read_text() if (root / "CLAUDE.md").is_file() else False
+    if merging and not a.merge_msg:
+        sys.exit("lead: this repo's CLAUDE.md allows merging; pass --merge-msg FILE (subject, blank line, body)")
+    review = last_review_comment(ticket, topic)
+    if not review:
+        sys.exit(f"lead: no Comment from rev-{topic} in {ticket.name}; review first, or post it by hand")
+
+    run(["git", "push", "-u", "origin", branch], cwd=root)
+    url = f.get("PR", "")
+    if not url.startswith("http"):
+        url = run(["gh", "pr", "create", "--head", branch, "--base", default,
+                   "--title", f"{title} ({tid})", "--body-file", a.body], cwd=root, capture=True) or "(dry run)"
+        say(f"+ PR {url}")
+    with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as tmp:
+        tmp.write(f"Review ({tid}), from the ticket:\n\n{review}\n")
+    run(["gh", "pr", "comment", url, "--body-file", tmp.name], cwd=root)
+    os.unlink(tmp.name)
+
+    merged = None
+    if merging:
+        subject, _, body = Path(a.merge_msg).read_text().partition("\n")
+        run(["gh", "pr", "merge", url, "--squash", "--delete-branch",
+             "--subject", subject.strip(), "--body", body.strip()], cwd=root)
+        current = quiet(["git", "branch", "--show-current"], cwd=root)[1]
+        if current == default:
+            run(["git", "pull", "--ff-only"], cwd=root)
+            merged = quiet(["git", "rev-parse", "--short", "HEAD"], cwd=root)[1]
+        else:
+            say(f"+ main checkout is on {current}, not {default}: skipping git pull")
+
+    for x in herdr_agents():
+        n = x.get("name") or ""
+        if re.fullmatch(rf"(impl|rev|dbg|ux)-{re.escape(topic)}", n):
+            run(["herdr", "pane", "close", x["pane_id"]], capture=True)
+    for wt_name in (topic, f"{topic}-review", f"fix-{topic}", f"design-{topic}"):
+        wt = root / ".claude/worktrees" / wt_name
+        if wt.is_dir():
+            run(["git", "worktree", "remove", str(wt)], cwd=root)
+
+    set_fields(ticket, {"Status": "done" if merging else "review", "PR": url, "Owner": "lead"})
+    add_comment(ticket, my_name(), f"shipped: PR {url}" + (f", squash-merged as {merged}" if merged else ", merged" if merging else ", waiting for Thomas to merge")
+                + "; workers closed, worktrees removed.")
+    check_ticket(root, ticket)
+    say(f"{tid} shipped. Good moment to /clear the lead: the state is in tickets/.")
+
+
+def main():
+    global DRY
+    p = argparse.ArgumentParser(prog="lead", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = p.add_subparsers(dest="cmd", required=True)
+    s = sub.add_parser("start")
+    s.add_argument("id"); s.add_argument("topic"); s.add_argument("role")
+    s.add_argument("--dry-run", action="store_true")
+    h = sub.add_parser("ship")
+    h.add_argument("id")
+    h.add_argument("--body", required=True, help="PR body file")
+    h.add_argument("--merge-msg", help="squash commit message file: subject, blank line, body")
+    h.add_argument("--dry-run", action="store_true")
+    a = p.parse_args()
+    DRY = a.dry_run
+    {"start": cmd_start, "ship": cmd_ship}[a.cmd](a)
+
+
+if __name__ == "__main__":
+    main()
