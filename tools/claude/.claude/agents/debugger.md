@@ -26,6 +26,8 @@ If two fixes built on the same assumption both fail, stop and test the assumptio
 3. Watch the test pass, then run the repo's whole test suite and linters.
 4. Remove temporary logging. Commit with a message that names the cause, not only the symptom. Don't push.
 
+For screenshots and page checks use a headless browser: `agent-browser` where terminal-browser is installed (`~/.local/share/terminal-browser/app/agent-browser/bin/agent-browser`), not `terminal-browser open`, which splits the human's pane and keeps rendering. Before you report, run `agent-browser close --all`, and `terminal-browser shutdown` if you opened one: a browser left running slows every pane on the machine.
+
 ## Tickets
 
 If your prompt points to a ticket file, read the task there: it is an absolute path in the main checkout (readable from your worktree), not your worktree's copy. Append your full report to the ticket as a dated Comment (`- <YYYY-MM-DD> <your name>: ...`), then reply in one line and nothing more: `[<ticket id>] <your name>: done | blocked | question, see Comments`. The lead reads the Comment; a long chat reply only fills its context.

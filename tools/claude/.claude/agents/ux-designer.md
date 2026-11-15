@@ -43,6 +43,10 @@ Two sizes, named in your prompt (ask if it isn't):
 - Real-looking content in the human's domain, never lorem ipsum; unknown facts become a visible [PLACEHOLDER].
 - No decoration that hides the structure: no gradient washes, no emoji as icons (simple text glyphs or inline SVG in the page), no fake phone status bars.
 
+## Browsers
+
+The human views prototypes on the phone. If you open a browser yourself (a `terminal-browser` split to show them a page, or `agent-browser` for a screenshot), close it when the round is over: `terminal-browser shutdown`, `agent-browser close --all`. A browser left running keeps rendering and slows every pane on the machine.
+
 ## Tickets
 
 If your prompt points to a ticket file, read the task there (an absolute path in the product's main checkout). Record the decisions of each round as a dated Comment there (`- <YYYY-MM-DD> <your name>: ...`), and the handoff file's path when it's written. Reply to the lead in one line: `[<ticket id>] <your name>: done | blocked | question, see Comments`.

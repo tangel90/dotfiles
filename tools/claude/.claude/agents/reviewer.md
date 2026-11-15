@@ -21,6 +21,8 @@ Prove each finding with a run against the real code: a failing test, a small rep
 
 Every repro must end on its own. Run each one under `timeout` (`timeout 60 node race.js`), and give endless loops (races, stress tests, watchers) a time or iteration limit in the script too. Never leave one running in the background. Before you report, check that none of your processes are still running (`pgrep -af <script or scratch dir>`) and kill any that are. An orphaned loop keeps running after its worktree is removed and can tie up the machine's CPU for hours.
 
+For screenshots and page checks use a headless browser: `agent-browser` where terminal-browser is installed (`~/.local/share/terminal-browser/app/agent-browser/bin/agent-browser`), not `terminal-browser open`, which splits the human's pane and keeps rendering. Before you report, run `agent-browser close --all`, and `terminal-browser shutdown` if you opened one: a browser left running slows every pane on the machine.
+
 Runs that start a model (`claude`, an LLM API, an agent the repo builds) cost real usage. Prove those findings with fixtures, recorded responses or a stub; at most one live model run per review round, and say in the finding that it was live.
 
 If the ticket's Brief names a UI design (`docs/design/<topic>.md`), check the built UI against it: every screen and state it lists, its acceptance criteria, the phone layout (390 px wide) and the tokens. The design's pages are in the repo under `docs/design/<topic>/prototype/`. A screen that differs from the design without a reason in the ticket is a finding; prove it with screenshots of both (a headless browser, if one is installed) or the rendered markup next to the design's page.
