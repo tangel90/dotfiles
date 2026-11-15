@@ -4,8 +4,18 @@
 # so no SSH and no key is needed there).
 #
 # The numbers come from the local OpenCode server's experimental endpoint
-# experimental.usage.limits, which needs a Console account sign-in
-# (`opencode auth login` > OpenCode Console > account). Run every few minutes
+# experimental.usage.limits, which needs the Go workspace's Console account
+# sign-in as the active credential. The agents need the pay-as-you-go key
+# active instead (another workspace), and OpenCode keeps one active login per
+# integration, so oclimits runs its own OpenCode instance: own data dirs under
+# ~/.local/share/oclimits holding only the account login, own service port
+# (49375). Set up once (secrets never printed):
+#   B=~/.local/share/oclimits; oc() { XDG_CONFIG_HOME=$B/config XDG_DATA_HOME=$B/data \
+#     XDG_STATE_HOME=$B/state XDG_CACHE_HOME=$B/cache opencode "$@"; }
+#   oc service set port 49375
+#   opencode auth export | jq '[.[] | select(.label == "Personal") | .active = true]' > $B/p.json
+#   oc auth import $B/p.json; shred -u $B/p.json
+# Run every few minutes
 # by oclimits.timer (tools/opencode). Writes only the go windows and the
 # time of the query, never keys or workspace ids.
 
@@ -13,7 +23,9 @@ set -euo pipefail
 
 dir="${XDG_CACHE_HOME:-$HOME/.cache}/opencode-status"
 mkdir -p "$dir"
-out=$(opencode api experimental.usage.limits 2>/dev/null) || exit 0
+b="$HOME/.local/share/oclimits"
+out=$(XDG_CONFIG_HOME=$b/config XDG_DATA_HOME=$b/data XDG_STATE_HOME=$b/state XDG_CACHE_HOME=$b/cache \
+    opencode api experimental.usage.limits 2>/dev/null) || exit 0
 jq -c --argjson now "$(date +%s)" '
     .data.go // empty
     | {at: $now} + (with_entries(.value |= {percent, limited, resets_at: ((.resetsAt // 0) / 1000 | floor)}))
