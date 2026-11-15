@@ -9,7 +9,9 @@
 #
 # --kind KIND (with --host) starts another agent herdr knows instead of
 # claude, e.g. --kind opencode for the OpenCode workers; the args go to that
-# agent's executable. Default: claude.
+# agent's executable. Default: claude. --typed (with --kind) types the args
+# into the new pane as a command line instead (a wrapper such as ocbox), and
+# names the agent once herdr detects it, as for dclaude.
 #
 # A new tab rather than this pane: agent start needs its pane idle at a shell
 # prompt, and this one is busy running ha. A tab rather than a split, so the
@@ -26,12 +28,14 @@ set -euo pipefail
 [ "${HERDR_ENV:-}" = 1 ] || { echo "ha: not inside a herdr pane" >&2; exit 1; }
 host=
 kind=claude
+typed=
 ws=
 group=
 while [ $# -gt 0 ]; do
     case $1 in
         --host) host=1 ;;
         --kind) kind=${2:?ha: --kind needs an agent kind}; shift ;;
+        --typed) typed=1 ;;
         --workspace) ws=${2:?ha: --workspace needs an ID}; shift ;;
         --tab) group=${2:?ha: --tab needs a LABEL}; shift ;;
         *) break ;;
@@ -81,8 +85,12 @@ fi
 # it follows the pane when hbreak or a move takes it elsewhere.
 herdr pane rename "$pane" "$name" >/dev/null
 
-if [ -z "$host" ]; then
-    herdr pane run "$pane" "$(printf '%q ' dclaude --new "$@")" >/dev/null
+if [ -z "$host" ] || [ -n "$typed" ]; then
+    if [ -n "$typed" ]; then
+        herdr pane run "$pane" "$(printf '%q ' "$@")" >/dev/null
+    else
+        herdr pane run "$pane" "$(printf '%q ' dclaude --new "$@")" >/dev/null
+    fi
     (
         for _ in {1..600}; do
             if herdr agent list | jq -e --arg p "$pane" 'any(.result.agents[]; .pane_id == $p)' >/dev/null; then
