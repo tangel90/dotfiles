@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# hoc [NAME]: start the OpenCode repo lead in this repo's main checkout, as the
+# herdr agent NAME (default <repo>-lead, which ht's ctrl-s looks for), in a new
+# tab. The OpenCode counterpart of `ha --host <repo>-lead --agent repo-lead`.
+#
+# OpenCode has no --agent flag, so the agent comes from the repo's
+# .opencode/opencode.jsonc (default_agent repo-lead, plus the Claude repo-lead
+# definition as instructions), which hoc writes and keeps out of git. Its model
+# is in ~/.config/opencode/agents/repo-lead.md (tools/opencode). It runs
+# --standalone, off OpenCode's shared background service, and not in ocbox:
+# the lead pushes and opens pull requests through `lead ship`.
+
+set -euo pipefail
+
+top=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "hoc: run it in a git repo" >&2; exit 1; }
+[ "$(git rev-parse --git-dir)" = "$(git rev-parse --git-common-dir)" ] || { echo "hoc: run it in the main checkout, not a worktree" >&2; exit 1; }
+name=${1:-$(basename "$top")-lead}
+cd "$top"
+
+mkdir -p .opencode
+jq -n --arg f "$HOME/.claude/agents/repo-lead.md" '{default_agent: "repo-lead", instructions: [$f]}' > .opencode/opencode.jsonc
+exclude="$(git rev-parse --git-common-dir)/info/exclude"
+grep -qx '.opencode/' "$exclude" 2>/dev/null || echo '.opencode/' >> "$exclude"
+
+exec ha --host --kind opencode "$name" --standalone
