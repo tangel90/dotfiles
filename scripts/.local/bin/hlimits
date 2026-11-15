@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# hlimits: print Claude's 5-hour and weekly usage for herdr's tab bar
-# (ui.tab_bar_right): the 5-hour window as a bar like the status line's, the
-# weekly one, rarely the limit, as plain text, e.g. "████░░░░░░ 42% ↻1h20 · 18% ↻3d".
+# hlimits: print the 5-hour usage windows for herdr's tab bar
+# (ui.tab_bar_right), one bar per service with a mark in front:
+# ✳ Claude, e.g. "✳ ████░░░░░░ 42% ↻1h20". The weekly window is left out.
 #
 # Claude only hands its rate limits to the status line, so
 # statusline-command.sh caches them in claude-limits.json; this reads that
@@ -22,5 +22,5 @@ jq -r --argjson now "$(date +%s)" '
         else (if ($w.resets_at // 0) <= $now then 0 else $w.used_percentage | round end) as $p
             | (if $withbar then "\(bar($p)) " else "" end) + "\($p)%"
               + (if $p > 0 then " ↻\(left($w.resets_at - $now))" else "" end) end;
-    [entry(.five_hour; true), entry(.seven_day; false)] | join(" · ")
+    [entry(.five_hour; true) | "✳ " + .] | join(" · ")
 ' "$cache"
