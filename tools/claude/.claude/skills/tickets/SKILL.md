@@ -65,6 +65,8 @@ The first three are the ticket's bottom line up front, for the human deciding at
 - **Cost**: `small`, `medium` or `large`, with a few words on what makes it so.
 - **Decide**: what the human must decide before it can start, as a question; several are numbered (`1. … 2. …`). Leave the line out when there is nothing to decide. A question for the human never sits only in the Brief or the Comments.
 
+Write these three lines with the unslop skill: plain words, the concrete situation and number, no AI phrasing. They are the part of the ticket the human reads; the Brief stays a precise work order for the worker and doesn't need that pass.
+
 - **Status**, exactly one of:
   - `needs-triage`: new, not evaluated or not yet agreed with the human.
   - `needs-info`: waiting on an answer; Owner is who must answer (the human, or an outside party such as `front desk`).
