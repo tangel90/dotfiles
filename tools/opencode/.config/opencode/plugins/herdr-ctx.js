@@ -71,6 +71,11 @@ const HerdrCtxPlugin = async () => ({
   event: async ({ event }) => {
     try {
       const props = event?.properties || event?.data || {};
+      if (process.env.HERDR_CTX_DEBUG) {
+        fs.mkdirSync(path.dirname(CACHE), { recursive: true });
+        fs.appendFileSync(path.join(path.dirname(CACHE), "events.log"),
+          `${event?.type} ${JSON.stringify(props).slice(0, 300)}\n`);
+      }
       // V1 bus: assistant messages carry the model and the step's tokens.
       if (event?.type === "message.updated") {
         const info = props.info;

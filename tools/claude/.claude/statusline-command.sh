@@ -111,9 +111,10 @@ fi
 # ── prompt cache ──────────────────────────────────────────────────────────────
 # The API has no TTL readout, so estimate it: each request refreshes the cache
 # for its TTL (1h normally, 5m in usage overage), as recorded in the
-# transcript's last request. Shown as the clock time it goes cold; after that
+# transcript's last request. Shown as the minutes left until it goes cold; after that
 # the next prompt re-reads the whole context uncached. The status line only
-# redraws on activity, so an idle session keeps showing the deadline.
+# redraws on activity (and on refreshInterval, if set), so an idle session's
+# count only moves when the line is redrawn.
 cache_part=""
 transcript=$(echo "$input" | jq -r '.transcript_path // empty')
 if [ -f "$transcript" ]; then
@@ -126,7 +127,7 @@ if [ -f "$transcript" ]; then
         if t=$(date -d "$ts" +%s 2>/dev/null); then
             expires=$(( t + ttl ))
             if [ "$expires" -gt "$(date +%s)" ]; then
-                cache_part=$(printf "${subtle}cache ${foam}%s${reset}" "$(date -d "@$expires" +%H:%M)")
+                cache_part=$(printf "${subtle}cache ${foam}%sm${reset}" "$(( (expires - $(date +%s) + 59) / 60 ))")
                 [ "$ttl" = 300 ] && cache_part="${cache_part}$(printf "${muted} (5m)${reset}")"
             else
                 cache_part=$(printf "${subtle}cache ${love}cold${reset}")
