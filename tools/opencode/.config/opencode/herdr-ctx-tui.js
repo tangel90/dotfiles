@@ -1,8 +1,8 @@
 // herdr-ctx: report an OpenCode session's context use and model to herdr as
 // pane metadata ($ctx, $model), as statusline-command.sh does for Claude, so
 // OpenCode agents show $ctx in herdr's sidebar and `herdr agent get` gives the
-// lead the number. Stowed from dotfiles tools/opencode; herdr's own
-// herdr-agent-state.js (status) is generated beside it.
+// lead the number. Stowed from dotfiles tools/opencode and registered in
+// tui.jsonc next to herdr's own TUI plugin.
 //
 // Context used = the last assistant step's input + cache read/write + output
 // tokens; the window size comes from OpenCode's model catalogue, fetched once
@@ -67,27 +67,24 @@ async function update(tokens) {
   report(ctx, model.modelID);
 }
 
-const HerdrCtxPlugin = async () => ({
-  event: async ({ event }) => {
+// A TUI plugin (tui.jsonc), not a server plugin: in OpenCode's full
+// interface only the TUI runs in the pane (HERDR_PANE_ID) and sees its
+// session's events; a server plugin's events don't fire there.
+async function tui(api) {
+  if (!PANE) return;
+  const unsubscribe = api.event.on("message.updated", async (event) => {
     try {
-      const props = event?.properties || event?.data || {};
+      const info = event?.properties?.info;
       if (process.env.HERDR_CTX_DEBUG) {
         fs.mkdirSync(path.dirname(CACHE), { recursive: true });
-        fs.appendFileSync(path.join(path.dirname(CACHE), "events.log"),
-          `${event?.type} ${JSON.stringify(props).slice(0, 300)}\n`);
+        fs.appendFileSync(path.join(path.dirname(CACHE), "events.log"), `${JSON.stringify(info).slice(0, 400)}\n`);
       }
-      // V1 bus: assistant messages carry the model and the step's tokens.
-      if (event?.type === "message.updated") {
-        const info = props.info;
-        if (info?.role !== "assistant") return;
-        if (info.modelID) model = { providerID: info.providerID || "", modelID: info.modelID };
-        await update(info.tokens);
-      // V2 bus: a finished step carries its tokens; the model is the last one seen.
-      } else if (event?.type === "session.step.ended") {
-        await update(props.tokens);
-      }
+      if (info?.role !== "assistant") return;
+      if (info.modelID) model = { providerID: info.providerID || "", modelID: info.modelID };
+      await update(info.tokens);
     } catch {}
-  },
-});
+  });
+  return () => unsubscribe?.();
+}
 
-export default { id: "herdr.ctx", server: HerdrCtxPlugin, setup() {} };
+export default { id: "herdr.ctx", setup() {}, tui };
