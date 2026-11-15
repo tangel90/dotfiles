@@ -194,17 +194,29 @@ def agent_status(name):
     return next((x.get("agent_status") for x in herdr_agents() if x.get("name") == name), None)
 
 
+def agent_ready(name):
+    """herdr's interactive_ready: the agent's interface takes input. Agents
+    whose integration doesn't report it count as ready once idle."""
+    a = next((x for x in herdr_agents() if x.get("name") == name), None)
+    if not a:
+        return False
+    if "interactive_ready" in a:
+        return bool(a["interactive_ready"])
+    return a.get("agent_status") in ("idle", "done")
+
+
 def send_pointer(name, msg):
     """Send the pointer once the agent is ready, and make sure it arrived.
     herdr lists an agent before its interface takes input (status "unknown";
     OpenCode in particular), and a prompt sent then is lost. So wait for
-    idle, send, and check that the agent starts working; resend once."""
+    interactive_ready (or idle), send, and check that the agent starts
+    working; resend once."""
     for _ in range(90):
-        if agent_status(name) in ("idle", "done"):
+        if agent_ready(name):
             break
         time.sleep(1)
     else:
-        sys.exit(f"lead: {name} never became idle; check its pane, then prompt it by hand")
+        sys.exit(f"lead: {name} never became ready for input; check its pane, then prompt it by hand")
     time.sleep(2)
     for attempt in (1, 2):
         run(["herdr", "agent", "prompt", name, msg], capture=True)
