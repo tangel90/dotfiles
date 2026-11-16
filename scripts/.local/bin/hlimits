@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 # hlimits: print the 5-hour usage windows for herdr's tab bar
 # (ui.tab_bar_right), one entry per service with a mark in front:
-# ✳ Claude and ◇ OpenCode Go, e.g. "✳ 42% ↻1h20 · ◇ 7% ↻3h05".
+# ✻ Claude and ◇ OpenCode Go, e.g. "✻ 42% ↻1h20 · ◇ 7% ↻3h05".
 # The weekly windows are left out.
+#
+# ✻ (U+273B), not ✳ (U+2733): ✳ has an emoji form, which Windows Terminal
+# draws as a green two-cell emoji over the following space. herdr strips
+# colour escapes from command output and has no fg option for tab-bar
+# entries (0.9.5), so the mark takes the tab bar's text colour.
 #
 # Claude only hands its rate limits to the status line, so
 # statusline-command.sh caches them in claude-limits.json; this reads that
@@ -23,10 +28,10 @@ render='
 now=$(date +%s)
 parts=()
 
-# ✳ Claude: the 5-hour window, cached by statusline-command.sh.
+# ✻ Claude: the 5-hour window, cached by statusline-command.sh.
 if [ -r "$cache" ]; then
     p=$(jq -r --argjson now "$now" "$render"'
-        if .five_hour then entry("✳"; .five_hour.used_percentage; .five_hour.resets_at) else empty end' "$cache")
+        if .five_hour then entry("✻"; .five_hour.used_percentage; .five_hour.resets_at) else empty end' "$cache")
     [ -n "$p" ] && parts+=("$p")
 fi
 
