@@ -32,3 +32,5 @@ trianel_soptim*
 
 **/.claude/.cc-writes/
 **/.claude/worktrees/
+
+**/.claude/settings.local.json

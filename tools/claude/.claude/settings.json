@@ -21,6 +21,7 @@
     "deny": [
       "Bash(pass)",
       "Bash(pass *)",
+      "Bash(az *)",
       "Bash(drp-run *)",
       "Bash(*/drp-run *)",
       "Read(~/.password-store/**)",
@@ -40,10 +41,7 @@
       "Bash(trio-mcp-server*)",
       "Read(~/.config/trio/**)"
     ],
-    "ask": [
-      "Bash(herdr pane read *)",
-      "Bash(herdr agent read *)"
-    ],
+    "ask": ["Bash(herdr pane read *)", "Bash(herdr agent read *)"],
     "defaultMode": "auto"
   },
   "hooks": {
@@ -148,10 +146,7 @@
         "/home/corni/.config/herdr/herdr.sock"
       ]
     },
-    "excludedCommands": [
-      "herdr *",
-      "sprint *"
-    ]
+    "excludedCommands": ["herdr *", "sprint *"]
   },
   "effortLevel": "medium",
   "tui": "fullscreen",
