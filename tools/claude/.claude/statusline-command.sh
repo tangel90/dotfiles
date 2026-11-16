@@ -94,6 +94,17 @@ if [ -n "$limits" ]; then
     echo "$limits" >"$cache.$$" && mv -f "$cache.$$" "$cache"
 fi
 
+# Cache each session's context use for the sprint lead's context hook
+# (~/.local/share/sprint/hooks/lead-context.py): hooks get no context
+# percentage, and the transcript alone doesn't tell the window size.
+session_id=$(echo "$input" | jq -r '.session_id // empty')
+if [ -n "$ctx_used" ] && [ -n "$session_id" ]; then
+    ctx_dir="${XDG_CACHE_HOME:-$HOME/.cache}/claude-ctx"
+    mkdir -p "$ctx_dir"
+    ctx_size=$(echo "$input" | jq -r '.context_window.context_window_size // empty')
+    echo "$ctx_used $ctx_size" >"$ctx_dir/$session_id.$$" && mv -f "$ctx_dir/$session_id.$$" "$ctx_dir/$session_id"
+fi
+
 # Report context use and model to herdr's agent sidebar ($ctx and $model in
 # ui.sidebar.agents), only when they change: the status line refreshes far
 # more often than that.

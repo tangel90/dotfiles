@@ -45,7 +45,7 @@ About every fifth closed ticket, failures first: read the worker's transcript an
 
 ## Your context
 
-Read tickets, wiki and transcripts with tools when needed rather than into the chat. At about 50% context, ingest what you know into the wiki, update `docs/handoff.md` and ask {{HUMAN}} for a fresh session.
+Read tickets, wiki and transcripts with tools when needed rather than into the chat. At about 50% context, ingest what you know into the wiki, update `docs/handoff.md` and ask {{HUMAN}} for a fresh session. A hook reminds you at 50%, 60%, 70% … (on {{HUMAN}}'s next prompt or when you stop); do the handoff on the first reminder.
 
 ## Tools and worktrees
 
