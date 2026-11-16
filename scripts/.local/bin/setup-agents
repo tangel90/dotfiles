@@ -76,9 +76,33 @@ say "herdr integration"
 # included, so the tracked copy keeps it verbatim: a no-op wherever home is
 # /home/corni. Elsewhere herdr adds a second entry — into the repo, through
 # the link — hence the check.
+settings="$repo/tools/claude/.claude/settings.json"
+before=$(cat "$settings")
 herdr integration install claude
-if ! git -C "$repo" diff --quiet -- tools/claude/.claude/settings.json; then
-    warn "herdr changed tools/claude/.claude/settings.json (different home path?) — review: git -C $repo diff"
+# herdr knows its entry only by the exact command, so the guarded one
+# ([ ! -f <script> ] || bash <script> session) doesn't count and every run
+# adds the bare command again: the hook would run twice. Put the file back as
+# it was when that duplicate is herdr's only change; anything else is left for
+# review.
+if [ "$(cat "$settings")" != "$before" ]; then
+    if BEFORE=$before python3 - "$settings" "$HOME/.claude/hooks/herdr-agent-state.sh" <<'PY'
+import json, os, sys
+path, script = sys.argv[1], sys.argv[2]
+before, after = json.loads(os.environ["BEFORE"]), json.load(open(path))
+bare = f"bash '{script}' session"
+def commands(entry):
+    return [h.get("command", "") for h in entry.get("hooks", [])]
+start = after.get("hooks", {}).get("SessionStart", [])
+guarded = any(script in c and c != bare for e in start for c in commands(e))
+after.setdefault("hooks", {})["SessionStart"] = [e for e in start if commands(e) != [bare]]
+sys.exit(0 if guarded and after == before else 1)
+PY
+    then
+        printf '%s\n' "$before" >"$settings"
+        echo "herdr re-added its unguarded session hook; kept the guarded entry instead"
+    else
+        warn "herdr changed tools/claude/.claude/settings.json (different home path?) — review: git -C $repo diff"
+    fi
 fi
 # Release-matched copy of herdr's skill, bundled with the binary. An existing
 # one (e.g. from `npx skills add herdrdev/herdr`) is left alone.
