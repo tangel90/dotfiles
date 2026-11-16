@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Wayland clipboard read shim for WSL — same backend as xclip shim.
+#   -l / --list-types   text types, plus image/png when the clipboard holds an
+#                       image (via wsl-clipboard-image)
+#   -t / --type <t>     image/png prints the image; text types print text; any
+#                       other type exits 1, so callers try their next method
+#   -n / --no-newline   drop one trailing newline
+# Other flags are ignored.
+set -e
+
+type= list= nonl=
+while (( $# )); do
+    case "$1" in
+        -l|--list-types) list=1 ;;
+        -t|--type) type=${2:-}; shift ;;
+        --type=*) type=${1#--type=} ;;
+        -n|--no-newline) nonl=1 ;;
+        -s|--seat) shift ;;
+    esac
+    shift
+done
+
+IMAGE=$(dirname "$(readlink -f "$0")")/wsl-clipboard-image
+
+if [[ -n $list ]]; then
+    printf '%s\n' "text/plain;charset=utf-8" text/plain UTF8_STRING
+    if "$IMAGE" has; then echo image/png; fi
+    exit 0
+fi
+case $type in
+    image/png) exec "$IMAGE" png ;;
+    ''|text/*|UTF8_STRING|STRING) ;;
+    *) exit 1 ;;
+esac
+
+WIN32YANK=$(command -v win32yank.exe 2>/dev/null || true)
+PWSH=/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
+read_text() {
+    if [[ -n $WIN32YANK ]]; then "$WIN32YANK" -o --lf
+    elif [[ -x $PWSH ]]; then "$PWSH" -NoProfile -Command "Get-Clipboard" | sed 's/\r$//'
+    else echo "wl-paste shim: no reader" >&2; exit 1
+    fi
+}
+if [[ -n $nonl ]]; then
+    out=$(read_text; printf x); out=${out%x}; printf '%s' "${out%$'\n'}"
+else
+    read_text
+fi

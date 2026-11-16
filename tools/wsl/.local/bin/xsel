@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Minimal xsel shim for WSL — same backend as the xclip shim.
+# Common flags: -b/--clipboard, -i/--input, -o/--output, -c/--clear.
+set -e
+
+mode=in
+while (( $# )); do
+    case "$1" in
+        -i|--input) mode=in ;;
+        -o|--output) mode=out ;;
+        -c|--clear) mode=clear ;;
+        -b|--clipboard|-p|--primary|-s|--secondary) ;;
+        -h|--help)
+            echo "xsel (WSL shim): -i, -o, -c, --clipboard (ignored)" >&2
+            exit 0 ;;
+    esac
+    shift
+done
+
+WIN32YANK=$(command -v win32yank.exe 2>/dev/null || true)
+CLIP=/mnt/c/Windows/System32/clip.exe
+PWSH=/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
+
+case $mode in
+    in)
+        if [[ -n $WIN32YANK ]]; then "$WIN32YANK" -i --crlf
+        elif [[ -x $CLIP ]]; then "$CLIP"
+        else echo "xsel shim: no writer" >&2; exit 1
+        fi ;;
+    out)
+        if [[ -n $WIN32YANK ]]; then "$WIN32YANK" -o --lf
+        elif [[ -x $PWSH ]]; then "$PWSH" -NoProfile -Command "Get-Clipboard" | sed 's/\r$//'
+        else echo "xsel shim: no reader" >&2; exit 1
+        fi ;;
+    clear)
+        if [[ -n $WIN32YANK ]]; then printf '' | "$WIN32YANK" -i
+        elif [[ -x $CLIP ]]; then printf '' | "$CLIP"
+        else exit 1
+        fi ;;
+esac

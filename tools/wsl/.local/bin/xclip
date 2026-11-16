@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Minimal xclip shim for WSL — dispatches to the Windows clipboard via
+# win32yank.exe (preferred) or clip.exe + powershell.exe.
+# Supports the small subset of xclip flags that real-world tools use:
+#   -in / -i         read stdin into clipboard (default)
+#   -out / -o        write clipboard to stdout
+#   -selection <s>   ignored (always uses Windows clipboard)
+#   -clipboard       ignored (alias seen in some tools)
+#   -t / -target <t> with -o: TARGETS lists text targets plus image/png when
+#                    the clipboard holds an image; image/png prints it (via
+#                    wsl-clipboard-image); text targets print text; any other
+#                    target exits 1, so callers fall through to their next
+#                    method instead of reading an empty "success"
+set -e
+
+mode=in
+target=
+while (( $# )); do
+    case "$1" in
+        -i|-in) mode=in ;;
+        -o|-out) mode=out ;;
+        -selection|-sel) shift ;;          # eat the selection arg
+        -clipboard|-primary|-secondary) ;;
+        -t|-target) target=${2:-}; shift ;;
+        -l|-loops) shift ;;                # eat numeric arg
+        -d|-display) shift ;;
+        -h|--help)
+            echo "xclip (WSL shim): -i (read stdin), -o (print clipboard), -t TARGETS|image/png|text, -selection <s> (ignored)" >&2
+            exit 0 ;;
+    esac
+    shift
+done
+
+WIN32YANK=$(command -v win32yank.exe 2>/dev/null || true)
+CLIP=/mnt/c/Windows/System32/clip.exe
+PWSH=/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
+IMAGE=$(dirname "$(readlink -f "$0")")/wsl-clipboard-image
+
+if [[ $mode == in ]]; then
+    [[ -z $target || $target == text/* || $target == UTF8_STRING || $target == STRING ]] || {
+        echo "xclip shim: can only write text, not $target" >&2; exit 1; }
+    if [[ -n $WIN32YANK ]]; then
+        "$WIN32YANK" -i --crlf
+    elif [[ -x $CLIP ]]; then
+        "$CLIP"
+    else
+        echo "xclip shim: no clipboard writer found" >&2; exit 1
+    fi
+    exit
+fi
+
+case $target in
+    TARGETS)
+        printf '%s\n' TARGETS UTF8_STRING STRING text/plain
+        if "$IMAGE" has; then echo image/png; fi
+        exit 0 ;;
+    image/png) exec "$IMAGE" png ;;
+    ''|text/*|UTF8_STRING|STRING) ;;
+    *) exit 1 ;;
+esac
+
+if [[ -n $WIN32YANK ]]; then
+    "$WIN32YANK" -o --lf
+elif [[ -x $PWSH ]]; then
+    "$PWSH" -NoProfile -Command "Get-Clipboard" | sed 's/\r$//'
+else
+    echo "xclip shim: no clipboard reader found" >&2; exit 1
+fi

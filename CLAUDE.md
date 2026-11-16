@@ -15,7 +15,7 @@ Personal dotfiles managed with **GNU Stow**. No build, no tests, no CI. Changes 
 
 Each top-level directory is a **stow package**: its subtree mirrors what should appear under `$HOME`. For example, `nvim/.config/nvim/init.lua` becomes `~/.config/nvim/init.lua` when `nvim` is stowed.
 
-Packages: `nvim`, `shell` (contains `zsh` and `PowerShell` sub-packages), `term` (per-terminal sub-packages: `alacritty`, `kitty`, `wezterm`, `windows_terminal`), `tools` (`claude`, `devcontainer`, `herdr`, `opencode`, `visidata` sub-packages), `scripts` (`~/.local/bin`), `arch` (Hyprland / waybar / greetd / qutebrowser), `gnupg`.
+Packages: `nvim`, `shell` (contains `zsh` and `PowerShell` sub-packages), `term` (per-terminal sub-packages: `alacritty`, `kitty`, `wezterm`, `windows_terminal`), `tools` (`claude`, `devcontainer`, `herdr`, `opencode`, `visidata`, `wsl` sub-packages), `scripts` (`~/.local/bin`), `arch` (Hyprland / waybar / greetd / qutebrowser), `gnupg`.
 
 ```sh
 # from repo root
@@ -53,6 +53,8 @@ lazy-bootstrap → lazy-plugins
 Lua is formatted with **stylua** per `nvim/.config/nvim/.stylua.toml` (2-space indent, 160 col, single quotes, no call parens). Run `stylua <file>` before committing Lua changes.
 
 ### WSL specifics
+
+`tools/wsl` (stow it on WSL only: on native Linux it would shadow the real tools) holds clipboard shims for `xclip`, `xsel`, `wl-paste`, `wl-copy` on top of win32yank, plus `wsl-clipboard-image` (PowerShell), so `xclip -t TARGETS` / `-t image/png -o` and `wl-paste -l` / `--type image/png` hand Windows clipboard images to tools such as Claude Code's Alt+V paste; non-text types they can't serve exit 1.
 
 `config/options.lua` swaps in `win32yank.exe` for clipboard when `has('wsl')` is true — if clipboard breaks, confirm `win32yank.exe` is still on `$PATH`. `.zshrc` strips `/mnt/c` entries from `$PATH` on shell init, so Windows executables shelled out to from zsh must be referenced by absolute path.
 

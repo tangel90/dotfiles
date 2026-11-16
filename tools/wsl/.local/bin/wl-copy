@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Wayland clipboard write shim for WSL — same backend as the xclip shim.
+# Real wl-copy is `wl-copy [options] [text...]`; with no text args it reads
+# stdin. nvim invokes `wl-copy --type text/plain` and pipes the text on stdin,
+# so we must skip option flags (and the value after --type/-t) rather than
+# treat them as the text to copy.
+set -e
+
+text_args=()
+while (( $# )); do
+    case "$1" in
+        -t|--type|--seat|-s) shift ;;            # eat the flag's value too
+        -*) ;;                                    # ignore other flags
+        *) text_args+=("$1") ;;                   # genuine literal text
+    esac
+    shift
+done
+
+WIN32YANK=$(command -v win32yank.exe 2>/dev/null || true)
+CLIP=/mnt/c/Windows/System32/clip.exe
+
+writer() {
+    if [[ -n $WIN32YANK ]]; then "$WIN32YANK" -i --crlf
+    else "$CLIP"
+    fi
+}
+
+if (( ${#text_args[@]} )); then
+    printf '%s' "${text_args[*]}" | writer
+else
+    writer   # read stdin
+fi

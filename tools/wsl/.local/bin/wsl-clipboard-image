@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# wsl-clipboard-image has|png: the image side of the WSL clipboard shims
+# (xclip, wl-paste). win32yank only carries text, so images go through
+# PowerShell's System.Windows.Forms.Clipboard.
+#   has   exit 0 when the Windows clipboard holds an image
+#   png   that image as PNG bytes on stdout; exit 1 when there is none
+# Claude Code's image paste (Alt+V) asks `xclip -t TARGETS` and then
+# `xclip -t image/png -o`, so this is what makes screenshots paste.
+set -euo pipefail
+
+PWSH=${WSL_CLIP_POWERSHELL:-/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe}
+[[ -x $PWSH ]] || exit 1
+
+load='Add-Type -AssemblyName System.Windows.Forms, System.Drawing;'
+case ${1:-} in
+    has)
+        [[ $("$PWSH" -NoProfile -STA -Command "$load [System.Windows.Forms.Clipboard]::ContainsImage()" | tr -d '\r') == True ]] ;;
+    png)
+        b64=$("$PWSH" -NoProfile -STA -Command "$load"'
+            $i = [System.Windows.Forms.Clipboard]::GetImage(); if (-not $i) { exit 1 }
+            $m = New-Object System.IO.MemoryStream
+            $i.Save($m, [System.Drawing.Imaging.ImageFormat]::Png)
+            [Convert]::ToBase64String($m.ToArray())' | tr -d '\r\n') || exit 1
+        [[ -n $b64 ]] || exit 1
+        printf '%s' "$b64" | base64 -d ;;
+    *)
+        echo "usage: wsl-clipboard-image has|png" >&2; exit 2 ;;
+esac
