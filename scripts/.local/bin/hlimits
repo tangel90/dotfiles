@@ -33,11 +33,14 @@ fi
 # ◇ OpenCode Go: the rolling 5-hour window, written on the VPS by oclimits and
 # served on the tailnet. The URL is local and untracked (this repo is public):
 # ~/.config/hlimits/opencode-url. Fetched at most once a minute; a failed fetch
-# keeps the last copy.
+# keeps the last copy. On the VPS itself (a remote workspace's tab bar runs
+# hlimits there) oclimits' own file is read directly, no URL needed.
 url_file="${XDG_CONFIG_HOME:-$HOME/.config}/hlimits/opencode-url"
+local_oc="${XDG_CACHE_HOME:-$HOME/.cache}/opencode-status/limits.json"
 oc="${XDG_CACHE_HOME:-$HOME/.cache}/opencode-limits.json"
-if [ -r "$url_file" ]; then
-    if [ ! -e "$oc" ] || [ $(( now - $(stat -c %Y "$oc") )) -ge 60 ]; then
+[ -r "$local_oc" ] && oc=$local_oc
+if [ "$oc" = "$local_oc" ] || [ -r "$url_file" ]; then
+    if [ "$oc" != "$local_oc" ] && { [ ! -e "$oc" ] || [ $(( now - $(stat -c %Y "$oc") )) -ge 60 ]; }; then
         curl -fsS -m 2 "$(head -1 "$url_file")" -o "$oc.tmp" 2>/dev/null && mv -f "$oc.tmp" "$oc" || { rm -f "$oc.tmp"; touch -c "$oc"; }
     fi
     if [ -s "$oc" ]; then
