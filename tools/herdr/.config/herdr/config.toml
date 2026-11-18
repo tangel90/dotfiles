@@ -231,3 +231,6 @@ command = "\"$HOME/.local/bin/hrun\""
 description = "pick a command or script and run it (hrun)"
 width = "90%"
 height = "85%"
+
+[experimental]
+kitty_graphics = true
