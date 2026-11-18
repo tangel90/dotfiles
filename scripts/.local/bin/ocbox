@@ -55,6 +55,13 @@ hide "$HOME/.config/opencode/service.json"
 
 # herdr recognises an agent typed into a pane by HERDR_AGENT (as for dclaude).
 export HERDR_AGENT=${HERDR_AGENT:-opencode}
+# Writable places for what defaults to read-only paths in here: TMPDIR (the
+# login's ~/.local/tmp; os.tmpdir() in tests), and agent-browser's profile
+# (terminal-browser's own folder), one per worktree so parallel workers don't
+# share a browser profile.
+export TMPDIR="$HOME/.local/tmp/opencode"
+export AGENT_BROWSER_PROFILE="$HOME/.local/tmp/opencode/browser/$(basename "$top")"
+mkdir -p "$AGENT_BROWSER_PROFILE"
 if [ -n "$dry" ]; then
     printf '%q ' bwrap "${args[@]}" --chdir "$PWD" "$@"; echo
     exit 0
