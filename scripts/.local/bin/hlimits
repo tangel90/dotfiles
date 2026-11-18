@@ -44,6 +44,10 @@ if [ -r "$url_file" ]; then
         p=$(jq -r --argjson now "$now" "$render"'
             if .rolling then entry("◇"; .rolling.percent; .rolling.resets_at) else empty end' "$oc" 2>/dev/null)
         [ -n "$p" ] && parts+=("$p")
+        # ◆ the pay-as-you-go budget, once one is set in the Console.
+        p=$(jq -r 'if .budget and .budget.limit then
+                     "◆ $\(.budget.spent * 100 | round / 100)/$\(.budget.limit | round)" else empty end' "$oc" 2>/dev/null)
+        [ -n "$p" ] && parts+=("$p")
     fi
 fi
 

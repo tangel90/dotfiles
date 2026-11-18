@@ -17,7 +17,8 @@
 #   oc auth import $B/p.json; shred -u $B/p.json
 # Run every few minutes
 # by oclimits.timer (tools/opencode). Writes only the go windows and the
-# time of the query, never keys or workspace ids.
+# time of the query, plus the pay-as-you-go budget (spent, limit, reset),
+# never keys or workspace ids.
 
 set -euo pipefail
 
@@ -26,7 +27,18 @@ mkdir -p "$dir"
 b="$HOME/.local/share/oclimits"
 out=$(XDG_CONFIG_HOME=$b/config XDG_DATA_HOME=$b/data XDG_STATE_HOME=$b/state XDG_CACHE_HOME=$b/cache \
     opencode api experimental.usage.limits 2>/dev/null) || exit 0
-jq -c --argjson now "$(date +%s)" '
+# Budget of the pay-as-you-go workspace (vps-projects): a third instance with
+# that workspace's account login, ~/.local/share/oclimits-budget, port 49376.
+c="$HOME/.local/share/oclimits-budget"
+budget='null'
+if [ -d "$c" ]; then
+    budget=$(XDG_CONFIG_HOME=$c/config XDG_DATA_HOME=$c/data XDG_STATE_HOME=$c/state XDG_CACHE_HOME=$c/cache \
+        opencode api experimental.usage.limits 2>/dev/null |
+        jq -c '[.data.budgets[]? | select(.scope == "combined" or .per == "set")][0] // .data.budgets[0]?
+               | if . then {spent, limit, resets_at: ((.resetsAt // 0) / 1000 | floor)} else null end' 2>/dev/null) || budget='null'
+    [ -n "$budget" ] || budget='null'
+fi
+jq -c --argjson now "$(date +%s)" --argjson budget "$budget" '
     .data.go // empty
-    | {at: $now} + (with_entries(.value |= {percent, limited, resets_at: ((.resetsAt // 0) / 1000 | floor)}))
+    | {at: $now} + (with_entries(.value |= {percent, limited, resets_at: ((.resetsAt // 0) / 1000 | floor)})) + {budget: $budget}
 ' <<<"$out" > "$dir/limits.json.tmp" && [ -s "$dir/limits.json.tmp" ] && mv -f "$dir/limits.json.tmp" "$dir/limits.json"
