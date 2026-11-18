@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # hlimits: print the 5-hour usage windows for herdr's tab bar
 # (ui.tab_bar_right), one entry per service with a mark in front:
-# ✳ Claude and ◇ OpenCode Go, e.g. "✳ 42% ↻1h20 · ◇ 7% ↻3h05".
+# ✳ Claude, ◇ OpenCode Go and ◆ the pay-as-you-go spend, e.g.
+# "✳ 42% ↻1h20 · ◇ 7% ↻3h05 · ◆ $0.26".
 # The weekly windows are left out.
 #
 # Claude only hands its rate limits to the status line, so
@@ -47,9 +48,10 @@ if [ "$oc" = "$local_oc" ] || [ -r "$url_file" ]; then
         p=$(jq -r --argjson now "$now" "$render"'
             if .rolling then entry("◇"; .rolling.percent; .rolling.resets_at) else empty end' "$oc" 2>/dev/null)
         [ -n "$p" ] && parts+=("$p")
-        # ◆ the pay-as-you-go budget, once one is set in the Console.
+        # ◆ the pay-as-you-go spend, once a budget is set in the Console
+        # (the limit itself is left out to save space).
         p=$(jq -r 'if .budget and .budget.limit then
-                     "◆ $\(.budget.spent * 100 | round / 100)/$\(.budget.limit | round)" else empty end' "$oc" 2>/dev/null)
+                     "◆ $\(.budget.spent * 100 | round / 100)" else empty end' "$oc" 2>/dev/null)
         [ -n "$p" ] && parts+=("$p")
     fi
 fi
