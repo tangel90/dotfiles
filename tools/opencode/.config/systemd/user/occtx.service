@@ -1,0 +1,10 @@
+[Unit]
+Description=Report OpenCode agents' context use to herdr (occtx)
+
+[Service]
+ExecStart=%h/.local/bin/occtx --watch
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
