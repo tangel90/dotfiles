@@ -6,19 +6,25 @@
 #     hcouple          couple this pane to the agent in the same tab
 #     hcouple NAME     ... to agent NAME
 #     hcouple off      stop
+#     hcouple wake     prompt the coupled agent now, to read the log
 # which calls this script:
 #     hcouple pick [NAME]                 print "DIR SID NAME" for the agent
 #     hcouple send DIR SID AGENT STATUS COMMAND  log one finished command
+#     hcouple wake AGENT                  prompt AGENT once it is idle
 #
 # Each finished command, with its exit status and output, is appended to
 # DIR/hcouple/SID.log, where DIR is the Claude config dir the agent runs with —
 # ~/.claude for host agents, dclaude's state dir for container ones, which the
 # container mounts as its config dir. The agent's UserPromptSubmit hook
 # (hooks/hcouple-hook.sh) hands the log over with the agent's next prompt.
-# To get it a prompt, a short note is sent once the agent is idle — right away,
-# or by a detached waiter while it works — unless a prompt has taken the log
-# over by then. Only an idle agent gets typed into, so it rarely meets the
-# user typing there.
+# Logging never wakes the agent: each wake-up re-reads its whole context, and
+# notes after every command were 38% of a lead's turns (2026-11-19). The user
+# wakes it with `hcouple wake`, which sends a short note once the agent is
+# idle (a detached waiter covers a busy one). Trivial commands (cd, clear,
+# ls, pwd, yank, hcouple ...) aren't logged.
+#
+# The session is looked up by agent name at each send, so the log follows the
+# agent's current session after a /clear; SID from pick is the fallback.
 #
 # The output comes from herdr's copy of the pane, read right after the command
 # ends: everything after the last line showing the typed command after a
@@ -56,9 +62,17 @@ pick() {
 }
 
 send() {
-    local dir=$1 sid=$2 agent=$3 status=$4 command=$5 pane first output
-    pane=$(this_pane pane_id)
+    local dir=$1 sid=$2 agent=$3 status=$4 command=$5 pane first output now
     first=$(printf '%s\n' "$command" | sed -n '/[^[:space:]]/{s/^[[:space:]]*//;s/[[:space:]]*$//;p;q}')
+    case ${first%% *} in
+        ''|cd|z|zi|clear|reset|ls|ll|la|l|pwd|yank|hcouple|exit|history) return 0 ;;
+    esac
+    if [ -n "$agent" ]; then
+        now=$(herdr agent list 2>/dev/null | jq -r --arg n "$agent" \
+            'first(.result.agents[] | select(.name == $n or .pane_id == $n)) | .agent_session.value // empty' 2>/dev/null) || now=
+        [ -n "$now" ] && sid=$now
+    fi
+    pane=$(this_pane pane_id)
     # The command reaches awk through the environment, not -v: -v expands
     # backslash escapes, so a command containing '\n' (tr -d '\n') never
     # matched its own line in the pane and the output was lost.
@@ -78,18 +92,21 @@ send() {
         printf '$ %s   (exit %s, %s)\n' "$command" "$status" "$(date +%T)"
         printf '%s\n\n' "${output:-(no output)}"
     } >>"$dir/hcouple/$sid.log"
+}
 
-    [ -n "$agent" ] || return 0
+wake() {
+    local agent=${1:?agent}
     setsid -f bash -c '
         herdr agent wait "$1" --until idle --until done --timeout 1800000 >/dev/null 2>&1 || exit 0
-        [ -s "$2" ] || exit 0
         herdr agent prompt "$1" "[hcouple] New output from my coupled shell pane (attached)." >/dev/null 2>&1
-    ' sh "$agent" "$dir/hcouple/$sid.log" </dev/null >/dev/null 2>&1
+    ' sh "$agent" </dev/null >/dev/null 2>&1
+    echo "hcouple: $agent gets a note once it is idle"
 }
 
 case ${1:-} in
     pick) shift; pick "$@" ;;
     # Four args: a shell coupled before the agent was passed along; log only.
+    wake) shift; wake "$@" ;;
     send) shift; [ $# -eq 4 ] && set -- "$1" "$2" "" "$3" "$4"; [ $# -eq 5 ] || exit 2; send "$@" ;;
     *) sed -n '5,8p' "$0" | sed 's/^#//' >&2; exit 2 ;;
 esac

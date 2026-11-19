@@ -186,17 +186,22 @@ precmd_functions=(_direnv_precmd_hook ${precmd_functions:#_direnv_hook})
 
 # hcouple [NAME|off]: inside herdr, let the agent in the same tab (or NAME)
 # see every command finished in this pane, with its output — for what agents
-# can't run themselves, like sudo. It gets them as soon as it is idle.
+# can't run themselves, like sudo. It gets them with its next prompt;
+# hcouple wake prompts it now.
 # The hook goes first in precmd_functions so $? is still the command's status;
 # the work is in the hcouple script.
 function hcouple() {
     if [[ $1 == off ]]; then
         unset HCOUPLE; echo "hcouple: off"; return
     fi
+    if [[ $1 == wake ]]; then
+        [[ ${#HCOUPLE} -eq 3 ]] || { echo "hcouple: not coupled" >&2; return 1; }
+        command hcouple wake "${HCOUPLE[3]}"; return
+    fi
     local picked
     picked=$(command hcouple pick "$@") || return
     HCOUPLE=(${=picked})  # config dir, session id, agent name
-    echo "hcouple: ${HCOUPLE[3]} sees what you run here, from its next turn on (hcouple off to stop)"
+    echo "hcouple: ${HCOUPLE[3]} sees what you run here with its next prompt (hcouple wake: now, hcouple off: stop)"
 }
 _hcouple_preexec() { _hcouple_cmd=$1 }
 

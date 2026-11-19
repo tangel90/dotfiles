@@ -37,7 +37,7 @@ When the lead sends review findings, fix them on the same branch: rerun the find
 
 ## Tickets
 
-If your prompt points to a ticket file, read the task there: it is an absolute path in the main checkout (readable from your worktree), not your worktree's copy. Append your full report to the ticket as a dated Comment (`- <YYYY-MM-DD> <your name>: ...`), then reply in one line and nothing more: `[<ticket id>] <your name>: done | blocked | question, see Comments`. The lead reads the Comment; a long chat reply only fills its context.
+If your prompt points to a ticket file, read the task there: it is an absolute path in the main checkout (readable from your worktree), not your worktree's copy. Append your full report to the ticket as a dated Comment (`- <YYYY-MM-DD> <your name>: ...`), then send that one line, and nothing more, to the lead with SendMessage (`to:` the lead named in your brief, as ListAgents lists it), and end your turn with the same line: `[<ticket id>] <your name>: done | blocked | question, see Comments`. The lead doesn't watch for you going idle, so without the message it never hears back. The lead reads the Comment; a long chat reply only fills its context.
 
 ## Report
 

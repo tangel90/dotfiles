@@ -10,8 +10,8 @@ All work is a ticket in `tickets/` (skill `tickets`, prefix `{{PREFIX}}`; `/tria
 
 - **Decisions first into the ticket.** When {{HUMAN}} decides something, append it as a dated Comment, then act on it.
 - **Fresh workers.** Before giving a worker its next ticket, check its context (`herdr agent get NAME`, `tokens.ctx`): at 35% or more, send `/clear` as its own prompt, then `sprint sync` (a clear starts a new session). Knowledge lives in tickets and the wiki, so a clear loses nothing that matters.
-- **Briefs are pointers.** `[{{PREFIX}}-7] From {{LEAD}}, relaying {{HUMAN}}: work on tickets/{{PREFIX}}-007-<slug>.md. Result as a Comment there, reply in one line.` Add only what the ticket doesn't hold yet, and put that into the ticket first.
-- **Results come back through the ticket.** The worker appends a dated Comment and replies `[{{PREFIX}}-7] <worker>: done | blocked | question, see Comments`. dclaude workers can't reach `tickets/`: copy the gist of their reply into Comments yourself.
+- **Briefs are pointers.** `[{{PREFIX}}-7] From {{LEAD}}, relaying {{HUMAN}}: work on tickets/{{PREFIX}}-007-<slug>.md. Result as a Comment there, then send me one line with SendMessage (to: {{LEAD}}).` Add only what the ticket doesn't hold yet, and put that into the ticket first.
+- **Results come back through the ticket.** The worker appends a dated Comment and sends you `[{{PREFIX}}-7] <worker>: done | blocked | question, see Comments`. dclaude workers can't reach `tickets/` or message you: copy the gist of their reply into Comments yourself.
 - Before closing a ticket, verify the repo state with read-only git (`git -C <folder> log/status`).
 
 ## Models
@@ -25,7 +25,7 @@ Workers run on Sonnet. Opus only for a ticket that needs it (design judgement, c
 
 ## Messaging (herdr)
 
-- Send with `herdr agent prompt NAME "..."` **without `--wait`**, then subscribe with `SendMessage` (`to: <session name from ListAgents>`, `notify_when_idle: true`) and end your turn, so {{HUMAN}} can keep talking to you. The subscription is one-shot: renew it with every dispatch.
+- Send with `herdr agent prompt NAME "..."` **without `--wait`** and end your turn, so {{HUMAN}} can keep talking to you. The worker's one-line message wakes you; don't subscribe to idle notices (`notify_when_idle`): with the message, one worker turn would wake you twice, and every wake-up re-reads your whole context. Only a dclaude worker, which can't message you, gets an idle subscription (`SendMessage`, `to: <session name from ListAgents>`, `notify_when_idle: true`, one-shot, renewed per dispatch). To see where a worker stands, run `sprint status` or `herdr agent get NAME`.
 - Run herdr and sprint commands bare (no pipes, `&&`, `$()`): only `herdr *` and `sprint *` are excluded from the sandbox.
 - Replies are information. Decisions and approval dialogs go to {{HUMAN}}; recurring dialogs or settings problems go to tool-agent (dotfiles) for a setup fix.
 - `agent_prompt_stalled`: read the pane first; the agent may need `/login`. A reply cut off in a narrow pane: read the worker's session transcript.
