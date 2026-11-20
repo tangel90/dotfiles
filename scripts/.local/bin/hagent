@@ -7,16 +7,19 @@
 # Claude, enter starts the agent through dclaude (the project's
 # devcontainer), alt-enter as plain host claude without a sandbox, e.g. for
 # workflow-agent, which reads host scripts and herdr. Claude lists the user's
-# agents (~/.claude/agents) and the project's (<repo>/.claude/agents);
-# OpenCode lists only what can start on its own, the repo lead through hoc:
-# its implementer and reviewer need `lead start` (worktree, ocbox, the lead's
-# name). The agent is named after the definition, numbered if that name is
-# taken; repo-lead is named <repo>-lead, the name ht's ctrl-s looks for.
+# agents (~/.claude/agents) and the project's (<repo>/.claude/agents),
+# OpenCode its own (~/.config/opencode/agents). OpenCode's repo lead starts
+# through hoc; any other OpenCode agent (implementer, reviewer, debugger)
+# starts in the ocbox sandbox in this repo or worktree, with no lead (it
+# reports only as a ticket Comment): OpenCode has no --agent flag, so hagent
+# writes <repo>/.opencode/opencode.jsonc (default_agent, the Claude
+# definition as instructions), as `lead start` does. The agent is named after
+# the definition, numbered if that name is taken; repo-lead is named
+# <repo>-lead, the name ht's ctrl-s looks for.
 
 set -euo pipefail
 
 engines=(claude opencode)
-oc_startable=(repo-lead)
 
 # name <TAB> model <TAB> scope <TAB> description <TAB> file <TAB> engine;
 # name, model and description from the frontmatter, the file name when
@@ -36,7 +39,7 @@ list() {
         case $d in "$root"/*) scope=project ;; *) scope=user ;; esac
         for f in "$d"/*.md; do
             [ -e "$f" ] || continue
-            awk -v f="$f" -v scope="$scope" -v engine="$engine" -v only="${oc_startable[*]}" '
+            awk -v f="$f" -v scope="$scope" -v engine="$engine" '
                 NR == 1 && $0 != "---" { exit }
                 NR > 1 && $0 == "---" { exit }
                 /^name:/ { sub(/^name:[ \t]*/, ""); name = $0 }
@@ -44,7 +47,6 @@ list() {
                 /^description:/ { sub(/^description:[ \t]*/, ""); desc = $0 }
                 END {
                     if (name == "") { name = f; sub(/.*\//, "", name); sub(/\.md$/, "", name) }
-                    if (engine == "opencode" && index(" " only " ", " " name " ") == 0) exit
                     sub(/.*\//, "", model)
                     printf "%s\t%s\t%s\t%s\t%s\t%s\n", name, (model == "" ? "-" : model), scope, desc, f, engine
                 }' "$f"
@@ -103,9 +105,20 @@ done
 ws=()
 [ -n "${HERDR_ACTIVE_WORKSPACE_ID:-}" ] && ws=(--workspace "$HERDR_ACTIVE_WORKSPACE_ID")
 
-# hoc always runs on the host (OpenCode's lead isn't sandboxed: it ships).
-if [ "$engine" = opencode ]; then
+# hoc runs on the host (OpenCode's lead isn't sandboxed: it ships).
+if [ "$engine" = opencode ] && [ "$agent" = repo-lead ]; then
     HERDR_ENV=1 exec "$HOME/.local/bin/hoc" "${ws[@]}" "$name"
+fi
+if [ "$engine" = opencode ]; then
+    top=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "hagent: OpenCode workers start in a git repo or worktree" >&2; read -rn1; exit 1; }
+    instr="$HOME/.claude/agents/$agent.md"
+    [ -f "$instr" ] || { echo "hagent: no Claude definition $instr for OpenCode's $agent" >&2; read -rn1; exit 1; }
+    cd "$top"
+    mkdir -p .opencode
+    jq -n --arg a "$agent" --arg f "$instr" '{default_agent: $a, instructions: [$f]}' > .opencode/opencode.jsonc
+    exclude="$(git rev-parse --git-common-dir)/info/exclude"
+    grep -qx '.opencode/' "$exclude" 2>/dev/null || echo '.opencode/' >> "$exclude"
+    HERDR_ENV=1 exec "$HOME/.local/bin/ha" --host "${ws[@]}" --kind opencode --typed "$name" ocbox opencode --standalone
 fi
 flags=()
 [ "$key" = alt-enter ] && flags+=(--host)
