@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# ocbox [--dry-run] [--] CMD [ARGS...]: run CMD (an OpenCode worker) in a
-# bubblewrap sandbox, started in a git worktree. `lead start --engine opencode`
-# runs `ocbox opencode --standalone` through ha.
+# ocbox [--dry-run] [--] CMD [ARGS...]: run CMD (an OpenCode worker, or the
+# pi or Hermes agent) in a bubblewrap sandbox, started in a git worktree.
+# `lead start --engine opencode` runs `ocbox opencode --standalone` through ha.
 #
 # OpenCode has no sandbox of its own, and its permission rules only cover its
 # own tools: a shell command could still read anything the user can. Here the
 # whole system is read-only, and only what a worker needs is writable:
 #   the worktree, the repo's git dir (commits), the main checkout's tickets/,
-#   OpenCode's state and scratch folder, ~/.cache, a private /tmp.
+#   OpenCode's state and scratch folder, pi's (~/.pi) and Hermes' (~/.hermes)
+#   state, ~/.cache, a private /tmp.
 # Hidden (an empty file or directory in their place): the Claude login, SSH
 # keys, the GitHub CLI login, dclaude's token, the password store and
 # OpenCode's service password. The network stays (the model API needs it),
@@ -38,6 +39,10 @@ rw "$HOME/.local/share/opencode"
 rw "$HOME/.local/state/opencode"
 rw "$HOME/.cache"
 rw "$HOME/.local/tmp/opencode"   # OpenCode's preferred scratch folder
+# pi and Hermes keep sessions, settings and their provider login here; only
+# when installed, so a machine without them gets no empty folders.
+[ -d "$HOME/.pi" ] && rw "$HOME/.pi"
+[ -d "$HOME/.hermes" ] && rw "$HOME/.hermes"
 [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ] && args+=(--bind "$XDG_RUNTIME_DIR" "$XDG_RUNTIME_DIR")
 
 hide() {
