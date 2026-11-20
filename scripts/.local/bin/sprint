@@ -332,6 +332,22 @@ def open_tickets(d):
     return out
 
 
+def claude_cmdlines():
+    """Command lines of this user's processes, or None where /proc can't tell."""
+    out = []
+    try:
+        pids = [p for p in os.listdir("/proc") if p.isdigit()]
+    except OSError:
+        return None
+    for p in pids:
+        try:
+            with open(f"/proc/{p}/cmdline", "rb") as f:
+                out.append(f.read().replace(b"\0", b" ").decode(errors="replace"))
+        except OSError:
+            continue
+    return out if any("claude" in c for c in out) else None
+
+
 def cmd_status(hub):
     snap = snapshot()
     agents, last = live(snap), sessions(hub)
@@ -340,6 +356,7 @@ def cmd_status(hub):
     else:
         tasks = (hub / "TASKS.md").read_text().splitlines() if (hub / "TASKS.md").is_file() else []
         open_tasks = [t.strip() for t in tasks if re.match(r"\s*- \[ \]", t)]
+    cmdlines = claude_cmdlines()
     names = set()
     for row in roster(hub):
         names.add(row["name"])
@@ -349,6 +366,12 @@ def cmd_status(hub):
         sid = (sid_of(a) if a else None) or last.get(row["name"]) or ""
         tab = f" [{row['tab']}]" if row["tab"] else ""
         print(f"{row['name']:<24} {state:<8} {pane:<8} {sid[:8]:<8} {row['folder']} ({row['mode']}){tab}")
+        # A host agent sprint started has its settings file on its command
+        # line; one herdr resumed bare (before hooks/resume-flags.py) lacks it.
+        if a and row["mode"] == "host" and cmdlines is not None:
+            mine = str(STATE / mangle(hub).strip("-") / f"{row['name']}.json")
+            if not any(mine in c for c in cmdlines):
+                print(f"    ! running without its sprint flags (settings, plugins, lead rules): sprint restart {row['name']}")
         for t in open_tasks:
             if re.search(rf"@{re.escape(row['name'])}\b", t):
                 print(f"    {t}")

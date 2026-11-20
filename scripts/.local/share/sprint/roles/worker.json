@@ -1,5 +1,8 @@
 {
   "model": "sonnet",
+  "hooks": {
+    "SessionStart": [{"hooks": [{"type": "command", "command": "python3 \"$HOME/.local/share/sprint/hooks/resume-flags.py\"", "async": true}]}]
+  },
   "permissions": {
     "additionalDirectories": [
       "{{HUB_PATH}}/tickets"

@@ -3,6 +3,7 @@
     "excludedCommands": ["sprint *"]
   },
   "hooks": {
+    "SessionStart": [{"hooks": [{"type": "command", "command": "python3 \"$HOME/.local/share/sprint/hooks/resume-flags.py\"", "async": true}]}],
     "UserPromptSubmit": [{"hooks": [{"type": "command", "command": "python3 \"$HOME/.local/share/sprint/hooks/lead-context.py\" prompt"}]}],
     "Stop": [{"hooks": [{"type": "command", "command": "python3 \"$HOME/.local/share/sprint/hooks/lead-context.py\" stop"}]}],
     "PreCompact": [{"hooks": [{"type": "command", "command": "python3 \"$HOME/.local/share/sprint/hooks/lead-context.py\" precompact"}]}]
