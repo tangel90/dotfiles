@@ -76,10 +76,12 @@ if [ -n "$tab" ]; then
         | "\(.id) \(if .w >= 2 * .h then "right" else "down" end)"')
     # No usable layout: fall back to the tab's last pane, split right.
     [ -n "${target:-}" ] || { target=$(jq -r last <<<"$panes"); dir=right; }
-    pane=$(herdr pane split "$target" --direction "$dir" --cwd "$PWD" | jq -r .result.pane.pane_id)
+    pane=$(herdr pane split "$target" --direction "$dir" --cwd "$PWD" --env HERDR_AGENT_PANE=1 | jq -r .result.pane.pane_id)
 else
-    pane=$(herdr tab create --workspace "$ws" --cwd "$PWD" --label "${group:-$name}" --focus | jq -r .result.root_pane.pane_id)
+    pane=$(herdr tab create --workspace "$ws" --cwd "$PWD" --env HERDR_AGENT_PANE=1 --label "${group:-$name}" --focus | jq -r .result.root_pane.pane_id)
 fi
+# HERDR_AGENT_PANE=1 keeps direnv (and the secrets .envrc files read) out of
+# the agent's shell; see .zshrc.
 # Pane label too: herdr's sidebar has no token for the agent name, so the
 # agent rows show the pane label instead (config.toml). Unlike the tab label
 # it follows the pane when hbreak or a move takes it elsewhere.

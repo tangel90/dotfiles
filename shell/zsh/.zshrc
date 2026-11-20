@@ -156,6 +156,19 @@ fi
 
 eval "$(fzf --zsh)"
 eval "$(zoxide init zsh --cmd cd)"
+# No direnv in agent panes: .envrc files read secrets with pass (iac's
+# Snowflake admin passphrase, ops' webservice login), which would land in
+# every agent's environment, and pinentry would block an unwatched pane
+# (2026-11-20). ha marks the panes it creates with HERDR_AGENT_PANE=1; herdr
+# restores a pane's agent name after a restart but not its env, so a pane
+# with an agent name counts too. Claude's own shells (CLAUDECODE) as well.
+_agent_shell() {
+    [[ -n ${HERDR_AGENT_PANE:-} || -n ${CLAUDECODE:-} ]] && return 0
+    [[ ${HERDR_ENV:-} == 1 && -n ${HERDR_PANE_ID:-} ]] || return 1
+    [[ -n $(herdr pane get "$HERDR_PANE_ID" 2>/dev/null | jq -r '.result.pane.agent_name // empty' 2>/dev/null) ]] || return 1
+    export HERDR_AGENT_PANE=1
+}
+if ! _agent_shell; then
 eval "$(direnv hook zsh)"
 
 # Replace direnv's precmd hook with one that drops its $ZSH_EVAL_CONTEXT guard.
@@ -183,6 +196,7 @@ _direnv_precmd_hook() {
     eval "$(direnv export zsh)"
 }
 precmd_functions=(_direnv_precmd_hook ${precmd_functions:#_direnv_hook})
+fi
 
 # hcouple [NAME|off]: inside herdr, let the agent in the same tab (or NAME)
 # see every command finished in this pane, with its output — for what agents
