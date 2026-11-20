@@ -1,54 +1,91 @@
 #!/usr/bin/env bash
-# hagent: pick a Claude subagent definition with fzf and start it as its own
-# herdr agent (claude --agent NAME) in a new tab, run from the pane's
-# directory. Bound to prefix+shift+a as a popup in herdr's config.toml.
+# hagent: pick an agent definition with fzf and start it as its own herdr
+# agent in a new tab, run from the pane's directory. Bound to prefix+shift+a
+# as a popup in herdr's config.toml.
 #
-# Lists the user's agents (~/.claude/agents) and the project's
-# (<repo>/.claude/agents). Enter starts it through dclaude, alt-enter as host
-# claude, e.g. for workflow-agent, which reads host scripts and herdr. The
-# herdr agent is named after the definition, numbered if that name is taken.
+# Tab cycles the engine, shown in the prompt: dclaude (Claude in the
+# project's devcontainer) -> host (plain claude, e.g. for workflow-agent,
+# which reads host scripts and herdr) -> opencode. Claude lists the user's
+# agents (~/.claude/agents) and the project's (<repo>/.claude/agents);
+# OpenCode lists only what can start on its own, the repo lead through hoc:
+# its implementer and reviewer need `lead start` (worktree, ocbox, the lead's
+# name). The agent is named after the definition, numbered if that name is
+# taken; repo-lead is named <repo>-lead, the name ht's ctrl-s looks for.
 
 set -euo pipefail
 
-here=${HERDR_ACTIVE_PANE_CWD:-$PWD}
-cd "$here"
-root=$(git rev-parse --show-toplevel 2>/dev/null || true)
+engines=(dclaude host opencode)
+oc_startable=(repo-lead)
 
-dirs=("$HOME/.claude/agents")
-[ -n "$root" ] && dirs+=("$root/.claude/agents")
-
-# name <TAB> scope <TAB> description <TAB> file; name and description from
-# the frontmatter, the file name when there's no name.
+# name <TAB> model <TAB> scope <TAB> description <TAB> file <TAB> engine;
+# name, model and description from the frontmatter, the file name when
+# there's no name.
 list() {
-    local d scope f
+    local engine=$1 d scope f root
+    local dirs=()
+    root=$(git rev-parse --show-toplevel 2>/dev/null || true)
+    if [ "$engine" = opencode ]; then
+        dirs=("$HOME/.config/opencode/agents")
+    else
+        dirs=("$HOME/.claude/agents")
+        [ -n "$root" ] && dirs+=("$root/.claude/agents")
+    fi
     for d in "${dirs[@]}"; do
         [ -d "$d" ] || continue
-        [ "$d" = "$HOME/.claude/agents" ] && scope=user || scope=project
+        case $d in "$root"/*) scope=project ;; *) scope=user ;; esac
         for f in "$d"/*.md; do
             [ -e "$f" ] || continue
-            awk -v f="$f" -v scope="$scope" '
+            awk -v f="$f" -v scope="$scope" -v engine="$engine" -v only="${oc_startable[*]}" '
                 NR == 1 && $0 != "---" { exit }
                 NR > 1 && $0 == "---" { exit }
                 /^name:/ { sub(/^name:[ \t]*/, ""); name = $0 }
+                /^model:/ { sub(/^model:[ \t]*/, ""); model = $0 }
                 /^description:/ { sub(/^description:[ \t]*/, ""); desc = $0 }
                 END {
                     if (name == "") { name = f; sub(/.*\//, "", name); sub(/\.md$/, "", name) }
-                    printf "%s\t%s\t%s\t%s\n", name, scope, desc, f
+                    if (engine == "opencode" && index(" " only " ", " " name " ") == 0) exit
+                    sub(/.*\//, "", model)
+                    printf "%s\t%s\t%s\t%s\t%s\t%s\n", name, (model == "" ? "-" : model), scope, desc, f, engine
                 }' "$f"
         done
     done
 }
 
-out=$(list | fzf --height=100% --delimiter='\t' --with-nth=1,2,3 --expect=alt-enter \
-    --header 'enter: dclaude · alt-enter: host' \
-    --preview 'bat --color=always --style=plain {4}' --preview-window=down,60%) || exit 0
-key=$(head -1 <<<"$out")
-line=$(sed -n 2p <<<"$out")
+if [ "${1:-}" = --list ]; then
+    list "${2:-dclaude}"
+    exit 0
+fi
+
+# Tab: the next engine after the one in fzf's prompt.
+if [ "${1:-}" = --next ]; then
+    cur=${FZF_PROMPT%> }
+    next=${engines[0]}
+    for i in "${!engines[@]}"; do
+        [ "${engines[$i]}" = "$cur" ] && next=${engines[$(( (i + 1) % ${#engines[@]} ))]}
+    done
+    echo "change-prompt($next> )+reload($0 --list $next)"
+    exit 0
+fi
+
+here=${HERDR_ACTIVE_PANE_CWD:-$PWD}
+cd "$here"
+
+line=$(list "${engines[0]}" | fzf --height=100% --delimiter='\t' --with-nth=1,2,3,4 \
+    --prompt "${engines[0]}> " --header 'tab: next engine (dclaude · host · opencode)' \
+    --bind "tab:transform:$0 --next" \
+    --preview 'bat --color=always --style=plain {5}' --preview-window=down,60%) || exit 0
 [ -n "$line" ] || exit 0
 agent=$(cut -f1 <<<"$line")
+engine=$(cut -f6 <<<"$line")
+
+if [ "$agent" = repo-lead ] && root=$(git rev-parse --show-toplevel 2>/dev/null); then
+    want=$(basename "$root")-lead
+else
+    want=$agent
+fi
 
 # herdr's rule for agent names, see ha.
-base=$(tr '[:upper:]' '[:lower:]' <<<"$agent" | tr -c 'a-z0-9_\n-' '-')
+base=$(tr '[:upper:]' '[:lower:]' <<<"$want" | tr -c 'a-z0-9_\n-' '-')
 [[ $base =~ ^[a-z] ]] || base=a-$base
 base=${base:0:29}
 name=$base
@@ -58,9 +95,13 @@ while jq -e --arg n "$name" '.result.agents[] | select(.name == $n)' <<<"$agents
     name=$base$((++n))
 done
 
-flags=()
-[ "$key" = alt-enter ] && flags+=(--host)
 # ha wants HERDR_ENV, which popups don't get (as in hp); in a popup the active
 # workspace stands in for the caller's pane, run from a shell ha finds its own.
-[ -n "${HERDR_ACTIVE_WORKSPACE_ID:-}" ] && flags+=(--workspace "$HERDR_ACTIVE_WORKSPACE_ID")
-HERDR_ENV=1 exec "$HOME/.local/bin/ha" "${flags[@]}" "$name" --agent "$agent"
+ws=()
+[ -n "${HERDR_ACTIVE_WORKSPACE_ID:-}" ] && ws=(--workspace "$HERDR_ACTIVE_WORKSPACE_ID")
+
+case $engine in
+    opencode) HERDR_ENV=1 exec "$HOME/.local/bin/hoc" "${ws[@]}" "$name" ;;
+    host) HERDR_ENV=1 exec "$HOME/.local/bin/ha" --host "${ws[@]}" "$name" --agent "$agent" ;;
+    *) HERDR_ENV=1 exec "$HOME/.local/bin/ha" "${ws[@]}" "$name" --agent "$agent" ;;
+esac
