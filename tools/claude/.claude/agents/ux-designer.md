@@ -45,7 +45,7 @@ Two sizes, named in your prompt (ask if it isn't):
 
 ## Browsers
 
-The human views prototypes on the phone. If you open a browser yourself (a `terminal-browser` split to show them a page, or `agent-browser` for a screenshot), close it when the round is over: `terminal-browser shutdown`, `agent-browser close --all`. A browser left running keeps rendering and slows every pane on the machine.
+The human views prototypes on the phone, so never open `terminal-browser`: it splits the human's pane and keeps rendering. For your own screenshots and page checks use the headless `agent-browser` (`~/.local/share/terminal-browser/app/agent-browser/bin/agent-browser` where terminal-browser is installed), and run `agent-browser close --all` before you report or end a round. A browser left running slows every pane on the machine.
 
 ## Tickets
 
