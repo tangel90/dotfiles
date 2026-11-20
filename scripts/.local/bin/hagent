@@ -3,9 +3,10 @@
 # agent in a new tab, run from the pane's directory. Bound to prefix+shift+a
 # as a popup in herdr's config.toml.
 #
-# Tab cycles the engine, shown in the prompt: dclaude (Claude in the
-# project's devcontainer) -> host (plain claude, e.g. for workflow-agent,
-# which reads host scripts and herdr) -> opencode. Claude lists the user's
+# Tab switches the engine, shown in the prompt: claude or opencode. For
+# Claude, enter starts the agent through dclaude (the project's
+# devcontainer), alt-enter as plain host claude without a sandbox, e.g. for
+# workflow-agent, which reads host scripts and herdr. Claude lists the user's
 # agents (~/.claude/agents) and the project's (<repo>/.claude/agents);
 # OpenCode lists only what can start on its own, the repo lead through hoc:
 # its implementer and reviewer need `lead start` (worktree, ocbox, the lead's
@@ -14,7 +15,7 @@
 
 set -euo pipefail
 
-engines=(dclaude host opencode)
+engines=(claude opencode)
 oc_startable=(repo-lead)
 
 # name <TAB> model <TAB> scope <TAB> description <TAB> file <TAB> engine;
@@ -52,7 +53,7 @@ list() {
 }
 
 if [ "${1:-}" = --list ]; then
-    list "${2:-dclaude}"
+    list "${2:-claude}"
     exit 0
 fi
 
@@ -70,10 +71,12 @@ fi
 here=${HERDR_ACTIVE_PANE_CWD:-$PWD}
 cd "$here"
 
-line=$(list "${engines[0]}" | fzf --height=100% --delimiter='\t' --with-nth=1,2,3,4 \
-    --prompt "${engines[0]}> " --header 'tab: next engine (dclaude · host · opencode)' \
-    --bind "tab:transform:$0 --next" \
+out=$(list "${engines[0]}" | fzf --height=100% --delimiter='\t' --with-nth=1,2,3,4 \
+    --prompt "${engines[0]}> " --header 'tab: claude/opencode · enter: dclaude · alt-enter: host' \
+    --bind "tab:transform:$0 --next" --expect=alt-enter \
     --preview 'bat --color=always --style=plain {5}' --preview-window=down,60%) || exit 0
+key=$(head -1 <<<"$out")
+line=$(sed -n 2p <<<"$out")
 [ -n "$line" ] || exit 0
 agent=$(cut -f1 <<<"$line")
 engine=$(cut -f6 <<<"$line")
@@ -100,8 +103,10 @@ done
 ws=()
 [ -n "${HERDR_ACTIVE_WORKSPACE_ID:-}" ] && ws=(--workspace "$HERDR_ACTIVE_WORKSPACE_ID")
 
-case $engine in
-    opencode) HERDR_ENV=1 exec "$HOME/.local/bin/hoc" "${ws[@]}" "$name" ;;
-    host) HERDR_ENV=1 exec "$HOME/.local/bin/ha" --host "${ws[@]}" "$name" --agent "$agent" ;;
-    *) HERDR_ENV=1 exec "$HOME/.local/bin/ha" "${ws[@]}" "$name" --agent "$agent" ;;
-esac
+# hoc always runs on the host (OpenCode's lead isn't sandboxed: it ships).
+if [ "$engine" = opencode ]; then
+    HERDR_ENV=1 exec "$HOME/.local/bin/hoc" "${ws[@]}" "$name"
+fi
+flags=()
+[ "$key" = alt-enter ] && flags+=(--host)
+HERDR_ENV=1 exec "$HOME/.local/bin/ha" "${flags[@]}" "${ws[@]}" "$name" --agent "$agent"
