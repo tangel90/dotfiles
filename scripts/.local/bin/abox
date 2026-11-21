@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# ocbox [--dry-run] [--] CMD [ARGS...]: run CMD (an OpenCode worker, or the
+# abox [--dry-run] [--] CMD [ARGS...]: run CMD (an OpenCode worker, or the
 # pi or Hermes agent) in a bubblewrap sandbox, started in a git worktree.
-# `lead start --engine opencode` runs `ocbox opencode --standalone` through ha.
+# `lead start --engine opencode` runs `abox opencode --standalone` through ha.
 #
 # OpenCode has no sandbox of its own, and its permission rules only cover its
 # own tools: a shell command could still read anything the user can. Here the
@@ -23,10 +23,10 @@ set -euo pipefail
 dry=
 [ "${1:-}" = --dry-run ] && { dry=1; shift; }
 [ "${1:-}" = -- ] && shift
-(( $# )) || { echo "usage: ocbox [--dry-run] [--] CMD [ARGS...]" >&2; exit 2; }
-command -v bwrap >/dev/null || { echo "ocbox: bwrap is missing (pacman -S bubblewrap)" >&2; exit 1; }
+(( $# )) || { echo "usage: abox [--dry-run] [--] CMD [ARGS...]" >&2; exit 2; }
+command -v bwrap >/dev/null || { echo "abox: bwrap is missing (pacman -S bubblewrap)" >&2; exit 1; }
 
-top=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "ocbox: run it inside a git worktree" >&2; exit 1; }
+top=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "abox: run it inside a git worktree" >&2; exit 1; }
 common=$(cd "$(git rev-parse --git-common-dir)" && pwd)
 main=$(dirname "$common")
 

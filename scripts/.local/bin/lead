@@ -21,7 +21,7 @@ lead still writes the PR body, the merge message and its Comments itself.
         (~/.config/opencode/agents/ROLE.md picks its model): lead writes the
         worktree's .opencode/opencode.jsonc (default_agent ROLE, the role's
         Claude definition as instructions), keeps .opencode/ out of git, and
-        starts `opencode --standalone` in the ocbox sandbox. OpenCode workers prompt the lead
+        starts `opencode --standalone` in the abox sandbox. OpenCode workers prompt the lead
         themselves when done; there's nothing to subscribe to.
 
     lead ship ID --body FILE [--merge-msg FILE] [--dry-run]
@@ -274,9 +274,9 @@ def cmd_start(a):
             sys.exit(f"lead: no OpenCode agent {agent_file}; --engine opencode works for: "
                      + ", ".join(sorted(x.stem for x in agent_file.parent.glob("*.md"))))
         write_opencode_config(root, wt, a.role)
-        # In the ocbox sandbox: OpenCode has no sandbox of its own.
+        # In the abox sandbox: OpenCode has no sandbox of its own.
         run(["ha", "--host", "--kind", "opencode", "--typed", "--tab", "workers", name,
-             "ocbox", "opencode", "--standalone"], cwd=wt)
+             "abox", "opencode", "--standalone"], cwd=wt)
     else:
         extra = ["--add-dir", str(Path.home() / "prototypes")] if a.role == "ux-designer" else []
         run(["ha", "--host", "--tab", "workers", name, "--agent", a.role, *extra], cwd=wt)

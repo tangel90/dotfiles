@@ -10,14 +10,14 @@
 # agents (~/.claude/agents) and the project's (<repo>/.claude/agents),
 # OpenCode its own (~/.config/opencode/agents). OpenCode's repo lead starts
 # through hoc; any other OpenCode agent (implementer, reviewer, debugger)
-# starts in the ocbox sandbox in this repo or worktree, with no lead (it
+# starts in the abox sandbox in this repo or worktree, with no lead (it
 # reports only as a ticket Comment): OpenCode has no --agent flag, so hagent
 # writes <repo>/.opencode/opencode.jsonc (default_agent, the Claude
 # definition as instructions), as `lead start` does. The agent is named after
 # the definition, numbered if that name is taken; repo-lead is named
 # <repo>-lead, the name ht's ctrl-s looks for. pi and Hermes have no agent
 # definitions: each lists one entry, with the default model from its own
-# settings, and starts in ocbox in this repo or worktree (named pi / hermes).
+# settings, and starts in abox in this repo or worktree (named pi / hermes).
 
 set -euo pipefail
 
@@ -34,12 +34,12 @@ list() {
         pi)
             f="$HOME/.pi/agent/settings.json"
             model=$(jq -r '.defaultModel // "-"' "$f" 2>/dev/null || echo -)
-            printf 'pi\t%s\tuser\tpi coding agent, sandboxed in ocbox in this repo\t%s\tpi\n' "$model" "$f"
+            printf 'pi\t%s\tuser\tpi coding agent, sandboxed in abox in this repo\t%s\tpi\n' "$model" "$f"
             return ;;
         hermes)
             f="$HOME/.hermes/config.yaml"
             model=$(awk '/^model:/ { m = 1; next } m && /^[^ #]/ { exit } m && /^  (default|model):/ { sub(/^  [a-z]+:[ \t]*/, ""); gsub(/"/, ""); print; exit }' "$f" 2>/dev/null)
-            printf 'hermes\t%s\tuser\tHermes Agent, sandboxed in ocbox in this repo\t%s\thermes\n' "${model##*/}" "$f"
+            printf 'hermes\t%s\tuser\tHermes Agent, sandboxed in abox in this repo\t%s\thermes\n' "${model##*/}" "$f"
             return ;;
     esac
     if [ "$engine" = opencode ]; then
@@ -132,12 +132,12 @@ if [ "$engine" = opencode ]; then
     jq -n --arg a "$agent" --arg f "$instr" '{default_agent: $a, instructions: [$f]}' > .opencode/opencode.jsonc
     exclude="$(git rev-parse --git-common-dir)/info/exclude"
     grep -qx '.opencode/' "$exclude" 2>/dev/null || echo '.opencode/' >> "$exclude"
-    HERDR_ENV=1 exec "$HOME/.local/bin/ha" --host "${ws[@]}" --kind opencode --typed "$name" ocbox opencode --standalone
+    HERDR_ENV=1 exec "$HOME/.local/bin/ha" --host "${ws[@]}" --kind opencode --typed "$name" abox opencode --standalone
 fi
 if [ "$engine" = pi ] || [ "$engine" = hermes ]; then
-    top=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "hagent: $engine starts in ocbox, which needs a git repo or worktree" >&2; read -rn1; exit 1; }
+    top=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "hagent: $engine starts in abox, which needs a git repo or worktree" >&2; read -rn1; exit 1; }
     cd "$top"
-    HERDR_ENV=1 exec "$HOME/.local/bin/ha" --host "${ws[@]}" --kind "$engine" --typed "$name" ocbox "$engine"
+    HERDR_ENV=1 exec "$HOME/.local/bin/ha" --host "${ws[@]}" --kind "$engine" --typed "$name" abox "$engine"
 fi
 flags=()
 [ "$key" = alt-enter ] && flags+=(--host)

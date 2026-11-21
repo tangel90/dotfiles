@@ -10,7 +10,7 @@
 # every assistant message's model and tokens. Context used = input + output +
 # reasoning + cache read/write of the session's last assistant message (what
 # OpenCode's own footer shows); the window size comes from OpenCode's model
-# catalogue, cached for a day. Sandboxed (ocbox) workers write the same
+# catalogue, cached for a day. Sandboxed (abox) workers write the same
 # database, so they're covered too.
 
 set -euo pipefail

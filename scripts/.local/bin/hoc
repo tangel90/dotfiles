@@ -9,7 +9,7 @@
 # .opencode/opencode.jsonc (default_agent repo-lead, plus the Claude repo-lead
 # definition as instructions), which hoc writes and keeps out of git. Its model
 # is in ~/.config/opencode/agents/repo-lead.md (tools/opencode). It runs
-# --standalone, off OpenCode's shared background service, and not in ocbox:
+# --standalone, off OpenCode's shared background service, and not in abox:
 # the lead pushes and opens pull requests through `lead ship`.
 
 set -euo pipefail
