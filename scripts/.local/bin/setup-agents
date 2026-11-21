@@ -110,6 +110,23 @@ if [ ! -e "$HOME/.claude/skills/herdr" ]; then
     mkdir -p "$HOME/.claude/skills/herdr"
     herdr --skill >"$HOME/.claude/skills/herdr/SKILL.md"
 fi
+# terminal-browser's installer links its skill into every agent's skills
+# folder, and its description sends agents to split the human's pane for any
+# page check. Agents use the headless agent-browser instead (our skill in
+# tools/claude); the human still runs terminal-browser by hand. Only links
+# into terminal-browser's own app folder are removed; an update may add them
+# again, hence on every run.
+for l in "$HOME/.claude/skills/terminal-browser" "$HOME/.agents/skills/terminal-browser"; do
+    if [ -L "$l" ] && [[ $(readlink "$l") == */terminal-browser/app/skills/* ]]; then
+        rm "$l" && echo "removed terminal-browser's agent skill link $l"
+    fi
+done
+# agent-browser ships with terminal-browser but not on PATH; agents call it by
+# name. A real install (npm) on PATH wins.
+ab="$HOME/.local/share/terminal-browser/app/agent-browser/bin/agent-browser"
+if [ -x "$ab" ] && ! command -v agent-browser >/dev/null; then
+    ln -s "$ab" "$HOME/.local/bin/agent-browser" && echo "linked agent-browser into ~/.local/bin"
+fi
 # Local plugins (stowed with tools/herdr) only run once linked. last-tab
 # backs prefix+tab.
 for p in "$HOME"/.config/herdr/plugins/*/; do
