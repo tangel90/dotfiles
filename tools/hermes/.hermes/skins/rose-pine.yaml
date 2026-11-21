@@ -1,46 +1,49 @@
 name: rose-pine
-description: Rosé Pine main — muted rose, iris, foam on dark
+description: Rosé Pine as in this dotfiles' palette (nvim palette.lua main, herdr) on the #282C34 base
+# Same choices as herdr's theme.custom: surfaces one step above the
+# terminal's #282C34 base (never Rosé Pine's darker purple), foam where
+# stock Rosé Pine uses the dark pine, labels brightened for contrast.
 colors:
-  ui_accent: '#c4a7e7'
-  banner_accent: '#c4a7e7'
-  ui_tool: '#f6c177'
-  ui_thinking: '#908caa'
-  banner_title: '#ebbcba'
-  banner_text: '#e0def4'
+  ui_accent: '#a4a7e7'        # iris
+  banner_accent: '#a4a7e7'
+  ui_tool: '#f6c177'          # gold
+  ui_thinking: '#999cba'      # subtle
+  banner_title: '#fbbcba'     # rose
+  banner_text: '#e0def4'      # text
   ui_text: '#e0def4'
-  ui_label: '#ebbcba'
-  banner_dim: '#908caa'
-  banner_border: '#403d52'
-  ui_border: '#403d52'
-  ui_ok: '#9ccfd8'
+  ui_label: '#fbbcba'
+  banner_dim: '#999cba'
+  banner_border: '#6a6e6f'    # muted: visible on the base, unlike highlight_med
+  ui_border: '#6a6e6f'
+  ui_ok: '#9ccfd8'            # foam
   ui_warn: '#f6c177'
-  ui_error: '#eb6f92'
+  ui_error: '#eb6f92'         # love
   prompt: '#e0def4'
-  input_rule: '#524f67'
-  response_border: '#c4a7e7'
-  status_bar_bg: '#1f1d2e'
+  input_rule: '#6a6e6f'
+  response_border: '#a4a7e7'
+  status_bar_bg: '#2C313A'    # surface
   status_bar_text: '#e0def4'
+  status_bar_strong: '#e0def4'
+  status_bar_dim: '#c8c6dc'   # herdr's overlay0 for dim labels
   status_bar_good: '#9ccfd8'
   status_bar_warn: '#f6c177'
   status_bar_bad: '#eb6f92'
   status_bar_critical: '#eb6f92'
-  session_label: '#ebbcba'
-  session_border: '#403d52'
-  completion_menu_bg: '#1f1d2e'
-  completion_menu_current_bg: '#403d52'
+  session_label: '#fbbcba'
+  session_border: '#6a6e6f'
+  completion_menu_bg: '#2C313A'
+  completion_menu_current_bg: '#403d52'   # highlight_med, herdr's selection
   selection_bg: '#403d52'
-  shell_dollar: '#31748f'
+  voice_status_bg: '#2C313A'
+  shell_dollar: '#9ccfd8'
   syntax_string: '#f6c177'
-  syntax_number: '#ebbcba'
-  syntax_keyword: '#31748f'
-  syntax_comment: '#6e6a86'
+  syntax_number: '#ffaa88'    # peach
+  syntax_keyword: '#9ccfd8'
+  syntax_comment: '#999cba'
   diff_added: '#9ccfd8'
   diff_removed: '#eb6f92'
-  diff_added_word: '#31748f'
+  diff_added_word: '#9ccfd8'
   diff_removed_word: '#eb6f92'
-  status_bar_strong: '#e0def4'
-  status_bar_dim: '#6e6a86'
-  voice_status_bg: '#1f1d2e'
 branding:
   agent_name: Hermes Agent
   prompt_symbol: ❯
