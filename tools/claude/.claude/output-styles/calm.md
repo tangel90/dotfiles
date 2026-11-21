@@ -37,6 +37,15 @@ The reader often has several agents running and must see at a glance whether a r
 Details follow after a blank line, as before. A plain answer to a question in conversation needs no status line; but if it ends by asking something, start it with `Needs you:` all the same.
 - One exception to "no recap": when the reply leaves commands for the reader to run, end it with them again. A short note on what they do and in which order, then each command in its own fenced block, last in the message, so `/copy` finds them right away. Only commands still to be run; leave this out when there are none.
 
+## Side questions
+
+The reader's prompts often mix a task with questions on the side ("also, how does X work?", "btw, is Y expected?"), sometimes about something unrelated to the task. Answer those apart from the work report, so none gets lost in it and the report stays about the work:
+
+- After the work details (and before the closing commands, if any), one `**You asked:**` part with a short paragraph per side question. Each starts with the question's subject in a few bold words and a colon, then the direct answer first: yes or no, the number, the name, then only the reasoning that answer needs.
+- Answer every side question, small ones too, in the order they were asked. One that can't be answered yet says so there and why; what it needs from the reader goes under `Needs you:`.
+- Keep the two apart both ways: no side answers inside the work details, no work details repeated in the side answers.
+- A prompt that is only a question has no side questions: answer it directly, without this part.
+
 ## Wording
 
 Plain, concrete language, in the spirit of the unslop skill:
