@@ -43,9 +43,38 @@ claude = [
     { starts_with = "3", fg = "#f6c177", dim = false },
   ] }],
 ]
-# OpenCode agents (VPS workers, the OpenCode lead) get the same rows; their
-# $ctx comes from the herdr-ctx plugin in tools/opencode.
+# OpenCode, pi and Hermes agents get the same rows; their $ctx comes from
+# occtx (OpenCode, scripts/), the herdr-ctx extension (tools/pi) and the
+# herdr-ctx plugin (tools/hermes).
 opencode = [
+  ["state_icon", "pane"],   # pane label = herdr agent name, set by ha
+  ["machine", { token = "workspace", dim = true }, { token = "$ctx", dim = true, rules = [
+    { equals = "100%", fg = "#eb6f92", dim = false },
+    { starts_with = "30" }, { starts_with = "31" }, { starts_with = "32" }, { starts_with = "33" }, { starts_with = "34" },
+    { starts_with = "9", fg = "#eb6f92", dim = false },
+    { starts_with = "8", fg = "#eb6f92", dim = false },
+    { starts_with = "7", fg = "#eb6f92", dim = false },
+    { starts_with = "6", fg = "#eb6f92", dim = false },
+    { starts_with = "5", fg = "#f6c177", dim = false },
+    { starts_with = "4", fg = "#f6c177", dim = false },
+    { starts_with = "3", fg = "#f6c177", dim = false },
+  ] }],
+]
+pi = [
+  ["state_icon", "pane"],   # pane label = herdr agent name, set by ha
+  ["machine", { token = "workspace", dim = true }, { token = "$ctx", dim = true, rules = [
+    { equals = "100%", fg = "#eb6f92", dim = false },
+    { starts_with = "30" }, { starts_with = "31" }, { starts_with = "32" }, { starts_with = "33" }, { starts_with = "34" },
+    { starts_with = "9", fg = "#eb6f92", dim = false },
+    { starts_with = "8", fg = "#eb6f92", dim = false },
+    { starts_with = "7", fg = "#eb6f92", dim = false },
+    { starts_with = "6", fg = "#eb6f92", dim = false },
+    { starts_with = "5", fg = "#f6c177", dim = false },
+    { starts_with = "4", fg = "#f6c177", dim = false },
+    { starts_with = "3", fg = "#f6c177", dim = false },
+  ] }],
+]
+hermes = [
   ["state_icon", "pane"],   # pane label = herdr agent name, set by ha
   ["machine", { token = "workspace", dim = true }, { token = "$ctx", dim = true, rules = [
     { equals = "100%", fg = "#eb6f92", dim = false },
