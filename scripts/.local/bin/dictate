@@ -1,76 +1,114 @@
 #!/usr/bin/env bash
 # dictate: voice input for any focused window, so for every agent pane
 # (Claude, OpenCode, pi, Hermes, local or on the VPS through herdr). Bound to a
-# KDE global shortcut; press once to record, again to stop: the speech is
-# transcribed locally by whisper.cpp on the GPU and pasted into the focused
-# window. Audio never leaves this machine.
+# KDE global shortcut: press once and speak; recording stops by itself after
+# 2 s of silence (or at a second press). The speech is transcribed locally by
+# whisper.cpp on the GPU and pasted into the focused window. Audio never
+# leaves this machine.
+#
+# Silence only counts once you have spoken: ffmpeg's silencedetect reports
+# each silent stretch with its start time, and one starting at 0 (before the
+# first word) is ignored. KDE shortcuts report no key release, so real
+# push-to-talk isn't possible here; stop-on-silence gives one press instead.
 #
 # Pasting, not typing: wtype doesn't work on KWin, and `ydotool type` mangles
 # umlauts on a German layout. So the text goes to the clipboard and ydotool
 # presses ctrl+shift+v (Ghostty's paste; agent TUIs take it as one bracketed
 # paste). The clipboard keeps the text afterwards.
 #
-# Needs: whisper-cpp + ggml-cuda, ydotool with ydotoold running (and access to
-# /dev/uinput), wl-copy, pw-record, notify-send. Model (once, ~550 MB):
-#   ~/.local/share/whisper/ggml-large-v3-turbo-q5_0.bin
-# from huggingface.co/ggerganov/whisper.cpp. DICTATE_MODEL overrides it.
+# Needs: ffmpeg (with pulse input), whisper-cpp + ggml-cuda, ydotool with
+# ydotoold running (and access to /dev/uinput), wl-copy, notify-send. Model
+# (once, ~550 MB): ~/.local/share/whisper/ggml-large-v3-turbo-q5_0.bin from
+# huggingface.co/ggerganov/whisper.cpp.
 #
-#   dictate          toggle recording
+#   dictate          start recording, or stop it early
 #   dictate --cancel stop recording and throw it away
+#
+# Tuning: DICTATE_SILENCE (seconds, default 2), DICTATE_NOISE_DB (what counts
+# as silence, default -35; the Wave:3 room floor is about -42), DICTATE_MODEL.
 
 set -euo pipefail
 
 model=${DICTATE_MODEL:-$HOME/.local/share/whisper/ggml-large-v3-turbo-q5_0.bin}
+silence=${DICTATE_SILENCE:-2}
+noise=${DICTATE_NOISE_DB:--35}
 dir="${XDG_RUNTIME_DIR:-/tmp}/dictate"
 wav="$dir/rec.wav"
+log="$dir/ffmpeg.log"
 pidf="$dir/rec.pid"
+cancelf="$dir/cancel"
 mkdir -p "$dir"
 
 note() { notify-send -a dictate -t "${2:-1500}" -h string:x-canonical-private-synchronous:dictate "$1" 2>/dev/null || true; }
 
 recording() { [ -f "$pidf" ] && kill -0 "$(cat "$pidf")" 2>/dev/null; }
 
-stop_rec() {
-    local pid
-    pid=$(cat "$pidf")
-    kill -INT "$pid" 2>/dev/null || true
-    while kill -0 "$pid" 2>/dev/null; do sleep 0.05; done
+# Records until silence after speech (or until stopped), then transcribes
+# and pastes. Runs detached from the shortcut that started it.
+worker() {
+    rm -f "$wav" "$log" "$cancelf"
+    ffmpeg -nostdin -hide_banner -f pulse -i default -ac 1 -ar 16000 \
+        -af "asetpts=PTS-STARTPTS,silencedetect=noise=${noise}dB:d=${silence}" -y "$wav" 2>"$log" &
+    local ff=$! starts ends last
+    echo "$ff" >"$pidf"
+    note "● Recording… stops after ${silence}s of silence" 600000
+    while kill -0 "$ff" 2>/dev/null; do
+        sleep 0.2
+        starts=$(grep -c 'silence_start' "$log" || true)
+        ends=$(grep -c 'silence_end' "$log" || true)
+        [ "$starts" -gt "$ends" ] || continue        # no silence going on
+        last=$(grep -o 'silence_start: [-0-9.]*' "$log" | tail -1 | cut -d' ' -f2)
+        # A silence from the very start means nothing was said yet.
+        awk -v t="$last" 'BEGIN { exit !(t > 0.3) }' && kill -INT "$ff" 2>/dev/null
+    done
+    wait "$ff" 2>/dev/null || true
     rm -f "$pidf"
+
+    if [ -f "$cancelf" ]; then
+        rm -f "$wav" "$cancelf"
+        note "Dictation cancelled"
+        return
+    fi
+    note "Transcribing…" 30000
+
+    # -l auto: German, English or both mixed. The prompt only nudges spelling
+    # of names the model wouldn't know.
+    local text
+    text=$(whisper-cli -m "$model" -f "$wav" -l auto -nt -np \
+            --prompt "Claude, herdr, OpenCode, Hermes, pi, abox, dotfiles, Ghostty, nvim." 2>/dev/null |
+           tr '\n' ' ' | sed -E 's/\[[A-Z_ ]+\]//g; s/^[[:space:]]+//; s/[[:space:]]+$//; s/[[:space:]]{2,}/ /g')
+    rm -f "$wav"
+
+    if [ -z "$text" ]; then
+        note "Nothing heard"
+        return
+    fi
+    printf '%s' "$text" | wl-copy
+    # KEY_LEFTCTRL 29, KEY_LEFTSHIFT 42, KEY_V 47: press, then release.
+    ydotool key 29:1 42:1 47:1 47:0 42:0 29:0 >/dev/null
+    note "✓ ${text:0:80}"
 }
 
-if [ "${1:-}" = --cancel ]; then
-    recording && stop_rec
-    rm -f "$wav"
-    note "Dictation cancelled"
-    exit 0
-fi
-
-if ! recording; then
-    [ -r "$model" ] || { note "dictate: model missing: $model" 5000; exit 1; }
-    rm -f "$wav"
-    # 16 kHz mono s16 is what whisper wants, so no conversion afterwards.
-    pw-record --rate 16000 --channels 1 --format s16 "$wav" &
-    echo $! >"$pidf"
-    note "● Recording… (shortcut again to stop)" 600000
-    exit 0
-fi
-
-stop_rec
-note "Transcribing…" 30000
-
-# -l auto: German, English or both mixed. The prompt only nudges spelling of
-# names the model wouldn't know.
-text=$(whisper-cli -m "$model" -f "$wav" -l auto -nt -np \
-        --prompt "Claude, herdr, OpenCode, Hermes, pi, abox, dotfiles, Ghostty, nvim." 2>/dev/null |
-       tr '\n' ' ' | sed -E 's/\[[A-Z_ ]+\]//g; s/^[[:space:]]+//; s/[[:space:]]+$//; s/[[:space:]]{2,}/ /g')
-rm -f "$wav"
-
-if [ -z "$text" ]; then
-    note "Nothing heard"
-    exit 0
-fi
-
-printf '%s' "$text" | wl-copy
-# KEY_LEFTCTRL 29, KEY_LEFTSHIFT 42, KEY_V 47: press, then release.
-ydotool key 29:1 42:1 47:1 47:0 42:0 29:0 >/dev/null
-note "✓ ${text:0:80}"
+case "${1:-}" in
+    --cancel)
+        if recording; then
+            touch "$cancelf"
+            kill -INT "$(cat "$pidf")" 2>/dev/null || true
+        fi
+        ;;
+    --worker)
+        worker
+        ;;
+    "")
+        if recording; then
+            kill -INT "$(cat "$pidf")" 2>/dev/null || true   # stop early, worker transcribes
+            exit 0
+        fi
+        [ -r "$model" ] || { note "dictate: model missing: $model" 5000; exit 1; }
+        setsid "$0" --worker </dev/null >/dev/null 2>&1 &
+        ;;
+    *)
+        echo "usage: dictate [--cancel]" >&2
+        exit 2
+        ;;
+esac
