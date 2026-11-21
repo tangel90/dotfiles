@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# dictate: voice input for any focused window, so for every agent pane
+# (Claude, OpenCode, pi, Hermes, local or on the VPS through herdr). Bound to a
+# KDE global shortcut; press once to record, again to stop: the speech is
+# transcribed locally by whisper.cpp on the GPU and pasted into the focused
+# window. Audio never leaves this machine.
+#
+# Pasting, not typing: wtype doesn't work on KWin, and `ydotool type` mangles
+# umlauts on a German layout. So the text goes to the clipboard and ydotool
+# presses ctrl+shift+v (Ghostty's paste; agent TUIs take it as one bracketed
+# paste). The clipboard keeps the text afterwards.
+#
+# Needs: whisper-cpp + ggml-cuda, ydotool with ydotoold running (and access to
+# /dev/uinput), wl-copy, pw-record, notify-send. Model (once, ~550 MB):
+#   ~/.local/share/whisper/ggml-large-v3-turbo-q5_0.bin
+# from huggingface.co/ggerganov/whisper.cpp. DICTATE_MODEL overrides it.
+#
+#   dictate          toggle recording
+#   dictate --cancel stop recording and throw it away
+
+set -euo pipefail
+
+model=${DICTATE_MODEL:-$HOME/.local/share/whisper/ggml-large-v3-turbo-q5_0.bin}
+dir="${XDG_RUNTIME_DIR:-/tmp}/dictate"
+wav="$dir/rec.wav"
+pidf="$dir/rec.pid"
+mkdir -p "$dir"
+
+note() { notify-send -a dictate -t "${2:-1500}" -h string:x-canonical-private-synchronous:dictate "$1" 2>/dev/null || true; }
+
+recording() { [ -f "$pidf" ] && kill -0 "$(cat "$pidf")" 2>/dev/null; }
+
+stop_rec() {
+    local pid
+    pid=$(cat "$pidf")
+    kill -INT "$pid" 2>/dev/null || true
+    while kill -0 "$pid" 2>/dev/null; do sleep 0.05; done
+    rm -f "$pidf"
+}
+
+if [ "${1:-}" = --cancel ]; then
+    recording && stop_rec
+    rm -f "$wav"
+    note "Dictation cancelled"
+    exit 0
+fi
+
+if ! recording; then
+    [ -r "$model" ] || { note "dictate: model missing: $model" 5000; exit 1; }
+    rm -f "$wav"
+    # 16 kHz mono s16 is what whisper wants, so no conversion afterwards.
+    pw-record --rate 16000 --channels 1 --format s16 "$wav" &
+    echo $! >"$pidf"
+    note "● Recording… (shortcut again to stop)" 600000
+    exit 0
+fi
+
+stop_rec
+note "Transcribing…" 30000
+
+# -l auto: German, English or both mixed. The prompt only nudges spelling of
+# names the model wouldn't know.
+text=$(whisper-cli -m "$model" -f "$wav" -l auto -nt -np \
+        --prompt "Claude, herdr, OpenCode, Hermes, pi, abox, dotfiles, Ghostty, nvim." 2>/dev/null |
+       tr '\n' ' ' | sed -E 's/\[[A-Z_ ]+\]//g; s/^[[:space:]]+//; s/[[:space:]]+$//; s/[[:space:]]{2,}/ /g')
+rm -f "$wav"
+
+if [ -z "$text" ]; then
+    note "Nothing heard"
+    exit 0
+fi
+
+printf '%s' "$text" | wl-copy
+# KEY_LEFTCTRL 29, KEY_LEFTSHIFT 42, KEY_V 47: press, then release.
+ydotool key 29:1 42:1 47:1 47:0 42:0 29:0 >/dev/null
+note "✓ ${text:0:80}"
