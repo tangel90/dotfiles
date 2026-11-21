@@ -17,7 +17,8 @@
 # the definition, numbered if that name is taken; repo-lead is named
 # <repo>-lead, the name ht's ctrl-s looks for. pi and Hermes have no agent
 # definitions: each lists one entry, with the default model from its own
-# settings, and starts in abox in this repo or worktree (named pi / hermes).
+# settings, and starts in abox in this repo, worktree or plain folder (named
+# pi / hermes).
 
 set -euo pipefail
 
@@ -135,8 +136,8 @@ if [ "$engine" = opencode ]; then
     HERDR_ENV=1 exec "$HOME/.local/bin/ha" --host "${ws[@]}" --kind opencode --typed "$name" abox opencode --standalone
 fi
 if [ "$engine" = pi ] || [ "$engine" = hermes ]; then
-    top=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "hagent: $engine starts in abox, which needs a git repo or worktree" >&2; read -rn1; exit 1; }
-    cd "$top"
+    # abox makes the repo writable, or outside one just this folder.
+    top=$(git rev-parse --show-toplevel 2>/dev/null) && cd "$top"
     HERDR_ENV=1 exec "$HOME/.local/bin/ha" --host "${ws[@]}" --kind "$engine" --typed "$name" abox "$engine"
 fi
 flags=()

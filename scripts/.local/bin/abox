@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # abox [--dry-run] [--] CMD [ARGS...]: run CMD (an OpenCode worker, or the
-# pi or Hermes agent) in a bubblewrap sandbox, started in a git worktree.
+# pi or Hermes agent) in a bubblewrap sandbox, started in a git worktree, or
+# in a plain project folder (then only that folder is writable).
 # `lead start --engine opencode` runs `abox opencode --standalone` through ha.
 #
 # OpenCode has no sandbox of its own, and its permission rules only cover its
@@ -26,15 +27,26 @@ dry=
 (( $# )) || { echo "usage: abox [--dry-run] [--] CMD [ARGS...]" >&2; exit 2; }
 command -v bwrap >/dev/null || { echo "abox: bwrap is missing (pacman -S bubblewrap)" >&2; exit 1; }
 
-top=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "abox: run it inside a git worktree" >&2; exit 1; }
-common=$(cd "$(git rev-parse --git-common-dir)" && pwd)
-main=$(dirname "$common")
-
 args=(--ro-bind / / --dev /dev --proc /proc --tmpfs /tmp --die-with-parent)
 rw() { [ -e "$1" ] || mkdir -p "$1"; args+=(--bind "$1" "$1"); }
-rw "$top"
-rw "$common"
-[ -d "$main/tickets" ] && rw "$main/tickets"
+
+# In a git repo: the worktree, the shared git dir (commits from a worktree)
+# and the main checkout's tickets/ (a worker's report), as a lead's workers
+# need. Outside one (pi, Hermes in a plain folder): just this folder, but
+# never the home folder or anything above it, which would open all of it.
+if top=$(git rev-parse --show-toplevel 2>/dev/null); then
+    common=$(cd "$(git rev-parse --git-common-dir)" && pwd)
+    main=$(dirname "$common")
+    rw "$top"
+    rw "$common"
+    [ -d "$main/tickets" ] && rw "$main/tickets"
+else
+    top=$(pwd -P)
+    case "$(cd "$HOME" && pwd -P)/" in
+        "$top"/*) echo "abox: run it in a project folder, not in $top (that would make all of your home writable)" >&2; exit 1 ;;
+    esac
+    rw "$top"
+fi
 rw "$HOME/.local/share/opencode"
 rw "$HOME/.local/state/opencode"
 rw "$HOME/.cache"
