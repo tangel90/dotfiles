@@ -58,8 +58,9 @@ hide "$HOME/.password-store"
 hide "$HOME/.gnupg"
 hide "$HOME/.config/opencode/service.json"
 
-# herdr recognises an agent typed into a pane by HERDR_AGENT (as for dclaude).
-export HERDR_AGENT=${HERDR_AGENT:-opencode}
+# herdr recognises an agent typed into a pane by HERDR_AGENT (as for dclaude):
+# the command's name, which is the herdr kind for opencode, pi and hermes.
+export HERDR_AGENT=${HERDR_AGENT:-$(basename "$1")}
 # Writable places for what defaults to read-only paths in here: TMPDIR (the
 # login's ~/.local/tmp; os.tmpdir() in tests), and agent-browser's profile
 # (terminal-browser's own folder), one per worktree so parallel workers don't

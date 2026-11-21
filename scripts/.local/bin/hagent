@@ -3,7 +3,7 @@
 # agent in a new tab, run from the pane's directory. Bound to prefix+shift+a
 # as a popup in herdr's config.toml.
 #
-# Tab switches the engine, shown in the prompt: claude or opencode. For
+# Tab cycles the engine, shown in the prompt: claude, opencode, pi, hermes. For
 # Claude, enter starts the agent through dclaude (the project's
 # devcontainer), alt-enter as plain host claude without a sandbox, e.g. for
 # workflow-agent, which reads host scripts and herdr. Claude lists the user's
@@ -15,19 +15,33 @@
 # writes <repo>/.opencode/opencode.jsonc (default_agent, the Claude
 # definition as instructions), as `lead start` does. The agent is named after
 # the definition, numbered if that name is taken; repo-lead is named
-# <repo>-lead, the name ht's ctrl-s looks for.
+# <repo>-lead, the name ht's ctrl-s looks for. pi and Hermes have no agent
+# definitions: each lists one entry, with the default model from its own
+# settings, and starts in ocbox in this repo or worktree (named pi / hermes).
 
 set -euo pipefail
 
-engines=(claude opencode)
+engines=(claude opencode pi hermes)
 
 # name <TAB> model <TAB> scope <TAB> description <TAB> file <TAB> engine;
 # name, model and description from the frontmatter, the file name when
 # there's no name.
 list() {
     local engine=$1 d scope f root
-    local dirs=()
+    local dirs=() model
     root=$(git rev-parse --show-toplevel 2>/dev/null || true)
+    case $engine in
+        pi)
+            f="$HOME/.pi/agent/settings.json"
+            model=$(jq -r '.defaultModel // "-"' "$f" 2>/dev/null || echo -)
+            printf 'pi\t%s\tuser\tpi coding agent, sandboxed in ocbox in this repo\t%s\tpi\n' "$model" "$f"
+            return ;;
+        hermes)
+            f="$HOME/.hermes/config.yaml"
+            model=$(awk '/^model:/ { m = 1; next } m && /^[^ #]/ { exit } m && /^  (default|model):/ { sub(/^  [a-z]+:[ \t]*/, ""); gsub(/"/, ""); print; exit }' "$f" 2>/dev/null)
+            printf 'hermes\t%s\tuser\tHermes Agent, sandboxed in ocbox in this repo\t%s\thermes\n' "${model##*/}" "$f"
+            return ;;
+    esac
     if [ "$engine" = opencode ]; then
         dirs=("$HOME/.config/opencode/agents")
     else
@@ -74,7 +88,7 @@ here=${HERDR_ACTIVE_PANE_CWD:-$PWD}
 cd "$here"
 
 out=$(list "${engines[0]}" | fzf --height=100% --delimiter='\t' --with-nth=1,2,3,4 \
-    --prompt "${engines[0]}> " --header 'tab: claude/opencode · enter: dclaude · alt-enter: host' \
+    --prompt "${engines[0]}> " --header 'tab: claude/opencode/pi/hermes · claude: enter dclaude, alt-enter host' \
     --bind "tab:transform:$0 --next" --expect=alt-enter \
     --preview 'bat --color=always --style=plain {5}' --preview-window=down,60%) || exit 0
 key=$(head -1 <<<"$out")
@@ -119,6 +133,11 @@ if [ "$engine" = opencode ]; then
     exclude="$(git rev-parse --git-common-dir)/info/exclude"
     grep -qx '.opencode/' "$exclude" 2>/dev/null || echo '.opencode/' >> "$exclude"
     HERDR_ENV=1 exec "$HOME/.local/bin/ha" --host "${ws[@]}" --kind opencode --typed "$name" ocbox opencode --standalone
+fi
+if [ "$engine" = pi ] || [ "$engine" = hermes ]; then
+    top=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "hagent: $engine starts in ocbox, which needs a git repo or worktree" >&2; read -rn1; exit 1; }
+    cd "$top"
+    HERDR_ENV=1 exec "$HOME/.local/bin/ha" --host "${ws[@]}" --kind "$engine" --typed "$name" ocbox "$engine"
 fi
 flags=()
 [ "$key" = alt-enter ] && flags+=(--host)
