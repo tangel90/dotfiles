@@ -70,6 +70,44 @@ hide "$HOME/.password-store"
 hide "$HOME/.gnupg"
 hide "$HOME/.config/opencode/service.json"
 
+# Hermes runs its agent, tools included, in one background daemon (its
+# "gateway") per Hermes home, shared by every hermes client and started by
+# the first one. A boxed client that found a daemon started outside abox (a
+# plain `hermes`, `hermes chat`) would hand it the work unsandboxed; one from
+# another box would run it with that box's writable folder. So start Hermes
+# here only when no daemon runs, or when it runs in a box of this same folder.
+hermes_guard() {
+    local home=${HERMES_HOME:-$HOME/.hermes} pid p prev line box=
+    pid=$(jq -r '.pid // empty' "$home/gateway.pid" 2>/dev/null) || return 0
+    [ -n "$pid" ] && [ -r "/proc/$pid/cmdline" ] || return 0
+    tr '\0' ' ' <"/proc/$pid/cmdline" | grep -q 'gateway run' || return 0   # stale pid file
+    p=$pid
+    while [ "${p:-1}" -gt 1 ]; do
+        if [ "$(basename "$(head -zn1 "/proc/$p/cmdline" 2>/dev/null | tr -d '\0')")" = bwrap ]; then
+            # The box's folder is the first --bind after --ro-bind / / and the
+            # /dev, /proc, /tmp ones: the repo top or plain folder.
+            prev=
+            while IFS= read -r -d '' line; do
+                [ "$prev" = --bind ] && { box=$line; break; }
+                prev=$line
+            done <"/proc/$p/cmdline"
+            break
+        fi
+        p=$(ps -o ppid= -p "$p" | tr -d ' ')
+    done
+    if [ -z "$box" ]; then
+        echo "abox: a Hermes daemon (pid $pid) runs outside the sandbox, and this Hermes would use it." >&2
+        echo "      Close the Hermes sessions outside abox, or stop it: hermes gateway stop" >&2
+        exit 1
+    fi
+    if [ "$box" != "$top" ]; then
+        echo "abox: the Hermes daemon (pid $pid) runs in the box of $box; this Hermes would work there, not in $top." >&2
+        echo "      Start it in $box, or close the Hermes sessions there first." >&2
+        exit 1
+    fi
+}
+[ "$(basename "$1")" = hermes ] && [ -z "$dry" ] && hermes_guard
+
 # herdr recognises an agent typed into a pane by HERDR_AGENT (as for dclaude):
 # the command's name, which is the herdr kind for opencode, pi and hermes.
 export HERDR_AGENT=${HERDR_AGENT:-$(basename "$1")}
