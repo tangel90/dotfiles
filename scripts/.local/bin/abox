@@ -95,6 +95,14 @@ hermes_guard() {
         fi
         p=$(ps -o ppid= -p "$p" | tr -d ' ')
     done
+    # The daemon outlives the client that started it: once that box's bwrap
+    # exits, the daemon is reparented to init but still runs in the box's
+    # mount namespace. Then the box's folder is the first mount point only
+    # that namespace has (abox binds it before anything else).
+    if [ -z "$box" ] && [ "$(readlink "/proc/$pid/ns/mnt")" != "$(readlink /proc/self/ns/mnt)" ]; then
+        box=$(awk 'NR == FNR { host[$5]; next } !($5 in host) { print $5; exit }' \
+            /proc/self/mountinfo "/proc/$pid/mountinfo" 2>/dev/null)
+    fi
     if [ -z "$box" ]; then
         echo "abox: a Hermes daemon (pid $pid) runs outside the sandbox, and this Hermes would use it." >&2
         echo "      Close the Hermes sessions outside abox, or stop it: hermes gateway stop" >&2
