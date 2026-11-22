@@ -18,7 +18,11 @@ colors:
   banner_dim: '#999cba'
   banner_border: '#6a6e6f'    # muted: visible on the base, unlike highlight_med
   ui_border: '#6a6e6f'
-  ui_ok: '#9ccfd8'            # foam
+  # Not foam: diffs draw added lines on a dark tint of ui_ok (red/4,
+  # green/2, blue/4), and foam's tint (39,103,54) is nearest to a grey in
+  # Hermes' 256 colours. This green's tint lands on #005f00; ui_error's
+  # (love) lands on #870000.
+  ui_ok: '#3ccf5a'
   ui_warn: '#f6c177'
   ui_error: '#eb6f92'         # love
   prompt: '#e0def4'
