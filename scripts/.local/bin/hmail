@@ -1,0 +1,295 @@
+#!/usr/bin/env python3
+"""hmail: messages between herdr agents that never type over the human.
+
+    hmail send NAME TEXT...   leave a one-line message for agent NAME
+    hmail take [--hook]       print and clear the mail of the agent in this pane
+    hmail list                show waiting mail
+    hmail daemon              deliver mail (run as hmail.service)
+
+`herdr agent prompt` types into the agent's input box right away, so a lead
+the human is typing to gets the message in the middle of their sentence.
+`hmail send` only appends the line to ~/.cache/hmail/NAME (writable from abox
+and, as an excluded command, from Claude's sandbox). Two things hand it over:
+
+- the daemon types it into the agent's pane once that is safe: the agent is
+  idle or done, and either the human is not on that pane (herdr's focus) or
+  the pane has been still for QUIET seconds with an empty input box;
+- a Claude agent's UserPromptSubmit hook (`hmail take --hook`) attaches it to
+  the human's next prompt, so a message waiting on a focused pane rides along
+  with what the human sends.
+
+The input box counts as empty when Claude's `❯` line between the two rules
+holds nothing, or, for any harness, when the screen is still exactly what it
+was when the agent turned idle (nothing was typed since).
+
+Without a running daemon (no heartbeat for 30 s) `send` falls back to
+`herdr agent prompt`, as before. Mail is per machine, like herdr's agents.
+"""
+
+import fcntl
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+MAILDIR = Path.home() / ".cache" / "hmail"
+HEARTBEAT = MAILDIR / ".daemon"
+POLL = 2  # seconds between daemon rounds
+QUIET = 15  # seconds a focused pane must be still before typing into it
+NAME_RE = re.compile(r"^[A-Za-z0-9._:-]+$")
+
+
+def herdr(*args):
+    r = subprocess.run(["herdr", *args], capture_output=True, text=True, timeout=10)
+    if r.returncode != 0:
+        raise RuntimeError(r.stderr.strip() or r.stdout.strip() or f"herdr {args[0]} failed")
+    return r.stdout
+
+
+def agents():
+    return json.loads(herdr("agent", "list"))["result"]["agents"]
+
+
+def own_name(agent_list=None):
+    pane = os.environ.get("HERDR_PANE_ID")
+    if not pane:
+        return None
+    for a in agent_list if agent_list is not None else agents():
+        if a.get("pane_id") == pane:
+            return a.get("name") or None
+    return None
+
+
+class Locked:
+    """One lock for the whole folder: appends and takes never interleave."""
+
+    def __enter__(self):
+        MAILDIR.mkdir(parents=True, exist_ok=True)
+        self.f = open(MAILDIR / ".lock", "w")
+        fcntl.flock(self.f, fcntl.LOCK_EX)
+        return self
+
+    def __exit__(self, *_):
+        fcntl.flock(self.f, fcntl.LOCK_UN)
+        self.f.close()
+
+
+def take(name):
+    box = MAILDIR / name
+    with Locked():
+        try:
+            text = box.read_text()
+        except FileNotFoundError:
+            return []
+        box.unlink()
+    return [l for l in text.splitlines() if l.strip()]
+
+
+def put_back(name, lines):
+    with Locked():
+        box = MAILDIR / name
+        old = box.read_text() if box.exists() else ""
+        box.write_text("".join(l + "\n" for l in lines) + old)
+
+
+def daemon_alive():
+    try:
+        return time.time() - HEARTBEAT.stat().st_mtime < 30
+    except FileNotFoundError:
+        return False
+
+
+def cmd_send(args):
+    if len(args) < 2:
+        sys.exit("usage: hmail send NAME TEXT...")
+    name, text = args[0], " ".join(args[1:])
+    text = " ".join(text.split())  # one line: a newline would submit early
+    if not NAME_RE.match(name):
+        sys.exit(f"hmail: bad agent name {name!r}")
+    if not text:
+        sys.exit("hmail: empty message")
+    alist = agents()
+    if not any(a.get("name") == name for a in alist):
+        sys.exit(f"hmail: no agent {name} on this machine (herdr agent list)")
+    sender = own_name(alist) or "someone"
+    line = f"[{time.strftime('%H:%M')}] {sender}: {text}"
+    if not daemon_alive():
+        herdr("agent", "prompt", name, f"[hmail] {line}")
+        print(f"hmail: no daemon running, prompted {name} directly")
+        return
+    try:
+        with Locked():
+            with open(MAILDIR / name, "a") as f:
+                f.write(line + "\n")
+    except OSError as e:
+        # A sandbox that can't write the mail folder (Claude's, unless it
+        # allows ~/.cache/hmail) still reaches herdr's socket.
+        herdr("agent", "prompt", name, f"[hmail] {line}")
+        print(f"hmail: can't write {MAILDIR} ({e.strerror}), prompted {name} directly")
+        return
+    print(f"hmail: queued for {name}")
+
+
+def cmd_take(args):
+    hook = "--hook" in args
+    try:
+        name = own_name()
+    except Exception:
+        name = None
+    if not name:
+        if hook:
+            return
+        sys.exit("hmail: this pane has no herdr agent name")
+    lines = take(name)
+    if not lines:
+        return
+    if hook:
+        print("Messages other agents left for you since your last turn (hmail):")
+        print()
+    print("\n".join(lines))
+
+
+def cmd_list(_):
+    if not MAILDIR.is_dir():
+        return
+    for box in sorted(MAILDIR.iterdir()):
+        if box.name.startswith(".") or not box.is_file():
+            continue
+        for l in box.read_text().splitlines():
+            print(f"{box.name}\t{l}")
+
+
+# --- daemon ---------------------------------------------------------------
+
+# The upper rule can carry the session name: "────── setup-admin ─".
+RULE = re.compile(r"^\s*─{4,}.*─\s*$")
+
+
+def claude_input_empty(screen):
+    """Claude's input box: the lines between the last two full rules,
+    the first starting with ❯. None when the layout isn't recognised."""
+    lines = screen.splitlines()
+    rules = [i for i, l in enumerate(lines) if RULE.match(l)]
+    if len(rules) < 2:
+        return None
+    body = lines[rules[-2] + 1 : rules[-1]]
+    if not body or not body[0].lstrip().startswith("❯"):
+        return None
+    rest = body[0].lstrip()[1:]
+    if re.fullmatch(r'\s*Try "[^"]*"\s*', rest) and len(body) == 1:
+        return True  # Claude's dimmed suggestion, not typed text
+    return all(not s.replace(" ", " ").strip() for s in [rest, *body[1:]])
+
+
+class Pane:
+    def __init__(self):
+        self.status = None
+        self.idle_screen = None  # screen when the agent turned idle
+        self.screen = None
+        self.still_since = time.time()
+
+
+def read_screen(pane_id):
+    return herdr("pane", "read", pane_id, "--source", "visible", "--lines", "60")
+
+
+def input_empty(agent, st):
+    """True, False, or None when this harness's box can't be judged."""
+    if st.screen is None:
+        return None
+    if agent.get("agent") == "claude":
+        empty = claude_input_empty(st.screen)
+        if empty is not None:
+            return empty
+    if st.idle_screen is not None:
+        return st.screen == st.idle_screen
+    return None
+
+
+def safe_to_type(agent, st, now):
+    """Never over a draft: a pane left with half a sentence in it holds it
+    whether or not the human is looking at it right now."""
+    if agent.get("agent_status") not in ("idle", "done"):
+        return False
+    empty = input_empty(agent, st)
+    if empty is False:
+        return False
+    if agent.get("focused"):
+        return empty is True and now - st.still_since >= QUIET
+    return now - st.still_since >= 2 * POLL
+
+
+def deliver(name, pane_id):
+    lines = take(name)
+    if not lines:
+        return
+    text = "[hmail] " + "  |  ".join(lines)
+    try:
+        herdr("agent", "prompt", pane_id, text)
+    except Exception as e:
+        put_back(name, lines)
+        print(f"hmail: delivery to {name} failed, kept: {e}", file=sys.stderr)
+
+
+def cmd_daemon(_):
+    MAILDIR.mkdir(parents=True, exist_ok=True)
+    panes = {}
+    while True:
+        now = time.time()
+        HEARTBEAT.touch()
+        try:
+            boxes = {p.name for p in MAILDIR.iterdir() if not p.name.startswith(".") and p.stat().st_size}
+            alist = agents()
+        except Exception as e:
+            print(f"hmail: {e}", file=sys.stderr)
+            time.sleep(POLL)
+            continue
+        by_name = {a["name"]: a for a in alist if a.get("name")}
+        # Track every agent pane, mail or not: the screen at the idle
+        # transition is the baseline for "nothing typed since".
+        seen = set()
+        for a in alist:
+            pid = a["pane_id"]
+            seen.add(pid)
+            st = panes.setdefault(pid, Pane())
+            status = a.get("agent_status")
+            # Not on first sight: an agent idle when the daemon starts may
+            # already hold a draft, so it gets no baseline.
+            turned_idle = st.status is not None and status in ("idle", "done") and st.status not in ("idle", "done")
+            if turned_idle or a.get("name") in boxes:
+                try:
+                    screen = read_screen(pid)
+                except Exception:
+                    screen = None
+                if screen != st.screen:
+                    st.screen, st.still_since = screen, now
+                if turned_idle:
+                    st.idle_screen = screen
+            if status not in ("idle", "done"):
+                st.idle_screen = None
+            st.status = status
+        for pid in list(panes):
+            if pid not in seen:
+                del panes[pid]
+        for name in boxes:
+            a = by_name.get(name)
+            if a and safe_to_type(a, panes[a["pane_id"]], now):
+                deliver(name, a["pane_id"])
+        time.sleep(POLL)
+
+
+def main():
+    cmds = {"send": cmd_send, "take": cmd_take, "list": cmd_list, "daemon": cmd_daemon}
+    if len(sys.argv) < 2 or sys.argv[1] not in cmds:
+        sys.exit(__doc__.split("\n\n")[0].split("\n", 1)[1])
+    try:
+        cmds[sys.argv[1]](sys.argv[2:])
+    except RuntimeError as e:
+        sys.exit(f"hmail: {e}")
+
+
+if __name__ == "__main__":
+    main()

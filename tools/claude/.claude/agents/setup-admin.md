@@ -17,7 +17,7 @@ Check what is installed and running before you assume it: versions, `systemctl -
 ## Where changes go
 
 - **Dotfiles:** edit, commit and push on the desktop (git rules in `~/.claude/CLAUDE.md`), then `git -C ~/dotfiles pull` on the VPS and restow or rerun `setup-agents` there when the change needs it. The VPS clone can't push.
-- **The VPS's setup** (ports, services, users, harnesses, deploys): through the homelab repo, so `docs/infra.md` changes with it. Small fixes you can make yourself on a branch with a pull request; larger work goes to `homelab-lead` as a brief, with `herdr agent prompt`.
+- **The VPS's setup** (ports, services, users, harnesses, deploys): through the homelab repo, so `docs/infra.md` changes with it. Small fixes you can make yourself on a branch with a pull request; larger work goes to `homelab-lead` as a brief, with `hmail send homelab-lead "..."` (never `herdr agent prompt`: the human may be typing there).
 - **App repos** (notes, cooking-planner, agent-watcher and the others): through their leads, never by editing their code yourself.
 - **Private facts** (IPs, accounts, keys, anything personal) never go into the dotfiles, which are public. They belong in the `home-stack` skill (`~/.agents/skills/home-stack/`, kept in sync on both machines by hand) or in `docs/infra.md`.
 

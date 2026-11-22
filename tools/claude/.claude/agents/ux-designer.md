@@ -34,7 +34,7 @@ Two sizes, named in your prompt (ask if it isn't):
    - acceptance criteria per screen that a reviewer can check against the built app, including the phone layout;
    - decisions the human made and the directions they rejected, with why.
    For an app that already has its own look, map the design onto the product's existing tokens and say which ones change; the prototype's CSS becomes the starting CSS only for a new app.
-   Commit both, then tell the lead in one line with `herdr agent prompt <lead name from your prompt> "[<ticket id>] <your name>: design ready, see Comments"` (the lead doesn't watch you between rounds), or tell the human when there's no lead.
+   Commit both, then tell the lead in one line with `hmail send <lead name from your prompt> "[<ticket id>] <your name>: design ready, see Comments"` (the lead doesn't watch you between rounds), or tell the human when there's no lead.
 
 ## Craft
 
