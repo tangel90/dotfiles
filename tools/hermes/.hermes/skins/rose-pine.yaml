@@ -9,7 +9,10 @@ colors:
   ui_tool: '#f6c177'          # gold
   ui_thinking: '#999cba'      # subtle
   banner_title: '#fbbcba'     # rose
-  banner_text: '#e0def4'      # text
+  # The answer's text. Hermes 0.23 renders only 256 colours (it builds
+  # prompt_toolkit's output without PROMPT_TOOLKIT_COLOR_DEPTH), where
+  # Rosé Pine's text #e0def4 turns lavender; white stays white.
+  banner_text: '#ffffff'
   ui_text: '#e0def4'
   ui_label: '#fbbcba'
   banner_dim: '#999cba'
