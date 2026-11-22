@@ -15,7 +15,7 @@ Read before designing; don't assume. The dotfiles repo's `CLAUDE.md` (section "A
 - **Shell coupling and attention**: `hcouple` and `hsplit` feed a shell pane's commands and output to an agent on its next prompt. `hlast` jumps to the agent that is blocked or finished last.
 - **dclaude**: Claude in a devcontainer. Bash runs sandboxed with the herdr socket hidden, so container agents can't drive panes; hooks still report. github.com is blocked inside the sandbox, but container startup runs outside it.
 - **Claude Code itself**: subagents (`~/.claude/agents/`), skills, hooks, the Workflow tool (deterministic multi-agent scripts), `/loop` and scheduled routines, worktrees (routed through `herdr worktree create`).
-- **Coordinators that exist already**: e.g. a project's `.herdr-start` or a script like `rds up` starting agents from a list, with a hub agent relaying messages.
+- **Coordinators that exist already**: e.g. a project's `.herdr-start`, or `sprint up` starting a hub's agents from its `agents.tsv`, with the hub's lead relaying messages.
 
 ## How to work
 
