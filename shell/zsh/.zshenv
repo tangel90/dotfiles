@@ -11,6 +11,9 @@ export LD_LIBRARY_PATH=/usr/local/lib
 export RIPGREP_CONFIG_PATH="$XDG_CONFIG_HOME/ripgrep/.ripgreprc"
 export EDITOR="nvim"
 export COLORTERM="truecolor"
+# prompt_toolkit ignores COLORTERM and rounds to 256 colours for
+# xterm-256color, which turned Hermes' Rosé Pine skin into greys.
+export PROMPT_TOOLKIT_COLOR_DEPTH="DEPTH_24_BIT"
 export TMPDIR="$HOME/.local/tmp"
 export PAGER="less"
 export LESS="-iMSRx4 -XFQ"
