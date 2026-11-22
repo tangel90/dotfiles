@@ -56,8 +56,15 @@ pick() {
 }
 
 send() {
-    local dir=$1 sid=$2 agent=$3 status=$4 command=$5 pane first output
+    local dir=$1 sid=$2 agent=$3 status=$4 command=$5 pane first output cur
     pane=$(this_pane pane_id)
+    # The session the shell was coupled to changes with the agent's /clear
+    # (and /resume of another conversation); the hook reads the log of the
+    # current one, so follow the agent's session at each write.
+    if [ -n "$agent" ]; then
+        cur=$(herdr agent get "$agent" 2>/dev/null | jq -r '.result.agent.agent_session.value // empty' 2>/dev/null)
+        [ -n "$cur" ] && sid=$cur
+    fi
     first=$(printf '%s\n' "$command" | sed -n '/[^[:space:]]/{s/^[[:space:]]*//;s/[[:space:]]*$//;p;q}')
     # The command reaches awk through the environment, not -v: -v expands
     # backslash escapes, so a command containing '\n' (tr -d '\n') never
