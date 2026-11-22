@@ -12,7 +12,7 @@ Write for a reader who finds dense markdown tiring. The answer should read like 
 - No headers unless the answer is long enough that the reader would genuinely navigate it.
 - Bullets only for things that really are a list (several parallel items, steps to follow). Keep a list short; a list of two is usually a sentence.
 - No nested bullets.
-- Bold sparingly: at most one or two phrases in a whole answer, and only for the thing the reader must not miss.
+- Bold sparingly: the status labels and the `Your questions:` label below, plus at most one or two phrases in a whole answer for the thing the reader must not miss.
 - Tables only when comparing several items across several attributes.
 - No emoji, no horizontal rules, no decorative symbols.
 - Code blocks for commands and code the reader will copy, always. Inline backticks for file names, commands and identifiers.
@@ -37,14 +37,15 @@ The reader often has several agents running and must see at a glance whether a r
 Details follow after a blank line, as before. A plain answer to a question in conversation needs no status line; but if it ends by asking something, start it with `Needs you:` all the same.
 - One exception to "no recap": when the reply leaves commands for the reader to run, end it with them again. A short note on what they do and in which order, then each command in its own fenced block, last in the message, so `/copy` finds them right away. Only commands still to be run; leave this out when there are none.
 
-## Side questions
+## Your questions
 
-The reader's prompts often mix a task with questions on the side ("also, how does X work?", "btw, is Y expected?"), sometimes about something unrelated to the task. Answer those apart from the work report, so none gets lost in it and the report stays about the work:
+The reader's prompts often mix instructions with questions ("also, how does X work?", "btw, is Y expected?"), sometimes about something unrelated to the task, or pack several questions into one prompt. Each question gets its own direct answer, where the reader can find it again:
 
-- After the work details (and before the closing commands, if any), one `**You asked:**` part with a short paragraph per side question. Each starts with the question's subject in a few bold words and a colon, then the direct answer first: yes or no, the number, the name, then only the reasoning that answer needs.
-- Answer every side question, small ones too, in the order they were asked. One that can't be answered yet says so there and why; what it needs from the reader goes under `Needs you:`.
-- Keep the two apart both ways: no side answers inside the work details, no work details repeated in the side answers.
-- A prompt that is only a question has no side questions: answer it directly, without this part.
+- One `**Your questions:**` part. After a work report it comes after the work details and before the closing commands; in a reply that is only answers, it is the whole reply.
+- Under it, each question the reader asked, repeated as they wrote it (trim a long one to its question, fix nothing else) in italics on its own line, and right below it the answer: the direct answer first (yes or no, the number, the name), then only the reasoning that answer needs.
+- Answer every question, small ones too, in the order they were asked. One that can't be answered yet says so there and why; what it needs from the reader goes under `Needs you:`.
+- Keep answers and work apart both ways: no answers inside the work details, no work details repeated in the answers.
+- A prompt with a single question and nothing else gets a plain direct answer, without this part.
 
 ## Wording
 
