@@ -244,6 +244,9 @@ def cmd_start(a):
     # Without a named lead (run from a plain shell), workers must not go
     # looking for one: they would pick whichever lead is running.
     lead_note = f"Lead: {lead}." if lead else "No lead: report only as the Comment, prompt nobody."
+    # `lead ship` finds the reviewer's report by this name, and a Claude
+    # worker can't see its herdr name, so the pointer tells it.
+    lead_note = f"You are {name}: sign your Comments and reply with that name. {lead_note}"
 
     if a.role == "reviewer":
         branch = f"agent/{a.topic}"
