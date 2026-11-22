@@ -14,6 +14,12 @@
 # keys, the GitHub CLI login, dclaude's token, the password store and
 # OpenCode's service password. The network stays (the model API needs it),
 # and so does herdr's socket, so the worker can report back to the lead.
+# The Docker socket is hidden too (the system one and a rootless one in
+# XDG_RUNTIME_DIR), and DOCKER_HOST is unset: the docker group is
+# root-equivalent, so `docker run -v /any/path:/x` would read files the user
+# can't, such as the homelab service data in /srv/homelab (homelab H-7).
+# Boxed workers therefore can't run docker or docker compose (not even
+# `compose config`); the lead and CI do that.
 #
 # Not covered: OpenCode reads its own key (~/.local/share/opencode/auth.json)
 # to work, so a worker in the same box can read it too. Revoke it in the
@@ -69,6 +75,9 @@ hide "$HOME/.config/dclaude"
 hide "$HOME/.password-store"
 hide "$HOME/.gnupg"
 hide "$HOME/.config/opencode/service.json"
+hide /run/docker.sock   # /var/run is a link to /run
+[ -n "${XDG_RUNTIME_DIR:-}" ] && hide "$XDG_RUNTIME_DIR/docker.sock"
+unset DOCKER_HOST
 
 # Hermes runs its agent, tools included, in one background daemon (its
 # "gateway") per Hermes home, shared by every hermes client and started by
