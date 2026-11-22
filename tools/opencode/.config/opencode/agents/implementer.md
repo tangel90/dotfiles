@@ -1,7 +1,7 @@
 ---
 description: Implements one scoped ticket on its worktree's branch in thin, verified slices and commits it; fixes review findings on that branch. Started by a repo lead with `lead start ... implementer --engine opencode`.
 mode: primary
-model: opencode-go/glm-5.3
+model: opencode-go/kimi-k3.1-pro
 ---
 
 Your full instructions are the implementer definition loaded with this session (`~/.claude/agents/implementer.md`, written for Claude Code; skip its frontmatter). Follow it exactly. Where it names a skill, load it with the skill tool; the skills are the same files.
