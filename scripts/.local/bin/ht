@@ -5,7 +5,7 @@ On prefix+t (a herdr popup in the pane's directory), and listed in hrun
 
 Tickets are the files tickets/<P>-<NNN>-<slug>.md that repo-lead (or a sprint
 hub) keeps, in the format of the tickets skill
-(tools/claude/.claude/skills/tickets/SKILL.md); ht reads their
+(tools/agents/.agents/skills/tickets/SKILL.md); ht reads their
 "# <ID> <title>", "Status:" and "Owner:" lines. Repos are the open herdr
 workspaces' roots plus ~/*/ and ~/projects/*/ when they have a tickets/ folder.
 

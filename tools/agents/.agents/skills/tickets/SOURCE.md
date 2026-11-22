@@ -1,6 +1,6 @@
 # Ticket skills: source and provenance
 
-`tickets`, `triage` and `to-tickets` are user-level skills from dotfiles (`tools/claude/.claude/skills/`), one ticket workflow for sprint hubs and single repos (repo-lead). Dotfiles is the source; project-manager proposes changes to tool-agent.
+`tickets`, `triage` and `to-tickets` are user-level skills from dotfiles (`tools/agents/.agents/skills/`, shared by every harness), one ticket workflow for sprint hubs and single repos (repo-lead). Dotfiles is the source; project-manager proposes changes to tool-agent.
 
 | Skill | Invoked | What |
 |---|---|---|
