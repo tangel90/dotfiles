@@ -164,6 +164,14 @@ width = "90%"
 height = "85%"
 
 [[keys.command]]
+key = "prefix+shift+w"
+type = "popup"
+command = "exec \"$HOME/.local/bin/hwt\""
+description = "the agents' git worktrees: branch, ticket, agent, commits ahead, uncommitted files (hwt)"
+width = "90%"
+height = "85%"
+
+[[keys.command]]
 key = "prefix+i"
 type = "popup"
 command = "cd \"${HERDR_ACTIVE_PANE_CWD:-$HOME}\" && exec lazygit"
