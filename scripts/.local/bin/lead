@@ -7,7 +7,7 @@ cleanup) cost more than the decisions. These run them in one go, from the
 main checkout, printing each step and stopping at the first failure. The
 lead still writes the PR body, the merge message and its Comments itself.
 
-    lead start ID TOPIC ROLE [--engine claude|opencode] [--dry-run]
+    lead start ID TOPIC ROLE [--engine claude|opencode|pi] [--dry-run]
         ROLE: implementer | reviewer | debugger | ux-designer
         implementer  worktree .claude/worktrees/TOPIC on agent/TOPIC, agent impl-TOPIC
         debugger     fix-TOPIC on agent/fix-TOPIC, agent dbg-TOPIC
@@ -20,7 +20,10 @@ lead still writes the PR body, the merge message and its Comments itself.
         Teams: the lead's own harness picks the workers' engine, so a Claude
         lead (repo-lead: Opus; implementer Opus, reviewer Sonnet, debugger
         Sonnet) never mixes with an OpenCode one (hoc: Gemini 4 Hydrogen;
-        implementer Kimi K3.1 Pro, reviewer and debugger GLM-5.3). --engine
+        implementer Kimi K3.1 Pro, reviewer and debugger GLM-5.3) or a pi one
+        (hpi: GPT-6 Luna; implementer Kimi K3.1 Pro, reviewer Haiku 5.5,
+        debugger GLM-5.3; ~/.pi/agent/roles/ROLE.md holds model and
+        thinking, appended after the Claude definition). --engine
         is only for runs without a lead (a plain shell, default claude); one
         that differs from the lead's team is refused. The ux-designer is
         Claude on both teams.
@@ -168,6 +171,24 @@ def herdr_agents():
         return []
 
 
+ENGINES = ("claude", "opencode", "pi")
+
+
+def pi_role(role):
+    """The pi team's role file (tools/pi): model and thinking from its header,
+    the file itself appended to the prompt after the Claude definition."""
+    f = Path.home() / ".pi/agent/roles" / f"{role}.md"
+    if not f.is_file():
+        sys.exit(f"lead: no pi role {f}; the pi team has: "
+                 + ", ".join(sorted(x.stem for x in f.parent.glob("*.md"))))
+    head = f.read_text().split("---")[1] if f.read_text().startswith("---") else ""
+    meta = dict(l.split(":", 1) for l in head.splitlines() if ":" in l)
+    model, thinking = meta.get("model", "").strip(), meta.get("thinking", "").strip()
+    if not model:
+        sys.exit(f"lead: {f} has no model: line")
+    return f, model, thinking
+
+
 def my_agent():
     pane = os.environ.get("HERDR_PANE_ID", "")
     return next((a for a in herdr_agents() if a.get("pane_id") == pane and a.get("name")), None)
@@ -182,7 +203,7 @@ def team_engine(a, me):
     """The workers' engine: the lead's own harness. A team is chosen when the
     lead starts (repo-lead or hoc) and stays one harness."""
     lead_engine = me.get("agent") if me else None
-    if lead_engine not in ("claude", "opencode"):
+    if lead_engine not in ENGINES:
         lead_engine = None
     if a.role == "ux-designer":
         if a.engine == "opencode":
@@ -191,7 +212,7 @@ def team_engine(a, me):
     if lead_engine is None:
         return a.engine or "claude"
     if a.engine and a.engine != lead_engine:
-        label = {"claude": "a Claude", "opencode": "an OpenCode"}[lead_engine]
+        label = {"claude": "a Claude", "opencode": "an OpenCode", "pi": "a pi"}[lead_engine]
         sys.exit(f"lead: you are {label} lead, so your workers are {lead_engine} too "
                  f"(teams don't mix); drop --engine {a.engine}")
     return lead_engine
@@ -305,7 +326,15 @@ def cmd_start(a):
             run(["git", "worktree", "add", str(wt), "-b", branch], cwd=root)
         msg = f"[{tid}] work on {ticket}. Report as a Comment there, reply in one line. {lead_note}"
 
-    if engine == "opencode":
+    if engine == "pi":
+        f, model, thinking = pi_role(a.role)
+        args = ["--model", model] + (["--thinking", thinking] if thinking else [])
+        args += ["--append-system-prompt", str(Path.home() / ".claude/agents" / f"{a.role}.md"),
+                 "--append-system-prompt", str(f)]
+        # In the abox sandbox, like the OpenCode workers.
+        run(["ha", "--host", "--kind", "pi", "--typed", "--tab", "workers", name,
+             "abox", "pi", *args], cwd=wt)
+    elif engine == "opencode":
         agent_file = Path.home() / ".config/opencode/agents" / f"{a.role}.md"
         if not agent_file.is_file():
             sys.exit(f"lead: no OpenCode agent {agent_file}; --engine opencode works for: "
@@ -422,7 +451,7 @@ def main():
     sub = p.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("start")
     s.add_argument("id"); s.add_argument("topic"); s.add_argument("role")
-    s.add_argument("--engine", choices=["claude", "opencode"], help="only without a lead; a lead's team decides")
+    s.add_argument("--engine", choices=list(ENGINES), help="only without a lead; a lead's team decides")
     s.add_argument("--dry-run", action="store_true")
     h = sub.add_parser("ship")
     h.add_argument("id")
