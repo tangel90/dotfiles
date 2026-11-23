@@ -25,7 +25,7 @@ Send each lesson to the highest place that prevents it, enforcement before text:
 
 1. A test, lint, check or script in the repo.
 2. The repo's `CLAUDE.md`, `REVIEW.md` or `CONSTRAINTS.md`.
-3. Agent definitions and skills in `~/.claude/agents/` and `~/.claude/skills/`, or the sprint lead rules.
+3. Agent definitions and skills, or the sprint lead rules. Agent definitions are edited in their sources, `~/.agents/roles/<role>.md` (harness-neutral), `~/.agents/harness/<harness>.md` (what differs per harness) and `~/.agents/teams.toml` (models), then `agents-gen` writes each harness's files; `~/.claude/agents/`, `~/.config/opencode/agents/` and `~/.pi/agent/roles/` are generated and read-only. Skills are in `~/.agents/skills/`.
 
 Repo changes go through the repo's normal flow. Never edit `~/.claude/` yourself: those files belong to the human's dotfiles, edited on their desktop. Write each proposed edit as the file, the exact text to add or change, and the evidence (transcript and turn, review round or ticket).
 

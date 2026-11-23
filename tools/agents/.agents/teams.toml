@@ -1,0 +1,91 @@
+# Which model runs each role, per team. agents-gen writes a role's
+# definition for a harness only when that harness's team lists the role, so
+# the ux-designer and the tooling agents exist for Claude only.
+#
+# Per team: name (shown in the roles' text), clear (the command that starts a
+# fresh conversation), lead_start (how the human starts the lead).
+# Per role: label (the model's name in the roles' text), and the header
+# fields that harness's definition gets: Claude model/tools, OpenCode model,
+# pi model/thinking.
+
+[claude]
+name = "Claude"
+clear = "/clear"
+lead_start = "`ha --host <repo>-lead --agent repo-lead`"
+
+[claude.roles.repo-lead]
+model = "opus"
+label = "Opus"
+
+[claude.roles.implementer]
+model = "opus"
+label = "Opus"
+
+[claude.roles.reviewer]
+model = "sonnet"
+label = "Sonnet"
+
+[claude.roles.debugger]
+model = "sonnet"
+label = "Sonnet"
+
+[claude.roles.ux-designer]
+model = "opus"
+label = "Opus"
+
+[claude.roles.setup-admin]
+model = "opus"
+label = "Opus"
+
+[claude.roles.project-manager]
+tools = "Read, Write, Edit, Bash, Glob, Grep"
+
+[claude.roles.workflow-agent]
+tools = "Read, Grep, Glob, Bash, WebFetch, WebSearch"
+
+[opencode]
+name = "OpenCode"
+clear = "/new"
+lead_start = "`hoc`"
+
+[opencode.roles.repo-lead]
+model = "opencode/gemini-4-hydrogen"
+label = "Gemini 4 Hydrogen"
+
+[opencode.roles.implementer]
+model = "opencode-go/kimi-k3.1-pro"
+label = "Kimi K3.1 Pro"
+
+[opencode.roles.reviewer]
+model = "opencode-go/glm-5.3"
+label = "GLM-5.3"
+
+[opencode.roles.debugger]
+model = "opencode-go/glm-5.3"
+label = "GLM-5.3"
+
+# pi raises "medium" to "high" for Kimi and GLM; GPT-6 Luna keeps it.
+[pi]
+name = "pi"
+clear = "/new"
+lead_start = "`hpi`"
+
+[pi.roles.repo-lead]
+model = "opencode-go/gpt-6-luna"
+thinking = "medium"
+label = "GPT-6 Luna"
+
+[pi.roles.implementer]
+model = "opencode-go/kimi-k3.1-pro"
+thinking = "high"
+label = "Kimi K3.1 Pro"
+
+[pi.roles.reviewer]
+model = "opencode-go/claude-haiku-5-5"
+thinking = "high"
+label = "Haiku 5.5"
+
+[pi.roles.debugger]
+model = "opencode-go/glm-5.3"
+thinking = "high"
+label = "GLM-5.3"
