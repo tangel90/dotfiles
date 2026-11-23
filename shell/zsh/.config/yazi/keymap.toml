@@ -70,8 +70,8 @@ desc = "cd into ~/.local/tmp"
 
 [[mgr.prepend_keymap]]
 on = ["g", "d"]
-run = "cd ~/dev"
-desc = "cd into ~/dev"
+run = "cd ~/dotfiles"
+desc = "cd into ~/dotfiles"
 
 [[mgr.prepend_keymap]]
 on = ["g", "D"]
