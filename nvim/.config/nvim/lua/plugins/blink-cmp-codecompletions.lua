@@ -39,22 +39,20 @@ return {
     return {
       keymap = {
         preset = 'none',
-        -- <Tab> does three jobs, in priority order:
-        --   1. jump to the next snippet placeholder, if a snippet is active
-        --   2. cycle to the next item, if the menu is already open
-        --   3. open the menu — e.g. after `SELECT * FROM ` where there is no
+        -- Arrow keys move through the menu; <Tab> accepts. <Tab> in order:
+        --   1. accept the selected item, if the menu is open
+        --   2. jump to the next snippet placeholder, if a snippet is active
+        --   3. open the menu, e.g. after `SELECT * FROM ` where there is no
         --      keyword to trigger on, so the snowflake source lists tables
         -- Only when the cursor sits in leading whitespace does it fall back to
-        -- a literal tab, so indenting still works. Accept stays on <CR>/<C-y>:
-        -- if <Tab> both cycled and accepted, the first press would commit the
-        -- preselected item instead of moving off it.
+        -- a literal tab, so indenting still works.
         ['<Tab>'] = {
           function(cmp)
+            if cmp.is_menu_visible() then
+              return cmp.select_and_accept()
+            end
             if cmp.snippet_active { direction = 1 } then
               return cmp.snippet_forward()
-            end
-            if cmp.is_menu_visible() then
-              return cmp.select_next()
             end
             local col = vim.fn.col '.' - 1
             if col == 0 or vim.api.nvim_get_current_line():sub(1, col):match '^%s*$' then
@@ -64,18 +62,10 @@ return {
           end,
           'fallback',
         },
-        ['<S-Tab>'] = {
-          function(cmp)
-            if cmp.snippet_active { direction = -1 } then
-              return cmp.snippet_backward()
-            end
-            if cmp.is_menu_visible() then
-              return cmp.select_prev()
-            end
-            return false
-          end,
-          'fallback',
-        },
+        ['<S-Tab>'] = { 'snippet_backward', 'fallback' },
+        -- Without a menu the arrows move the cursor as usual.
+        ['<Down>'] = { 'select_next', 'fallback' },
+        ['<Up>'] = { 'select_prev', 'fallback' },
         ['<C-n>'] = { 'select_next', 'show' },
         ['<C-p>'] = { 'select_prev', 'show' },
         ['<C-u>'] = { 'scroll_documentation_up', 'fallback' },
