@@ -7,7 +7,7 @@ cleanup) cost more than the decisions. These run them in one go, from the
 main checkout, printing each step and stopping at the first failure. The
 lead still writes the PR body, the merge message and its Comments itself.
 
-    lead start ID TOPIC ROLE [--engine claude|opencode|pi] [--dry-run]
+    lead start ID TOPIC ROLE [--engine claude|opencode|pi] [--model MODEL] [--dry-run]
         ROLE: implementer | reviewer | debugger | ux-designer
         implementer  worktree .claude/worktrees/TOPIC on agent/TOPIC, agent impl-TOPIC
         debugger     fix-TOPIC on agent/fix-TOPIC, agent dbg-TOPIC
@@ -27,6 +27,10 @@ lead still writes the PR body, the merge message and its Comments itself.
         is only for runs without a lead (a plain shell, default claude); one
         that differs from the lead's team is refused. The ux-designer is
         Claude on both teams.
+        --model MODEL (Claude workers only) passes `--model MODEL` to claude
+        through ha, to run one worker on another model (e.g. a reviewer on
+        sonnet) and still send it the standard pointer with its name. Other
+        engines take their model from the role file, so it is refused there.
         An OpenCode worker (~/.config/opencode/agents/ROLE.md picks its
         model): lead writes the
         worktree's .opencode/opencode.jsonc (default_agent ROLE, the role's
@@ -296,6 +300,9 @@ def cmd_start(a):
     lead = me.get("name") if me else None
     engine = team_engine(a, me)
     say(f"+ engine {engine}" + (f" ({lead}'s team)" if lead else ""))
+    if a.model and engine != "claude":
+        sys.exit(f"lead: --model is for Claude workers; {engine} workers take their model "
+                 f"from the role file, so drop --model")
     # Without a named lead (run from a plain shell), workers must not go
     # looking for one: they would pick whichever lead is running.
     lead_note = f"Lead: {lead}." if lead else "No lead: report only as the Comment, prompt nobody."
@@ -345,6 +352,7 @@ def cmd_start(a):
              "abox", "opencode", "--standalone"], cwd=wt)
     else:
         extra = ["--add-dir", str(Path.home() / "prototypes")] if a.role == "ux-designer" else []
+        extra += ["--model", a.model] if a.model else []
         run(["ha", "--host", "--tab", "workers", name, "--agent", a.role, *extra], cwd=wt)
 
     pane = None
@@ -452,6 +460,7 @@ def main():
     s = sub.add_parser("start")
     s.add_argument("id"); s.add_argument("topic"); s.add_argument("role")
     s.add_argument("--engine", choices=list(ENGINES), help="only without a lead; a lead's team decides")
+    s.add_argument("--model", help="Claude workers only: passed to claude through ha")
     s.add_argument("--dry-run", action="store_true")
     h = sub.add_parser("ship")
     h.add_argument("id")
