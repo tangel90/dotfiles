@@ -205,7 +205,23 @@ def opencode_input_empty(screen):
     return all(not s.replace(" ", " ").strip() for s in draft)
 
 
-BOX_PARSERS = {"claude": claude_input_empty, "opencode": opencode_input_empty}
+FULL_RULE = re.compile(r"^\s*─{8,}\s*$")
+
+
+def pi_input_empty(screen):
+    """pi's input box: the lines between the last two plain rules (no prompt
+    sign; the path and usage footer follow). None when not recognised."""
+    lines = screen.splitlines()
+    rules = [i for i, l in enumerate(lines) if FULL_RULE.match(l)]
+    if len(rules) < 2:
+        return None
+    body = lines[rules[-2] + 1 : rules[-1]]
+    if not body:
+        return None
+    return all(not s.replace(" ", " ").strip() for s in body)
+
+
+BOX_PARSERS = {"claude": claude_input_empty, "opencode": opencode_input_empty, "pi": pi_input_empty}
 
 
 class Pane:

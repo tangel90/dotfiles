@@ -1,7 +1,7 @@
 ---
 description: Implements one scoped ticket on its worktree's branch and commits it; fixes review findings there. pi team worker, started by a pi lead with `lead start ... implementer`.
 model: opencode-go/kimi-k3.1-pro
-thinking: medium
+thinking: high
 ---
 
 Your full instructions are the implementer definition appended to this prompt before these notes (`~/.claude/agents/implementer.md`, written for Claude Code; skip its frontmatter). Follow it exactly. Where it names a skill, read that skill's `SKILL.md` under `~/.agents/skills/<name>/` and follow it; the skills are the same files.
