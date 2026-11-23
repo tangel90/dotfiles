@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# occtx [--watch]: report each OpenCode agent's context use and model to herdr
+# as pane metadata ($ctx, $model), as statusline-command.sh does for Claude,
+# so OpenCode agents show $ctx in herdr's sidebar and `herdr agent get` gives a
+# lead the number for its 35% reuse rule. Runs on the VPS as occtx.service
+# (tools/opencode), every 10 s with --watch.
+#
+# From outside, since OpenCode 2.2.7 never called our TUI plugin: herdr knows
+# each OpenCode pane's session (agent_session), and OpenCode's database has
+# every assistant message's model and tokens. Context used = input + output +
+# reasoning + cache read/write of the session's last assistant message (what
+# OpenCode's own footer shows); the window size comes from OpenCode's model
+# catalogue, cached for a day. Sandboxed (abox) workers write the same
+# database, so they're covered too.
+
+set -euo pipefail
+# The user service's PATH lacks ~/.local/bin, where herdr lives.
+PATH="$HOME/.local/bin:$PATH"
+
+db="${XDG_DATA_HOME:-$HOME/.local/share}/opencode/opencode.db"
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/herdr-ctx"
+limits="$cache/limits.json"
+mkdir -p "$cache"
+
+refresh_limits() {
+    if [ ! -s "$limits" ] || [ -n "$(find "$limits" -mmin +1440 2>/dev/null)" ]; then
+        curl -fsS -m 30 https://models.opencode.ai/experimental/v2.0/api.json 2>/dev/null |
+            jq -c '[to_entries[] | .key as $p | (.value.models // {}) | to_entries[]
+                    | select(.value.limit.context) | {key: "\($p)/\(.key)", value: .value.limit.context}] | from_entries' \
+            > "$limits.tmp" 2>/dev/null && [ -s "$limits.tmp" ] && mv -f "$limits.tmp" "$limits" || rm -f "$limits.tmp"
+    fi
+}
+
+once() {
+    [ -r "$db" ] || return 0
+    refresh_limits
+    herdr agent list 2>/dev/null |
+        jq -r '.result.agents[] | select(.agent == "opencode" and (.agent_session.value // "") != "") | "\(.pane_id) \(.agent_session.value)"' |
+        while read -r pane sid; do
+            [[ $sid =~ ^ses_[A-Za-z0-9]+$ ]] || continue
+            row=$(sqlite3 -readonly "$db" "select json_extract(data,'\$.model.providerID') || '/' || json_extract(data,'\$.model.id'),
+                    coalesce(json_extract(data,'\$.tokens.input'),0) + coalesce(json_extract(data,'\$.tokens.output'),0)
+                  + coalesce(json_extract(data,'\$.tokens.reasoning'),0) + coalesce(json_extract(data,'\$.tokens.cache.read'),0)
+                  + coalesce(json_extract(data,'\$.tokens.cache.write'),0)
+                  from session_message where session_id='$sid' and type='assistant' and json_extract(data,'\$.tokens') is not null
+                  order by seq desc limit 1;" 2>/dev/null) || continue
+            [ -n "$row" ] || continue
+            model=${row%%|*}; used=${row##*|}
+            size=$(jq -r --arg m "$model" '.[$m] // empty' "$limits" 2>/dev/null)
+            ctx=""
+            [ -n "$size" ] && [ "$size" -gt 0 ] && ctx=$(printf "%02d%%" $(( used * 100 / size > 100 ? 100 : used * 100 / size )))
+            state="$cache/last-${pane//[^A-Za-z0-9]/_}"
+            [ "$(cat "$state" 2>/dev/null)" = "$ctx|${model#*/}" ] && continue
+            herdr pane report-metadata "$pane" --source opencode-ctx --token "ctx=$ctx" --token "model=${model#*/}" >/dev/null 2>&1 &&
+                echo "$ctx|${model#*/}" > "$state"
+        done
+}
+
+if [ "${1:-}" = --watch ]; then
+    while true; do once || true; sleep 10; done
+else
+    once
+fi

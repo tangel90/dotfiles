@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# hwt: overview of the agents' git worktrees, one line each: repo, worktree,
+# branch, ticket, the herdr agent working in it, commits ahead of the default
+# branch, uncommitted files, time of the last commit. The preview shows the
+# branch's commits, its uncommitted changes and its diff stat. Enter opens
+# lazygit there, ctrl-g goes to the agent, ctrl-r refreshes.
+#
+# Repos: main checkouts in ~/*/ and ~/projects/*/, plus the repos of open herdr
+# workspaces (as in ht). Every worktree except the main checkout is listed,
+# whoever made it (`lead start` puts them under .claude/worktrees/). The
+# ticket is the one in the main checkout's tickets/ whose `Branch:` line names
+# the worktree's branch; a reviewer's detached `<topic>-review` worktree
+# counts for `agent/<topic>`.
+
+set -euo pipefail
+
+TAB=$'\t'
+
+repos() {
+    {
+        for g in "$HOME"/*/.git "$HOME"/projects/*/.git; do [ -d "$g" ] && dirname "$g"; done
+        herdr workspace list 2>/dev/null |
+            jq -r '.result.workspaces[]?.worktree // empty | .repo_root // empty' 2>/dev/null || true
+    } | sort -u
+}
+
+default_branch() {
+    local root=$1 b
+    b=$(git -C "$root" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null) && { echo "$b"; return; }
+    for b in main master; do
+        git -C "$root" rev-parse --verify --quiet "$b" >/dev/null && { echo "$b"; return; }
+    done
+    echo HEAD
+}
+
+ticket_for() {
+    local root=$1 branch=$2 f
+    [ -n "$branch" ] && [ -d "$root/tickets" ] || { echo -; return; }
+    f=$(grep -l -x -F "Branch: $branch" "$root"/tickets/*.md 2>/dev/null | head -1) || true
+    if [ -n "$f" ]; then f=$(basename "$f" .md); echo "${f%%-*}-$(cut -d- -f2 <<<"$f" | sed 's/^0*//')"; else echo -; fi
+}
+
+list() {
+    local agents root base wt branch name ahead dirty last agent ticket
+    agents=$(herdr agent list 2>/dev/null |
+        jq -r '.result.agents[] | "\(.name // .pane_id)\t\(.foreground_cwd // .cwd // "")"' 2>/dev/null || true)
+    while IFS= read -r root; do
+        base=$(default_branch "$root")
+        git -C "$root" worktree list --porcelain 2>/dev/null |
+            awk -v RS= -v main="$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" '
+                { wt = ""; br = ""
+                  for (i = 1; i <= NF; i++) {
+                      if ($i == "worktree") wt = $(i + 1)
+                      if ($i == "branch") { br = $(i + 1); sub("^refs/heads/", "", br) } }
+                  if (wt != "" && wt != main) print wt "\t" br }' |
+        while IFS="$TAB" read -r wt branch; do
+            [ -d "$wt" ] || continue
+            name=$(basename "$wt")
+            [ -z "$branch" ] && [[ $name == *-review ]] && tb="agent/${name%-review}" || tb=$branch
+            ahead=$(git -C "$wt" rev-list --count "$base..HEAD" 2>/dev/null || echo "?")
+            dirty=$(git -C "$wt" status --porcelain 2>/dev/null | wc -l)
+            last=$(git -C "$wt" log -1 --format=%cr 2>/dev/null | sed 's/ ago//')
+            agent=$(awk -F"$TAB" -v d="$wt" '$2 == d || index($2, d "/") == 1 { print $1; exit }' <<<"$agents")
+            ticket=$(ticket_for "$root" "$tb")
+            printf '%s\t%s\t%s\t%-16s %-24s %-28s %-8s %-18s %4s %4s  %s\n' \
+                "$wt" "$base" "${agent:--}" "$(basename "$root")" "$name" "${branch:-(detached)}" \
+                "$ticket" "${agent:--}" "+$ahead" "~$dirty" "$last"
+        done
+    done < <(repos)
+}
+
+if [ "${1:-}" = --list ]; then list; exit 0; fi
+
+if [ "${1:-}" = --preview ]; then
+    wt=$2 base=$3
+    echo "commits ahead of $base:"
+    git -C "$wt" log --oneline --decorate --color=always "$base..HEAD" 2>/dev/null | head -20
+    echo
+    echo "uncommitted:"
+    git -C "$wt" -c color.status=always status --short 2>/dev/null | head -25
+    echo
+    echo "diff against $base:"
+    git -C "$wt" diff --stat --color=always "$base...HEAD" 2>/dev/null | tail -20
+    exit 0
+fi
+
+command -v fzf >/dev/null || { echo "hwt: fzf is missing" >&2; exit 1; }
+header=$(printf '%-16s %-24s %-28s %-8s %-18s %4s %4s  %s' repo worktree branch ticket agent ahead dirty "last commit")
+list | fzf --height=100% --delimiter="$TAB" --with-nth=4 --no-sort --ansi \
+    --header "enter lazygit · ctrl-g go to agent · ctrl-r refresh"$'\n'"$header" \
+    --preview "$0 --preview {1} {2}" --preview-window=down,55% \
+    --bind "enter:execute(lazygit -p {1})" \
+    --bind "ctrl-g:execute-silent([ {3} = - ] || herdr agent focus {3})+abort" \
+    --bind "ctrl-r:reload($0 --list)" || true

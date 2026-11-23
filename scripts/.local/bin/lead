@@ -17,11 +17,18 @@ lead still writes the PR body, the merge message and its Comments itself.
         it, sends the standard pointer, and (not for a reviewer) sets the
         ticket's Status in-progress, Owner and Branch. Prints "NAME PANE".
         Subscribing to the worker's idle notification stays with the lead.
-        --engine opencode starts an OpenCode worker instead of Claude
-        (~/.config/opencode/agents/ROLE.md picks its model): lead writes the
+        Teams: the lead's own harness picks the workers' engine, so a Claude
+        lead (repo-lead: Opus; implementer Opus, reviewer Sonnet, debugger
+        Sonnet) never mixes with an OpenCode one (hoc: Gemini 4 Hydrogen;
+        implementer Kimi K3.1 Pro, reviewer and debugger GLM-5.3). --engine
+        is only for runs without a lead (a plain shell, default claude); one
+        that differs from the lead's team is refused. The ux-designer is
+        Claude on both teams.
+        An OpenCode worker (~/.config/opencode/agents/ROLE.md picks its
+        model): lead writes the
         worktree's .opencode/opencode.jsonc (default_agent ROLE, the role's
         Claude definition as instructions), keeps .opencode/ out of git, and
-        starts `opencode --standalone` in the ocbox sandbox. OpenCode workers prompt the lead
+        starts `opencode --standalone` in the abox sandbox. OpenCode workers prompt the lead
         themselves when done; there's nothing to subscribe to.
 
     lead ship ID --body FILE [--merge-msg FILE] [--dry-run]
@@ -161,9 +168,33 @@ def herdr_agents():
         return []
 
 
-def my_name():
+def my_agent():
     pane = os.environ.get("HERDR_PANE_ID", "")
-    return next((a.get("name") for a in herdr_agents() if a.get("pane_id") == pane and a.get("name")), None)
+    return next((a for a in herdr_agents() if a.get("pane_id") == pane and a.get("name")), None)
+
+
+def my_name():
+    me = my_agent()
+    return me.get("name") if me else None
+
+
+def team_engine(a, me):
+    """The workers' engine: the lead's own harness. A team is chosen when the
+    lead starts (repo-lead or hoc) and stays one harness."""
+    lead_engine = me.get("agent") if me else None
+    if lead_engine not in ("claude", "opencode"):
+        lead_engine = None
+    if a.role == "ux-designer":
+        if a.engine == "opencode":
+            sys.exit("lead: the ux-designer is Claude on both teams; drop --engine")
+        return "claude"
+    if lead_engine is None:
+        return a.engine or "claude"
+    if a.engine and a.engine != lead_engine:
+        label = {"claude": "a Claude", "opencode": "an OpenCode"}[lead_engine]
+        sys.exit(f"lead: you are {label} lead, so your workers are {lead_engine} too "
+                 f"(teams don't mix); drop --engine {a.engine}")
+    return lead_engine
 
 
 def branch_exists(root, branch):
@@ -240,10 +271,16 @@ def cmd_start(a):
     name = agent_pre + a.topic
     if any(x.get("name") == name for x in herdr_agents()):
         sys.exit(f"lead: an agent named {name} is already running; prompt it, or close it first")
-    lead = my_name()
+    me = my_agent()
+    lead = me.get("name") if me else None
+    engine = team_engine(a, me)
+    say(f"+ engine {engine}" + (f" ({lead}'s team)" if lead else ""))
     # Without a named lead (run from a plain shell), workers must not go
     # looking for one: they would pick whichever lead is running.
     lead_note = f"Lead: {lead}." if lead else "No lead: report only as the Comment, prompt nobody."
+    # `lead ship` finds the reviewer's report by this name, and a Claude
+    # worker can't see its herdr name, so the pointer tells it.
+    lead_note = f"You are {name}: sign your Comments and reply with that name. {lead_note}"
 
     if a.role == "reviewer":
         branch = f"agent/{a.topic}"
@@ -268,15 +305,15 @@ def cmd_start(a):
             run(["git", "worktree", "add", str(wt), "-b", branch], cwd=root)
         msg = f"[{tid}] work on {ticket}. Report as a Comment there, reply in one line. {lead_note}"
 
-    if a.engine == "opencode":
+    if engine == "opencode":
         agent_file = Path.home() / ".config/opencode/agents" / f"{a.role}.md"
         if not agent_file.is_file():
             sys.exit(f"lead: no OpenCode agent {agent_file}; --engine opencode works for: "
                      + ", ".join(sorted(x.stem for x in agent_file.parent.glob("*.md"))))
         write_opencode_config(root, wt, a.role)
-        # In the ocbox sandbox: OpenCode has no sandbox of its own.
+        # In the abox sandbox: OpenCode has no sandbox of its own.
         run(["ha", "--host", "--kind", "opencode", "--typed", "--tab", "workers", name,
-             "ocbox", "opencode", "--standalone"], cwd=wt)
+             "abox", "opencode", "--standalone"], cwd=wt)
     else:
         extra = ["--add-dir", str(Path.home() / "prototypes")] if a.role == "ux-designer" else []
         run(["ha", "--host", "--tab", "workers", name, "--agent", a.role, *extra], cwd=wt)
@@ -385,7 +422,7 @@ def main():
     sub = p.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("start")
     s.add_argument("id"); s.add_argument("topic"); s.add_argument("role")
-    s.add_argument("--engine", choices=["claude", "opencode"], default="claude")
+    s.add_argument("--engine", choices=["claude", "opencode"], help="only without a lead; a lead's team decides")
     s.add_argument("--dry-run", action="store_true")
     h = sub.add_parser("ship")
     h.add_argument("id")

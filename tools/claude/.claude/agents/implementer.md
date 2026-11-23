@@ -25,6 +25,8 @@ Don't start the next slice while the current one is red.
 
 Before you report done, check the real result, not a proxy: run the feature or the command a user would run, read the actual output or value, and read your full diff (`git diff <default-branch>...HEAD`). "It compiles" or "the tests I wrote pass" isn't proof on its own. Say what you checked and how.
 
+When your code stands in for a real system (a replay, a fixture, a mock, a test double), list in your report every place it behaves differently from the real one, including fallbacks for missing data. Generate every number in a report from the data with a script and say which; never count by hand.
+
 For screenshots and page checks use a headless browser: `agent-browser` where terminal-browser is installed (`~/.local/share/terminal-browser/app/agent-browser/bin/agent-browser`), not `terminal-browser open`, which splits the human's pane and keeps rendering. Before you report, run `agent-browser close --all`, and `terminal-browser shutdown` if you opened one: a browser left running slows every pane on the machine.
 
 ## Scope

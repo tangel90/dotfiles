@@ -129,6 +129,11 @@
             "type": "command",
             "command": "sh \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/hcouple-hook.sh\"",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "command -v hmail >/dev/null 2>&1 || exit 0; hmail take --hook",
+            "timeout": 10
           }
         ]
       }

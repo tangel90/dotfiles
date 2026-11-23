@@ -1,0 +1,10 @@
+[Unit]
+Description=Deliver messages between herdr agents without typing over the human (hmail)
+
+[Service]
+ExecStart=%h/.local/bin/hmail daemon
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

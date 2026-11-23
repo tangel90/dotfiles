@@ -1,0 +1,3 @@
+name: claude-diff
+version: "1.0"
+description: Edit diffs as in Claude Code - coloured line number and +/- sign, plain text, no background tint

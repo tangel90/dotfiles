@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+# abox [--dry-run] [--] CMD [ARGS...]: run CMD (an OpenCode worker, or the
+# pi or Hermes agent) in a bubblewrap sandbox, started in a git worktree, or
+# in a plain project folder (then only that folder is writable).
+# `lead start --engine opencode` runs `abox opencode --standalone` through ha.
+#
+# OpenCode has no sandbox of its own, and its permission rules only cover its
+# own tools: a shell command could still read anything the user can. Here the
+# whole system is read-only, and only what a worker needs is writable:
+#   the worktree, the repo's git dir (commits), the main checkout's tickets/,
+#   OpenCode's state and scratch folder, pi's (~/.pi) and Hermes' (~/.hermes)
+#   state, ~/.cache, a private /tmp.
+# Hidden (an empty file or directory in their place): the Claude login, SSH
+# keys, the GitHub CLI login, dclaude's token, the password store and
+# OpenCode's service password. The network stays (the model API needs it),
+# and so does herdr's socket, so the worker can report back to the lead.
+#
+# Not covered: OpenCode reads its own key (~/.local/share/opencode/auth.json)
+# to work, so a worker in the same box can read it too. Revoke it in the
+# OpenCode console if a worker ever misbehaves.
+
+set -euo pipefail
+
+dry=
+[ "${1:-}" = --dry-run ] && { dry=1; shift; }
+[ "${1:-}" = -- ] && shift
+(( $# )) || { echo "usage: abox [--dry-run] [--] CMD [ARGS...]" >&2; exit 2; }
+command -v bwrap >/dev/null || { echo "abox: bwrap is missing (pacman -S bubblewrap)" >&2; exit 1; }
+
+args=(--ro-bind / / --dev /dev --proc /proc --tmpfs /tmp --die-with-parent)
+rw() { [ -e "$1" ] || mkdir -p "$1"; args+=(--bind "$1" "$1"); }
+
+# In a git repo: the worktree, the shared git dir (commits from a worktree)
+# and the main checkout's tickets/ (a worker's report), as a lead's workers
+# need. Outside one (pi, Hermes in a plain folder): just this folder, but
+# never the home folder or anything above it, which would open all of it.
+if top=$(git rev-parse --show-toplevel 2>/dev/null); then
+    common=$(cd "$(git rev-parse --git-common-dir)" && pwd)
+    main=$(dirname "$common")
+    rw "$top"
+    rw "$common"
+    [ -d "$main/tickets" ] && rw "$main/tickets"
+else
+    top=$(pwd -P)
+    case "$(cd "$HOME" && pwd -P)/" in
+        "$top"/*) echo "abox: run it in a project folder, not in $top (that would make all of your home writable)" >&2; exit 1 ;;
+    esac
+    rw "$top"
+fi
+rw "$HOME/.local/share/opencode"
+rw "$HOME/.local/state/opencode"
+rw "$HOME/.cache"
+rw "$HOME/.local/tmp/opencode"   # OpenCode's preferred scratch folder
+# pi and Hermes keep sessions, settings and their provider login here; only
+# when installed, so a machine without them gets no empty folders.
+[ -d "$HOME/.pi" ] && rw "$HOME/.pi"
+[ -d "$HOME/.hermes" ] && rw "$HOME/.hermes"
+[ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ] && args+=(--bind "$XDG_RUNTIME_DIR" "$XDG_RUNTIME_DIR")
+
+hide() {
+    if [ -d "$1" ]; then args+=(--tmpfs "$1")
+    elif [ -e "$1" ]; then args+=(--ro-bind /dev/null "$1")
+    fi
+}
+hide "$HOME/.claude/.credentials.json"
+hide "$HOME/.ssh"
+hide "$HOME/.config/gh"
+hide "$HOME/.config/dclaude"
+hide "$HOME/.password-store"
+hide "$HOME/.gnupg"
+hide "$HOME/.config/opencode/service.json"
+
+# Hermes runs its agent, tools included, in one background daemon (its
+# "gateway") per Hermes home, shared by every hermes client and started by
+# the first one. A boxed client that found a daemon started outside abox (a
+# plain `hermes`, `hermes chat`) would hand it the work unsandboxed; one from
+# another box would run it with that box's writable folder. So start Hermes
+# here only when no daemon runs, or when it runs in a box of this same folder.
+hermes_guard() {
+    local home=${HERMES_HOME:-$HOME/.hermes} pid p prev line box=
+    pid=$(jq -r '.pid // empty' "$home/gateway.pid" 2>/dev/null) || return 0
+    [ -n "$pid" ] && [ -r "/proc/$pid/cmdline" ] || return 0
+    tr '\0' ' ' <"/proc/$pid/cmdline" | grep -q 'gateway run' || return 0   # stale pid file
+    p=$pid
+    while [ "${p:-1}" -gt 1 ]; do
+        if [ "$(basename "$(head -zn1 "/proc/$p/cmdline" 2>/dev/null | tr -d '\0')")" = bwrap ]; then
+            # The box's folder is the first --bind after --ro-bind / / and the
+            # /dev, /proc, /tmp ones: the repo top or plain folder.
+            prev=
+            while IFS= read -r -d '' line; do
+                [ "$prev" = --bind ] && { box=$line; break; }
+                prev=$line
+            done <"/proc/$p/cmdline"
+            break
+        fi
+        p=$(ps -o ppid= -p "$p" | tr -d ' ')
+    done
+    # The daemon outlives the client that started it: once that box's bwrap
+    # exits, the daemon is reparented to init but still runs in the box's
+    # mount namespace. Then the box's folder is the first mount point only
+    # that namespace has (abox binds it before anything else).
+    if [ -z "$box" ] && [ "$(readlink "/proc/$pid/ns/mnt")" != "$(readlink /proc/self/ns/mnt)" ]; then
+        box=$(awk 'NR == FNR { host[$5]; next }
+                   $5 ~ /^\/(dev|proc|sys|tmp|run)(\/|$)/ { next }
+                   !($5 in host) { print $5; exit }' \
+            /proc/self/mountinfo "/proc/$pid/mountinfo" 2>/dev/null)
+    fi
+    if [ -z "$box" ]; then
+        echo "abox: a Hermes daemon (pid $pid) runs outside the sandbox, and this Hermes would use it." >&2
+        echo "      Close the Hermes sessions outside abox, or stop it: hermes gateway stop" >&2
+        exit 1
+    fi
+    if [ "$box" != "$top" ]; then
+        echo "abox: the Hermes daemon (pid $pid) runs in the box of $box; this Hermes would work there, not in $top." >&2
+        echo "      Start it in $box, or close the Hermes sessions there first." >&2
+        exit 1
+    fi
+}
+[ "$(basename "$1")" = hermes ] && [ -z "$dry" ] && hermes_guard
+
+# herdr recognises an agent typed into a pane by HERDR_AGENT (as for dclaude):
+# the command's name, which is the herdr kind for opencode, pi and hermes.
+export HERDR_AGENT=${HERDR_AGENT:-$(basename "$1")}
+# Writable places for what defaults to read-only paths in here: TMPDIR (the
+# login's ~/.local/tmp; os.tmpdir() in tests), and agent-browser's profile
+# (terminal-browser's own folder), one per worktree so parallel workers don't
+# share a browser profile.
+export TMPDIR="$HOME/.local/tmp/opencode"
+export AGENT_BROWSER_PROFILE="$HOME/.local/tmp/opencode/browser/$(basename "$top")"
+mkdir -p "$AGENT_BROWSER_PROFILE"
+if [ -n "$dry" ]; then
+    printf '%q ' bwrap "${args[@]}" --chdir "$PWD" "$@"; echo
+    exit 0
+fi
+exec bwrap "${args[@]}" --chdir "$PWD" "$@"

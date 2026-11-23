@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # hlimits: print the 5-hour usage windows for herdr's tab bar
 # (ui.tab_bar_right), one entry per service with a mark in front:
-# ✻ Claude and ◇ OpenCode Go, e.g. "✻ 42% ↻1h20 · ◇ 7% ↻3h05".
+# ✻ Claude, ◇ OpenCode Go and ◆ the pay-as-you-go spend, e.g.
+# "✻ 42% ↻1h20 · ◇ 7% ↻3h05 · ◆ $0.26".
 # The weekly windows are left out.
 #
 # ✻ (U+273B), not ✳ (U+2733): ✳ has an emoji form, which Windows Terminal
@@ -38,16 +39,24 @@ fi
 # ◇ OpenCode Go: the rolling 5-hour window, written on the VPS by oclimits and
 # served on the tailnet. The URL is local and untracked (this repo is public):
 # ~/.config/hlimits/opencode-url. Fetched at most once a minute; a failed fetch
-# keeps the last copy.
+# keeps the last copy. On the VPS itself (a remote workspace's tab bar runs
+# hlimits there) oclimits' own file is read directly, no URL needed.
 url_file="${XDG_CONFIG_HOME:-$HOME/.config}/hlimits/opencode-url"
+local_oc="${XDG_CACHE_HOME:-$HOME/.cache}/opencode-status/limits.json"
 oc="${XDG_CACHE_HOME:-$HOME/.cache}/opencode-limits.json"
-if [ -r "$url_file" ]; then
-    if [ ! -e "$oc" ] || [ $(( now - $(stat -c %Y "$oc") )) -ge 60 ]; then
+[ -r "$local_oc" ] && oc=$local_oc
+if [ "$oc" = "$local_oc" ] || [ -r "$url_file" ]; then
+    if [ "$oc" != "$local_oc" ] && { [ ! -e "$oc" ] || [ $(( now - $(stat -c %Y "$oc") )) -ge 60 ]; }; then
         curl -fsS -m 2 "$(head -1 "$url_file")" -o "$oc.tmp" 2>/dev/null && mv -f "$oc.tmp" "$oc" || { rm -f "$oc.tmp"; touch -c "$oc"; }
     fi
     if [ -s "$oc" ]; then
         p=$(jq -r --argjson now "$now" "$render"'
             if .rolling then entry("◇"; .rolling.percent; .rolling.resets_at) else empty end' "$oc" 2>/dev/null)
+        [ -n "$p" ] && parts+=("$p")
+        # ◆ the pay-as-you-go spend, once a budget is set in the Console
+        # (the limit itself is left out to save space).
+        p=$(jq -r 'if .budget and .budget.limit then
+                     "◆ $\(.budget.spent * 100 | round / 100)" else empty end' "$oc" 2>/dev/null)
         [ -n "$p" ] && parts+=("$p")
     fi
 fi

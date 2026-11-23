@@ -37,3 +37,6 @@ tldr	extra	tldr	tldr
 trans	core	translate-shell	translate-shell	used through the alias in .zshrc (bing engine)
 vd	extra	visidata	visidata
 uv	extra	uv	-	curl -LsSf https://astral.sh/uv/install.sh | sh
+whisper-cli	extra	whisper-cpp	-	dictate: speech to text; also install ggml-cuda (Arch) for the GPU, and the model (see dictate)
+ydotool	extra	ydotool	ydotool	dictate: presses paste; needs ydotoold running with /dev/uinput access
+ffmpeg	extra	ffmpeg	ffmpeg	dictate: records the microphone and stops on silence

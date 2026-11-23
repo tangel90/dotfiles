@@ -3,7 +3,7 @@ name: ketchup
 description: Catch the human up on what changed since their last message, in plain words and small visuals, and list every decision waiting on them with enough to decide from the reply alone. Use for /ketchup, "catch me up", or when the human returns after agents worked unattended.
 ---
 
-<!-- From pstack by Lauren Tan (poteto), MIT License (LICENSE beside this file), via github.com/backnotprop/pstack @ a6342de. Changed: model invocation enabled, references to /bro and Cursor's /visualize replaced. -->
+<!-- From pstack by Lauren Tan (poteto), MIT License (LICENSE beside this file), via github.com/backnotprop/pstack @ a6342de. Changed: model invocation enabled, references to /bro and Cursor's /visualize replaced, word counts replaced by length guidance. -->
 
 # Ketchup
 
@@ -21,7 +21,7 @@ One call can cover many items, such as each PR in a set awaiting merge. For each
 
 ## Write the reply
 
-Spend words on the calls, not on the story. Keep what happened under 100 words, not counting pictures, and shorter when less happened. Leave out work that changed nothing for the user. Give each item about 30 words. The reply grows with the number of items: two items need well under 150 words in all, not counting pictures, and thirty need far more. Never cut items or shrink them to stay under a word count: no count in place of a list, and no link in place of an item. A link can add depth, but the reply alone must be enough to decide.
+Spend words on the calls, not on the story. Keep what happened to a short paragraph, shorter when less happened, and leave out work that changed nothing for the user. Give each item only what its call needs. The reply grows with the number of items. Never cut items or shrink them to keep the reply short: no count in place of a list, and no link in place of an item. A link can add depth, but the reply alone must be enough to decide.
 
 Open with one short sentence that names what waits on the user, or says nothing does. The action items give the detail. If nothing happened and nothing waits on the user, say so and stop.
 

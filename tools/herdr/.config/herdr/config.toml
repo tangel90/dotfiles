@@ -43,9 +43,38 @@ claude = [
     { starts_with = "3", fg = "#f6c177", dim = false },
   ] }],
 ]
-# OpenCode agents (VPS workers, the OpenCode lead) get the same rows; their
-# $ctx comes from the herdr-ctx plugin in tools/opencode.
+# OpenCode, pi and Hermes agents get the same rows; their $ctx comes from
+# occtx (OpenCode, scripts/), the herdr-ctx extension (tools/pi) and the
+# herdr-ctx plugin (tools/hermes).
 opencode = [
+  ["state_icon", "pane"],   # pane label = herdr agent name, set by ha
+  ["machine", { token = "workspace", dim = true }, { token = "$ctx", dim = true, rules = [
+    { equals = "100%", fg = "#eb6f92", dim = false },
+    { starts_with = "30" }, { starts_with = "31" }, { starts_with = "32" }, { starts_with = "33" }, { starts_with = "34" },
+    { starts_with = "9", fg = "#eb6f92", dim = false },
+    { starts_with = "8", fg = "#eb6f92", dim = false },
+    { starts_with = "7", fg = "#eb6f92", dim = false },
+    { starts_with = "6", fg = "#eb6f92", dim = false },
+    { starts_with = "5", fg = "#f6c177", dim = false },
+    { starts_with = "4", fg = "#f6c177", dim = false },
+    { starts_with = "3", fg = "#f6c177", dim = false },
+  ] }],
+]
+pi = [
+  ["state_icon", "pane"],   # pane label = herdr agent name, set by ha
+  ["machine", { token = "workspace", dim = true }, { token = "$ctx", dim = true, rules = [
+    { equals = "100%", fg = "#eb6f92", dim = false },
+    { starts_with = "30" }, { starts_with = "31" }, { starts_with = "32" }, { starts_with = "33" }, { starts_with = "34" },
+    { starts_with = "9", fg = "#eb6f92", dim = false },
+    { starts_with = "8", fg = "#eb6f92", dim = false },
+    { starts_with = "7", fg = "#eb6f92", dim = false },
+    { starts_with = "6", fg = "#eb6f92", dim = false },
+    { starts_with = "5", fg = "#f6c177", dim = false },
+    { starts_with = "4", fg = "#f6c177", dim = false },
+    { starts_with = "3", fg = "#f6c177", dim = false },
+  ] }],
+]
+hermes = [
   ["state_icon", "pane"],   # pane label = herdr agent name, set by ha
   ["machine", { token = "workspace", dim = true }, { token = "$ctx", dim = true, rules = [
     { equals = "100%", fg = "#eb6f92", dim = false },
@@ -105,6 +134,7 @@ settings = "prefix+shift+s"                  # prefix+s runs hp
 split_vertical = "prefix+shift+v"            # prefix+v runs hsplit (split + hcouple)
 cycle_pane_next = []                         # was prefix+tab, now last tab (plugins/last-tab); prefix+shift+tab still cycles
 reload_config = []                           # prefix+shift+r runs hrun, which lists "herdr reload"
+new_worktree = []                            # prefix+shift+g runs hwt (worktree overview); workers get worktrees from lead start, by hand: herdr worktree create
 clear_pane = "prefix+ctrl+r"                # wipe screen + scrollback, e.g. after a secret was shown
 copy_mode = "prefix+f"                       # default was prefix+[
 edit_scrollback = "prefix+shift+e"           # prefix+e runs yazi
@@ -131,6 +161,14 @@ key = "prefix+t"            # replaces new_tab (now prefix+c)
 type = "popup"
 command = "cd \"${HERDR_ACTIVE_PANE_CWD:-$HOME}\" && exec \"$HOME/.local/bin/ht\""
 description = "ticket board (ht), started in the pane's directory so . means its repo"
+width = "90%"
+height = "85%"
+
+[[keys.command]]
+key = "prefix+shift+g"      # replaces new_worktree
+type = "popup"
+command = "exec \"$HOME/.local/bin/hwt\""
+description = "the agents' git worktrees: branch, ticket, agent, commits ahead, uncommitted files (hwt)"
 width = "90%"
 height = "85%"
 
@@ -231,3 +269,6 @@ command = "\"$HOME/.local/bin/hrun\""
 description = "pick a command or script and run it (hrun)"
 width = "90%"
 height = "85%"
+
+[experimental]
+kitty_graphics = true
