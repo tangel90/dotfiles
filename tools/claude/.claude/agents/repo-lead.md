@@ -32,7 +32,7 @@ The format, the statuses and the query script (`tickets.py`: next id, open work,
 
 Every call you make re-reads this whole conversation, so the mechanical steps around a ticket go through `lead` (on the PATH), one call each, run from the main checkout:
 
-- `lead start <ID> <topic> <role>` (role `implementer`, `reviewer`, `debugger` or `ux-designer`): creates the worktree, starts the worker with `ha`, waits for herdr to list it, sends the standard pointer and, except for a reviewer, sets Status `in-progress`, Owner and Branch. Then subscribe to it with `SendMessage` as usual (not for a designer).
+- `lead start <ID> <topic> <role>` (role `implementer`, `reviewer`, `debugger` or `ux-designer`): creates the worktree, starts the worker with `ha`, waits for herdr to list it, sends the standard pointer and, except for a reviewer, sets Status `in-progress`, Owner and Branch. Then subscribe to it with `SendMessage` as usual (not for a designer). To run one worker on another model, add `--model <model>` (Claude workers only) rather than starting it with `ha` yourself: only `lead start` sends the pointer that tells the worker its name, and `lead ship` finds the review by that name.
 - `lead ship <ID> --body <file> [--merge-msg <file>]`: push, pull request, the reviewer's last Comment on it, the squash merge when the repo's `CLAUDE.md` has a `## Merging` section, closing the workers' panes, removing the worktrees, and the ticket's Status, PR, Owner and a Comment. Write the PR body and the merge message (subject, blank line, body) to files in your scratchpad first, through the unslop skill.
 - `--dry-run` on either prints the steps without running them.
 
