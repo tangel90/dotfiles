@@ -18,7 +18,7 @@
 # <repo>-lead, the name ht's ctrl-s looks for. pi and Hermes have no agent
 # definitions: each lists one entry, with the default model from its own
 # settings, and starts in abox in this repo, worktree or plain folder (named
-# pi / hermes).
+# pi / hermes); pi also lists the pi team's repo lead, started through hpi.
 
 set -euo pipefail
 
@@ -36,6 +36,13 @@ list() {
             f="$HOME/.pi/agent/settings.json"
             model=$(jq -r '.defaultModel // "-"' "$f" 2>/dev/null || echo -)
             printf 'pi\t%s\tuser\tpi coding agent, sandboxed in abox in this repo\t%s\tpi\n' "$model" "$f"
+            # The pi team's lead (tools/pi roles), started through hpi.
+            f="$HOME/.pi/agent/roles/repo-lead.md"
+            if [ -f "$f" ]; then
+                model=$(sed -n '2,/^---$/{s/^model: *//p}' "$f" | head -n1)
+                printf 'repo-lead\t%s\tuser\t%s\t%s\tpi\n' "${model##*/}" \
+                    "$(sed -n '2,/^---$/{s/^description: *//p}' "$f" | head -n1)" "$f"
+            fi
             return ;;
         hermes)
             f="$HOME/.hermes/config.yaml"
@@ -123,6 +130,10 @@ ws=()
 # hoc runs on the host (OpenCode's lead isn't sandboxed: it ships).
 if [ "$engine" = opencode ] && [ "$agent" = repo-lead ]; then
     HERDR_ENV=1 exec "$HOME/.local/bin/hoc" "${ws[@]}" "$name"
+fi
+# hpi likewise (the pi lead ships too).
+if [ "$engine" = pi ] && [ "$agent" = repo-lead ]; then
+    HERDR_ENV=1 exec "$HOME/.local/bin/hpi" "${ws[@]}" "$name"
 fi
 if [ "$engine" = opencode ]; then
     top=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "hagent: OpenCode workers start in a git repo or worktree" >&2; read -rn1; exit 1; }
