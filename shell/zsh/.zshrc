@@ -210,7 +210,7 @@ function hcouple() {
     fi
     if [[ $1 == wake ]]; then
         [[ ${#HCOUPLE} -eq 3 ]] || { echo "hcouple: not coupled" >&2; return 1; }
-        command hcouple wake "${HCOUPLE[3]}"; return
+        command hcouple wake "${HCOUPLE[1]}" "${HCOUPLE[2]}" "${HCOUPLE[3]}"; return
     fi
     local picked
     picked=$(command hcouple pick "$@") || return

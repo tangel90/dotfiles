@@ -10,7 +10,8 @@
 # which calls this script:
 #     hcouple pick [NAME]                 print "DIR SID NAME" for the agent
 #     hcouple send DIR SID AGENT STATUS COMMAND  log one finished command
-#     hcouple wake AGENT                  prompt AGENT once it is idle
+#     hcouple wake DIR SID AGENT          prompt AGENT once it is idle,
+#                                         if its log holds anything
 #
 # Each finished command, with its exit status and output, is appended to
 # DIR/hcouple/SID.log, where DIR is the Claude config dir the agent runs with —
@@ -64,16 +65,18 @@ pick() {
 send() {
     local dir=$1 sid=$2 agent=$3 status=$4 command=$5 pane first output cur
     first=$(printf '%s\n' "$command" | sed -n '/[^[:space:]]/{s/^[[:space:]]*//;s/[[:space:]]*$//;p;q}')
-    case ${first%% *} in
-        ''|cd|z|zi|clear|reset|ls|ll|la|l|pwd|yank|hcouple|exit|history) return 0 ;;
+    # Skip a trivial command only when it stands alone: `cd /x && deploy`
+    # is logged.
+    case $command in
+        *'&'* | *'|'* | *';'* | *'$('* | *'`'* | *$'\n'*) ;;
+        *) case ${first%% *} in
+               ''|cd|z|zi|clear|reset|ls|ll|la|l|pwd|yank|hcouple|exit|history) return 0 ;;
+           esac ;;
     esac
     # The session the shell was coupled to changes with the agent's /clear
     # (and /resume of another conversation); the hook reads the log of the
     # current one, so follow the agent's session at each write.
-    if [ -n "$agent" ]; then
-        cur=$(herdr agent get "$agent" 2>/dev/null | jq -r '.result.agent.agent_session.value // empty' 2>/dev/null)
-        [ -n "$cur" ] && sid=$cur
-    fi
+    sid=$(current_sid "$agent" "$sid")
     pane=$(this_pane pane_id)
     # The command reaches awk through the environment, not -v: -v expands
     # backslash escapes, so a command containing '\n' (tr -d '\n') never
@@ -96,12 +99,22 @@ send() {
     } >>"$dir/hcouple/$sid.log"
 }
 
+current_sid() {
+    local cur=
+    [ -n "$1" ] && cur=$(herdr agent get "$1" 2>/dev/null | jq -r '.result.agent.agent_session.value // empty' 2>/dev/null)
+    printf '%s\n' "${cur:-$2}"
+}
+
 wake() {
-    local agent=${1:?agent}
+    local dir=${1:?dir} sid=${2:?sid} agent=${3:?agent} log
+    log=$dir/hcouple/$(current_sid "$agent" "$sid").log
+    [ -s "$log" ] || { echo "hcouple: nothing new for $agent"; return 0; }
+    # The waiter checks again: a prompt in the meantime takes the log over.
     setsid -f bash -c '
         herdr agent wait "$1" --until idle --until done --timeout 1800000 >/dev/null 2>&1 || exit 0
+        [ -s "$2" ] || exit 0
         herdr agent prompt "$1" "[hcouple] New output from my coupled shell pane (attached)." >/dev/null 2>&1
-    ' sh "$agent" </dev/null >/dev/null 2>&1
+    ' sh "$agent" "$log" </dev/null >/dev/null 2>&1
     echo "hcouple: $agent gets a note once it is idle"
 }
 
