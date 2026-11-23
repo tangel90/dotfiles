@@ -41,7 +41,10 @@
       "Bash(trio-mcp-server*)",
       "Read(~/.config/trio/**)"
     ],
-    "ask": ["Bash(herdr pane read *)", "Bash(herdr agent read *)"],
+    "ask": [
+      "Bash(herdr pane read *)",
+      "Bash(herdr agent read *)"
+    ],
     "defaultMode": "auto"
   },
   "hooks": {
@@ -151,7 +154,10 @@
         "/home/corni/.config/herdr/herdr.sock"
       ]
     },
-    "excludedCommands": ["herdr *", "sprint *"]
+    "excludedCommands": [
+      "herdr *",
+      "sprint *"
+    ]
   },
   "effortLevel": "medium",
   "tui": "fullscreen",
@@ -162,6 +168,7 @@
   "theme": "custom:rose-pine",
   "editorMode": "vim",
   "preferredNotifChannel": "kitty",
+  "autoCompactEnabled": false,
   "autoMode": {
     "soft_deny": [
       "$defaults",
@@ -196,5 +203,5 @@
     ]
   },
   "voiceEnabled": true,
-  "autoCompactEnabled": false
+  "model": "opus"
 }
