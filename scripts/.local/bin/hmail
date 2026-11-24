@@ -30,6 +30,7 @@ import fcntl
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -42,8 +43,13 @@ QUIET = 15  # seconds a focused pane must be still before typing into it
 NAME_RE = re.compile(r"^[A-Za-z0-9._:-]+$")
 
 
+# A systemd user service runs with PATH=/usr/local/bin:/usr/bin, without
+# ~/.local/bin where herdr is installed; the daemon failed every round there.
+HERDR = shutil.which("herdr") or str(Path.home() / ".local/bin/herdr")
+
+
 def herdr(*args):
-    r = subprocess.run(["herdr", *args], capture_output=True, text=True, timeout=10)
+    r = subprocess.run([HERDR, *args], capture_output=True, text=True, timeout=10)
     if r.returncode != 0:
         raise RuntimeError(r.stderr.strip() or r.stdout.strip() or f"herdr {args[0]} failed")
     return r.stdout

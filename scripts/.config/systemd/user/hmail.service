@@ -2,6 +2,8 @@
 Description=Deliver messages between herdr agents without typing over the human (hmail)
 
 [Service]
+# herdr is in ~/.local/bin, which a user service's PATH lacks.
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=%h/.local/bin/hmail daemon
 Restart=always
 RestartSec=10
