@@ -9,7 +9,7 @@
 # merged and closed ones too.
 #
 # Keys: o opens the diff in nvim (back to the list when nvim quits),
-# alt-m squash-merges after showing the checks and asking, ctrl-o opens the
+# M (shift+m) squash-merges after showing the checks and asking, ctrl-o opens the
 # pull request in the browser (on a machine without one, such as the VPS, it
 # shows the link and copies it, through OSC 52 where needed), ctrl-r reloads
 # the list, esc quits.
@@ -35,7 +35,7 @@ if [ "${1:-}" = __web ]; then
 fi
 
 if [ "${1:-}" = __merge ]; then
-    # Called by fzf's alt-m: hpr __merge REPO N
+    # Called by fzf's M: hpr __merge REPO N
     repo=$2 n=$3
     gh pr view "$n" --repo "$repo" --json number,title,state,mergeable,reviewDecision,baseRefName,headRefName \
         --template '#{{.number}} {{.title}}
@@ -92,10 +92,10 @@ list="gh pr list --repo '$repo' --state $state --limit 100 \
 export HPR_REPO=$repo HPR_SELF=$0
 fzf --ansi --reverse --height 100% \
     --prompt "$repo PRs> " \
-    --header 'o diff in nvim · alt-m merge · ctrl-o browser · ctrl-r reload' \
+    --header 'o diff in nvim · M merge · ctrl-o browser · ctrl-r reload' \
     --bind "start:reload:$list" \
     --bind "ctrl-r:reload:$list" \
     --bind 'o:execute(n={1}; gh pr diff "${n#\#}" --repo "$HPR_REPO" | nvim -R -c "set ft=diff" -)' \
-    --bind "alt-m:execute(n={1}; \"\$HPR_SELF\" __merge \"\$HPR_REPO\" \"\${n#\\#}\")+reload:$list" \
+    --bind "M:execute(n={1}; \"\$HPR_SELF\" __merge \"\$HPR_REPO\" \"\${n#\\#}\")+reload:$list" \
     --bind "ctrl-o:execute(n={1}; \"\$HPR_SELF\" __web \"\$HPR_REPO\" \"\${n#\\#}\")" \
     < /dev/null || true
