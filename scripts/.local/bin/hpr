@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# hpr [--all] [OWNER/REPO]: fzf over a repo's pull requests, open one's diff
+# read-only in nvim (gh pr diff N | nvim -R -c 'set ft=diff' -).
+#
+# The repo: OWNER/REPO if given, else the current folder's GitHub repo, else
+# one picked with fzf from your GitHub repos (for repos that live on another
+# machine, such as the VPS's homelab). Open pull requests only; --all lists
+# merged and closed ones too.
+#
+# Keys: enter opens the diff in nvim (back to the list when nvim quits),
+# ctrl-o opens the pull request in the browser, ctrl-r reloads the list,
+# esc quits. The preview shows the description, checks and changed files.
+
+set -euo pipefail
+
+state=open repo=
+while [ $# -gt 0 ]; do
+    case $1 in
+        --all) state=all; shift ;;
+        -h|--help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -*) echo "usage: hpr [--all] [OWNER/REPO]" >&2; exit 2 ;;
+        *) repo=$1; shift ;;
+    esac
+done
+
+if [ -z "$repo" ]; then
+    repo=$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null) || repo=
+fi
+if [ -z "$repo" ]; then
+    repo=$(gh repo list --limit 200 --json nameWithOwner,pushedAt \
+               --jq 'sort_by(.pushedAt) | reverse | .[].nameWithOwner' |
+           fzf --prompt 'repo> ' --height 100% --reverse) || exit 0
+fi
+
+list="gh pr list --repo '$repo' --state $state --limit 100 \
+  --json number,title,author,headRefName,state,updatedAt \
+  --template '{{range .}}{{printf \"#%-5v\" .number}}  {{printf \"%-7s\" .state}}  {{.title}}  ({{.headRefName}}, {{.author.login}}, {{timeago .updatedAt}}){{\"\\n\"}}{{end}}'"
+
+export HPR_REPO=$repo
+fzf --ansi --reverse --height 100% \
+    --prompt "$repo PRs> " \
+    --header 'enter diff in nvim · ctrl-o browser · ctrl-r reload' \
+    --bind "start:reload:$list" \
+    --bind "ctrl-r:reload:$list" \
+    --bind 'enter:execute(n={1}; gh pr diff "${n#\#}" --repo "$HPR_REPO" | nvim -R -c "set ft=diff" -)' \
+    --bind 'ctrl-o:execute-silent(n={1}; gh pr view "${n#\#}" --repo "$HPR_REPO" --web)' \
+    --preview 'n={1}; n=${n#\#}; gh pr view "$n" --repo "$HPR_REPO" --json title,state,author,body,files,statusCheckRollup --template "{{.title}}  [{{.state}}]  {{.author.login}}
+{{range .statusCheckRollup}}{{.name}}: {{if .conclusion}}{{.conclusion}}{{else}}{{.status}}{{end}}
+{{end}}
+{{range .files}}+{{.additions}} -{{.deletions}}  {{.path}}
+{{end}}
+{{.body}}" 2>/dev/null' \
+    --preview-window 'right,55%,wrap' \
+    < /dev/null || true

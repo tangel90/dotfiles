@@ -181,6 +181,14 @@ width = "86%"
 height = "96%"
 
 [[keys.command]]
+key = "prefix+shift+i"
+type = "popup"
+command = "cd \"${HERDR_ACTIVE_PANE_CWD:-$HOME}\" && exec hpr"
+description = "pull requests of the pane's repo (hpr): preview, diff in nvim"
+width = "86%"
+height = "96%"
+
+[[keys.command]]
 key = "prefix+e"            # replaces edit_scrollback, now prefix+shift+e
 type = "popup"
 command = "cd \"${HERDR_ACTIVE_PANE_CWD:-$HOME}\" && exec yazi"

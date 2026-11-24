@@ -5,6 +5,7 @@
 
 tickets        | popup | ticket board: triage, start, reject (ht)             | ht
 worktrees      | popup | the agents' worktrees: branch, ticket, agent (hwt)    | hwt
+pull requests  | popup | this repo's pull requests: preview, diff in nvim (hpr) | hpr
 projects       | popup | open a project, workspace or past chat (hp)          | hp
 agent          | popup | start a Claude subagent definition in a new tab      | hagent
 file           | popup | open a file below this directory in a new tab (hw)   | hw --here
