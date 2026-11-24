@@ -189,6 +189,14 @@ width = "90%"
 height = "85%"
 
 [[keys.command]]
+key = "prefix+alt+e"        # yazi on the VPS over SFTP; [sftp.vps] in the untracked ~/.config/yazi/vfs.toml (desktop only)
+type = "popup"
+command = "grep -qs '^\\[sftp\\.vps\\]' ~/.config/yazi/vfs.toml && exec yazi sftp://vps; echo 'no [sftp.vps] in ~/.config/yazi/vfs.toml on this machine'; read -r _"
+description = "yazi on the VPS (sftp://vps)"
+width = "90%"
+height = "85%"
+
+[[keys.command]]
 key = "prefix+o"            # open_notification_target moved to prefix+a; hnvim is unbound
 type = "popup"
 command = "\"$HOME/.local/bin/hw\" --here"
