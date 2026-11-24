@@ -12,8 +12,12 @@
 #   state, ~/.cache, a private /tmp.
 # Hidden (an empty file or directory in their place): the Claude login, SSH
 # keys, the GitHub CLI login, dclaude's token, the password store and
-# OpenCode's service password. The network stays (the model API needs it),
-# and so does herdr's socket, so the worker can report back to the lead.
+# OpenCode's service password. The network stays (the model API needs it).
+# herdr's sockets are hidden too (homelab H-17): through them a worker could
+# run `herdr pane run` in any pane, outside the box. The worker reports to
+# its lead with `hmail send`, which only writes a file in ~/.cache/hmail;
+# hmail's daemon, outside, types it in. OpenCode's and pi's status reports
+# go through abox-herdr-relay, which forwards only those, for this pane.
 # XDG_RUNTIME_DIR is an empty private folder, and the system bus is hidden:
 # the user bus would let `systemd-run --user` start a unit outside the box.
 # The Docker socket is hidden too (the system one and a rootless one in
@@ -67,9 +71,9 @@ rw "$HOME/.local/tmp/opencode"   # OpenCode's preferred scratch folder
 # the user bus (bus) and the user manager (systemd/private), through which
 # `systemd-run --user` starts a unit outside the box that reads anything,
 # the gh token and the Docker socket included (homelab H-15); also the
-# gpg-agent's SSH socket and other tools' daemons. Nothing a boxed worker
-# needs lives there: herdr's socket is ~/.config/herdr/herdr.sock, and
-# tools that keep sockets there (agent-browser) start their own in here.
+# gpg-agent's SSH socket and other tools' daemons (herdr-core's too).
+# Nothing a boxed worker needs lives there: tools that keep sockets there
+# (agent-browser) start their own in here.
 if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
     args+=(--perms 0700 --tmpfs "$XDG_RUNTIME_DIR")
 fi
@@ -98,6 +102,9 @@ hide "$HOME/.password-store"
 hide "$HOME/.gnupg"
 hide "$HOME/.config/opencode/service.json"
 hide /run/docker.sock   # /var/run is a link to /run
+# herdr: its server and client sockets, its logs and session file, and the
+# link to gpg-agent's SSH socket all live here (homelab H-17).
+hide "$HOME/.config/herdr"
 # A rootless Docker socket would be in XDG_RUNTIME_DIR, which is empty here.
 unset DOCKER_HOST
 # The system bus: nothing a worker runs needs it (homelab H-15).
@@ -154,6 +161,36 @@ hermes_guard() {
 }
 [ "$(basename "$1")" = hermes ] && [ -z "$dry" ] && hermes_guard
 
+# herdr inside the box: no socket at all, except abox-herdr-relay's, which
+# forwards only pane.report_agent and pane.report_agent_session for this
+# pane (OpenCode's and pi's status). It runs outside the box, listening in a
+# private folder that is bound into the box's own /tmp, and stops with abox.
+# Hermes has no such integration (herdr reads its screen), so it gets none.
+relay_dir= relay_pid=
+relay_sock=/tmp/abox-herdr/relay.sock
+upstream=${HERDR_SOCKET_PATH:-$HOME/.config/herdr/herdr.sock}
+unset HERDR_SOCKET_PATH HERDR_BIN_PATH
+case "$(basename "$1")" in opencode|pi) want_relay=1 ;; *) want_relay= ;; esac
+if [ -n "$want_relay" ] && [ -n "${HERDR_PANE_ID:-}" ] && [ -S "$upstream" ]; then
+    if [ -n "$dry" ]; then
+        args+=(--bind /RELAY-DIR /tmp/abox-herdr)
+        export HERDR_SOCKET_PATH=$relay_sock
+    else
+        relay_dir=$(mktemp -d -p "${XDG_RUNTIME_DIR:-/tmp}" abox-herdr.XXXXXX)
+        ABOX_HERDR_UPSTREAM=$upstream "$(dirname "$(readlink -f "$0")")/abox-herdr-relay" "$relay_dir/relay.sock" \
+            "$HERDR_PANE_ID" "$(basename "$1")" </dev/null &
+        relay_pid=$!
+        trap 'kill "$relay_pid" 2>/dev/null; rm -rf "$relay_dir"' EXIT
+        for _ in {1..50}; do [ -S "$relay_dir/relay.sock" ] && break; sleep 0.1; done
+        if [ -S "$relay_dir/relay.sock" ]; then
+            args+=(--bind "$relay_dir" /tmp/abox-herdr)
+            export HERDR_SOCKET_PATH=$relay_sock
+        else
+            echo "abox: abox-herdr-relay didn't start; herdr gets no status from this box" >&2
+        fi
+    fi
+fi
+
 # herdr recognises an agent typed into a pane by HERDR_AGENT (as for dclaude):
 # the command's name, which is the herdr kind for opencode, pi and hermes.
 export HERDR_AGENT=${HERDR_AGENT:-$(basename "$1")}
@@ -168,4 +205,6 @@ if [ -n "$dry" ]; then
     printf '%q ' bwrap "${args[@]}" --chdir "$PWD" "$@"; echo
     exit 0
 fi
-exec bwrap "${args[@]}" --chdir "$PWD" "$@"
+# Without a relay nothing needs to run after the box: exec, as before.
+[ -n "$relay_pid" ] || exec bwrap "${args[@]}" --chdir "$PWD" "$@"
+bwrap "${args[@]}" --chdir "$PWD" "$@"

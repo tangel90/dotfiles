@@ -1,0 +1,174 @@
+#!/usr/bin/env python3
+"""abox-herdr-relay LISTEN PANE AGENT: the only way from an abox box to herdr.
+
+abox hides herdr's socket from the box: through it a boxed worker could run
+`herdr pane run <pane> CMD` in any pane, the lead's and plain shells
+included, outside the box (homelab H-17). But OpenCode's and pi's herdr
+integrations report the agent's working, idle and blocked state over that
+socket, which herdr's `agent list` (and hmail's idle rule) rely on.
+
+So abox starts this relay outside the box, listening on LISTEN, a socket in
+a private folder that it binds into the box as HERDR_SOCKET_PATH. It takes
+one JSON request line per connection and forwards only the two status
+reports, for the box's own pane:
+
+    pane.report_agent          state, seq, agent_session_id
+    pane.report_agent_session  agent_session_id, session_start_source
+
+The request is rebuilt from those fields; pane_id, agent and source are
+always PANE and AGENT (herdr:AGENT), whatever the box sent. Anything else
+(another method, a field of the wrong type or too long, a line over
+MAX_LINE bytes, no line within TIMEOUT seconds) gets an error reply and
+reaches no herdr. The relay exits when abox, its parent, does.
+"""
+
+import json
+import os
+import signal
+import socket
+import socketserver
+import sys
+import threading
+import time
+
+MAX_LINE = 16 * 1024  # the integrations send a few hundred bytes
+MAX_REPLY = 64 * 1024
+MAX_STR = 512
+TIMEOUT = 3
+MAX_CONN = 8  # at once; more wait in the listen queue
+STATES = {"working", "idle", "blocked", "done", "unknown"}
+FIELDS = {  # method: {field: type}
+    "pane.report_agent": {"state": str, "seq": int, "agent_session_id": str},
+    "pane.report_agent_session": {"agent_session_id": str, "session_start_source": str},
+}
+UPSTREAM = os.environ.get("ABOX_HERDR_UPSTREAM") or os.path.expanduser("~/.config/herdr/herdr.sock")
+
+
+def refuse(rid, why):
+    return {"id": rid, "error": {"code": "abox_relay_refused", "message": why}}
+
+
+def rebuild(req, pane, agent):
+    """The forwarded request, or (None, reason)."""
+    if not isinstance(req, dict):
+        return None, "request is not a JSON object"
+    method, params = req.get("method"), req.get("params")
+    if method not in FIELDS:
+        return None, f"method {method!r} is not relayed from abox (only status reports)"
+    if not isinstance(params, dict):
+        return None, "params is not an object"
+    if params.get("pane_id", pane) != pane:
+        return None, "a box reports only for its own pane"
+    out = {"pane_id": pane, "agent": agent, "source": f"herdr:{agent}"}
+    for k, t in FIELDS[method].items():
+        if k not in params:
+            continue
+        v = params[k]
+        if t is int and (isinstance(v, bool) or not isinstance(v, int)):
+            return None, f"{k} must be an integer"
+        if t is str and (not isinstance(v, str) or len(v) > MAX_STR or not v.isprintable()):
+            return None, f"{k} must be a printable string of at most {MAX_STR} characters"
+        out[k] = v
+    if method == "pane.report_agent" and out.get("state") not in STATES:
+        return None, f"state must be one of {', '.join(sorted(STATES))}"
+    rid = req.get("id")
+    rid = rid if isinstance(rid, str) and len(rid) <= MAX_STR else "abox-relay"
+    return {"id": rid, "method": method, "params": out}, None
+
+
+def read_line(sock, limit):
+    buf = b""
+    while b"\n" not in buf:
+        chunk = sock.recv(4096)
+        if not chunk:
+            break
+        buf += chunk
+        if len(buf) > limit:
+            return None
+    return buf.split(b"\n", 1)[0]
+
+
+def forward(req):
+    with socket.socket(socket.AF_UNIX) as up:
+        up.settimeout(TIMEOUT)
+        up.connect(UPSTREAM)
+        up.sendall(json.dumps(req).encode() + b"\n")
+        return read_line(up, MAX_REPLY) or b""
+
+
+class Handler(socketserver.BaseRequestHandler):
+    def handle(self):
+        with self.server.slots:
+            self._handle()
+
+    def _handle(self):
+        s = self.request
+        s.settimeout(TIMEOUT)
+        rid = None
+        try:
+            line = read_line(s, MAX_LINE)
+            if line is None:
+                reply = refuse(None, f"request over {MAX_LINE} bytes")
+            else:
+                try:
+                    req = json.loads(line)
+                except ValueError:
+                    req = None
+                rid = req.get("id") if isinstance(req, dict) and isinstance(req.get("id"), str) else None
+                fwd, why = rebuild(req, self.server.pane, self.server.agent)
+                if fwd is None:
+                    reply = refuse(rid, why)
+                else:
+                    s.sendall(forward(fwd) + b"\n")
+                    return
+            s.sendall(json.dumps(reply).encode() + b"\n")
+        except OSError as e:
+            try:
+                s.sendall(json.dumps(refuse(rid, f"relay: {e.strerror or e}")).encode() + b"\n")
+            except OSError:
+                pass
+
+
+class Server(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
+    daemon_threads = True
+
+
+def main():
+    if len(sys.argv) != 4:
+        sys.exit("usage: abox-herdr-relay LISTEN PANE AGENT")
+    listen, pane, agent = sys.argv[1:]
+    parent = os.getppid()
+    old = os.umask(0o077)
+    srv = Server(listen, Handler)
+    os.umask(old)
+    srv.pane, srv.agent = pane, agent
+    srv.slots = threading.BoundedSemaphore(MAX_CONN)
+
+    def watch_parent():
+        while os.getppid() == parent:
+            time.sleep(1)
+        srv.shutdown()
+
+    threading.Thread(target=watch_parent, daemon=True).start()
+
+    # Closing the pane hangs up abox and this relay together, before abox's
+    # EXIT trap runs: clean up here too, not only on a normal stop.
+    def stop(*_):
+        raise SystemExit(0)
+
+    for sig in (signal.SIGHUP, signal.SIGTERM, signal.SIGINT):
+        signal.signal(sig, stop)
+    try:
+        srv.serve_forever()
+    finally:
+        srv.server_close()
+        # abox removes its folder too, but not when a signal ended it first.
+        for f in (lambda: os.unlink(listen), lambda: os.rmdir(os.path.dirname(listen))):
+            try:
+                f()
+            except OSError:
+                pass
+
+
+if __name__ == "__main__":
+    main()
