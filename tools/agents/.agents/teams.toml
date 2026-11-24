@@ -115,28 +115,55 @@ label = "DeepSeek V4.1 Flash"
 model = "opencode/deepseek-v4.1-flash#max"
 label = "DeepSeek V4.1 Flash"
 
-# pi raises "medium" to "high" for Kimi and GLM; GPT-6 Luna keeps it.
+# pi, the main driver since 2026-11-24, runs the same two trial teams as
+# OpenCode. The default team is the Go one (`hpi`, all on the Go plan);
+# `hpi --team zen` the Zen one (all on the Zen pay-as-you-go key, which pi
+# needs as its `opencode` login). No thinking line: pi's default for that
+# model.
 [pi]
-name = "pi"
+name = "pi Go"
 clear = "/new"
 lead_start = "`hpi`"
 
 [pi.roles.repo-lead]
-model = "opencode-go/gpt-6-luna"
-thinking = "medium"
-label = "GPT-6 Luna"
+model = "opencode-go/qwen4-max"
+label = "Qwen4 Max"
 
 [pi.roles.implementer]
-model = "opencode-go/kimi-k3.1-pro"
-thinking = "high"
-label = "Kimi K3.1 Pro"
+model = "opencode-go/hy4"
+label = "Hy4"
 
 [pi.roles.reviewer]
 model = "opencode-go/claude-haiku-5-5"
-thinking = "high"
+thinking = "max"
 label = "Haiku 5.5"
 
 [pi.roles.debugger]
-model = "opencode-go/glm-5.3"
-thinking = "high"
-label = "GLM-5.3"
+model = "opencode-go/claude-haiku-5-5"
+thinking = "max"
+label = "Haiku 5.5"
+
+[pi-zen]
+name = "pi Zen"
+clear = "/new"
+lead_start = "`hpi --team zen`"
+
+[pi-zen.roles.repo-lead]
+model = "opencode/gemini-4-hydrogen"
+thinking = "xhigh"
+label = "Gemini 4 Hydrogen"
+
+[pi-zen.roles.implementer]
+model = "opencode/claude-haiku-5-5"
+thinking = "max"
+label = "Haiku 5.5"
+
+[pi-zen.roles.reviewer]
+model = "opencode/deepseek-v4.1-flash"
+thinking = "max"
+label = "DeepSeek V4.1 Flash"
+
+[pi-zen.roles.debugger]
+model = "opencode/deepseek-v4.1-flash"
+thinking = "max"
+label = "DeepSeek V4.1 Flash"
