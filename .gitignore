@@ -11,3 +11,5 @@ tools/herdr/.config/herdr/*
 # generated per machine by `herdr integration install claude`
 tools/claude/.claude/hooks/herdr-agent-state.sh
 __pycache__/
+# Private skills live only on each machine (~/.agents/skills/), never here.
+tools/agents/.agents/skills/home-stack/
