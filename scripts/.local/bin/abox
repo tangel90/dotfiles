@@ -14,6 +14,8 @@
 # keys, the GitHub CLI login, dclaude's token, the password store and
 # OpenCode's service password. The network stays (the model API needs it),
 # and so does herdr's socket, so the worker can report back to the lead.
+# XDG_RUNTIME_DIR is an empty private folder, and the system bus is hidden:
+# the user bus would let `systemd-run --user` start a unit outside the box.
 # The Docker socket is hidden too (the system one and a rootless one in
 # XDG_RUNTIME_DIR), and DOCKER_HOST is unset: the docker group is
 # root-equivalent, so `docker run -v /any/path:/x` would read files the user
@@ -61,7 +63,16 @@ rw "$HOME/.local/tmp/opencode"   # OpenCode's preferred scratch folder
 # when installed, so a machine without them gets no empty folders.
 [ -d "$HOME/.pi" ] && rw "$HOME/.pi"
 [ -d "$HOME/.hermes" ] && rw "$HOME/.hermes"
-[ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ] && args+=(--bind "$XDG_RUNTIME_DIR" "$XDG_RUNTIME_DIR")
+# XDG_RUNTIME_DIR gets an empty private tmpfs, not the real one: that holds
+# the user bus (bus) and the user manager (systemd/private), through which
+# `systemd-run --user` starts a unit outside the box that reads anything,
+# the gh token and the Docker socket included (homelab H-15); also the
+# gpg-agent's SSH socket and other tools' daemons. Nothing a boxed worker
+# needs lives there: herdr's socket is ~/.config/herdr/herdr.sock, and
+# tools that keep sockets there (agent-browser) start their own in here.
+if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
+    args+=(--perms 0700 --tmpfs "$XDG_RUNTIME_DIR")
+fi
 
 # An editor started in the box (Hermes' ctrl-g, pi's external editor) is
 # nvim, which writes its state (shada, logs, swap) and harpoon's marks on
@@ -87,8 +98,13 @@ hide "$HOME/.password-store"
 hide "$HOME/.gnupg"
 hide "$HOME/.config/opencode/service.json"
 hide /run/docker.sock   # /var/run is a link to /run
-[ -n "${XDG_RUNTIME_DIR:-}" ] && hide "$XDG_RUNTIME_DIR/docker.sock"
+# A rootless Docker socket would be in XDG_RUNTIME_DIR, which is empty here.
 unset DOCKER_HOST
+# The system bus: nothing a worker runs needs it (homelab H-15).
+hide /run/dbus/system_bus_socket
+# Both point into the real XDG_RUNTIME_DIR (the user bus, and gpg-agent's
+# SSH socket through herdr's link), so they would only dangle.
+unset DBUS_SESSION_BUS_ADDRESS SSH_AUTH_SOCK
 
 # Hermes runs its agent, tools included, in one background daemon (its
 # "gateway") per Hermes home, shared by every hermes client and started by
