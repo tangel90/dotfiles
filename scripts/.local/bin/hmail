@@ -24,6 +24,27 @@ was when the agent turned idle (nothing was typed since).
 
 Without a running daemon (no heartbeat for 30 s) `send` falls back to
 `herdr agent prompt`, as before. Mail is per machine, like herdr's agents.
+
+In abox (homelab H-17) herdr isn't reachable: `send` then only queues the
+line, unchecked (no agent list to check the name against, no fallback),
+signed HMAIL_FROM or "a boxed agent". Everything in ~/.cache/hmail is
+therefore written by untrusted senders, and the daemon, which runs outside
+any box, treats it so:
+
+- it opens the folder once (refusing a symlink) and every file in it
+  relative to that, without following symlinks, and reads only regular
+  files: a link to a secret is neither read nor typed into a pane, and a
+  link in place of .lock, .daemon or a mailbox writes nothing elsewhere;
+- it delivers only to agents in `herdr agent list`; mail for another name
+  waits in its file (`hmail list` shows it);
+- it types text only: control and format characters (escape sequences,
+  carriage returns, tabs, bidi marks) become spaces, and every delivery
+  starts with "[hmail] ", so a line can't start a Claude `!` shell command;
+- a line over MAX_LINE characters is cut there and marked "[cut]"; one
+  delivery types at most MAX_TYPE characters, and the lines after that go
+  in the next round; a mailbox over MAX_BOX bytes is read up to that size
+  and the rest dropped, with a note in the mail. `send` refuses a message
+  over MAX_LINE characters outright.
 """
 
 import fcntl
@@ -31,16 +52,21 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import time
+import unicodedata
 from pathlib import Path
 
 MAILDIR = Path.home() / ".cache" / "hmail"
 HEARTBEAT = MAILDIR / ".daemon"
 POLL = 2  # seconds between daemon rounds
 QUIET = 15  # seconds a focused pane must be still before typing into it
-NAME_RE = re.compile(r"^[A-Za-z0-9._:-]+$")
+NAME_RE = re.compile(r"^[A-Za-z0-9_:-][A-Za-z0-9._:-]*$")  # no dotfiles
+MAX_LINE = 2000  # characters in one message
+MAX_TYPE = 8000  # characters typed into a pane in one delivery
+MAX_BOX = 64 * 1024  # bytes read from one mailbox
 
 
 # A systemd user service runs with PATH=/usr/local/bin:/usr/bin, without
@@ -69,36 +95,116 @@ def own_name(agent_list=None):
     return None
 
 
+NOFOLLOW = os.O_NOFOLLOW | os.O_CLOEXEC
+
+
+def open_maildir():
+    """The mail folder as a directory fd, never through a symlink: a boxed
+    sender can replace ~/.cache/hmail, but not the folder this fd holds."""
+    MAILDIR.mkdir(parents=True, exist_ok=True)
+    return os.open(MAILDIR, os.O_RDONLY | os.O_DIRECTORY | NOFOLLOW)
+
+
 class Locked:
-    """One lock for the whole folder: appends and takes never interleave."""
+    """One lock for the whole folder: appends and takes never interleave.
+    `.dir` is the folder's fd; every file is opened relative to it."""
 
     def __enter__(self):
-        MAILDIR.mkdir(parents=True, exist_ok=True)
-        self.f = open(MAILDIR / ".lock", "w")
-        fcntl.flock(self.f, fcntl.LOCK_EX)
+        self.dir = open_maildir()
+        try:
+            self.lock = os.open(".lock", os.O_RDWR | os.O_CREAT | NOFOLLOW, 0o600, dir_fd=self.dir)
+        except OSError:  # a link (or a folder) a sender put in its place
+            try:
+                os.unlink(".lock", dir_fd=self.dir)
+            except IsADirectoryError:
+                os.rmdir(".lock", dir_fd=self.dir)
+            self.lock = os.open(".lock", os.O_RDWR | os.O_CREAT | NOFOLLOW, 0o600, dir_fd=self.dir)
+        fcntl.flock(self.lock, fcntl.LOCK_EX)
         return self
 
     def __exit__(self, *_):
-        fcntl.flock(self.f, fcntl.LOCK_UN)
-        self.f.close()
+        fcntl.flock(self.lock, fcntl.LOCK_UN)
+        os.close(self.lock)
+        os.close(self.dir)
+
+
+def read_box(dirfd, name):
+    """A mailbox's text, at most MAX_BOX bytes of it, or None when it is
+    missing or not a regular file (a symlink, a fifo, a folder)."""
+    try:
+        fd = os.open(name, os.O_RDONLY | os.O_NONBLOCK | NOFOLLOW, dir_fd=dirfd)
+    except OSError:
+        return None
+    with os.fdopen(fd, "rb") as f:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            return None
+        data = f.read(MAX_BOX + 1)
+    text = data[:MAX_BOX].decode("utf-8", "replace")
+    if len(data) > MAX_BOX:
+        text = text.rsplit("\n", 1)[0] + f"\n(hmail: mail for {name} over {MAX_BOX} bytes, the rest was dropped)\n"
+    return text
 
 
 def take(name):
-    box = MAILDIR / name
-    with Locked():
+    with Locked() as l:
+        text = read_box(l.dir, name)
         try:
-            text = box.read_text()
-        except FileNotFoundError:
-            return []
-        box.unlink()
-    return [l for l in text.splitlines() if l.strip()]
+            os.unlink(name, dir_fd=l.dir)  # also a link or fifo in its place
+        except (FileNotFoundError, IsADirectoryError, PermissionError):
+            pass
+    return [x for x in (text or "").splitlines() if x.strip()]
+
+
+def write_box(dirfd, name, text):
+    """Replace a mailbox: a new file renamed over it, so a symlink in its
+    place is replaced, not followed."""
+    tmp = f".{name}.{os.getpid()}"
+    try:
+        os.unlink(tmp, dir_fd=dirfd)  # left by an earlier run
+    except FileNotFoundError:
+        pass
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | NOFOLLOW, 0o600, dir_fd=dirfd)
+    with os.fdopen(fd, "w") as f:
+        f.write(text)
+    os.replace(tmp, name, src_dir_fd=dirfd, dst_dir_fd=dirfd)
 
 
 def put_back(name, lines):
-    with Locked():
-        box = MAILDIR / name
-        old = box.read_text() if box.exists() else ""
-        box.write_text("".join(l + "\n" for l in lines) + old)
+    with Locked() as l:
+        old = read_box(l.dir, name) or ""
+        write_box(l.dir, name, "".join(x + "\n" for x in lines) + old)
+
+
+def append_box(name, line):
+    with Locked() as l:
+        fd = os.open(name, os.O_WRONLY | os.O_APPEND | os.O_CREAT | NOFOLLOW, 0o600, dir_fd=l.dir)
+        with os.fdopen(fd, "a") as f:
+            f.write(line + "\n")
+
+
+def heartbeat():
+    """Touch .daemon without following a symlink a sender put there."""
+    d = open_maildir()
+    try:
+        try:
+            fd = os.open(".daemon", os.O_WRONLY | os.O_CREAT | NOFOLLOW, 0o600, dir_fd=d)
+        except OSError:  # a link or something else in its place
+            try:
+                os.unlink(".daemon", dir_fd=d)
+            except IsADirectoryError:
+                os.rmdir(".daemon", dir_fd=d)
+            fd = os.open(".daemon", os.O_WRONLY | os.O_CREAT | NOFOLLOW, 0o600, dir_fd=d)
+        os.utime(fd)
+        os.close(fd)
+    finally:
+        os.close(d)
+
+
+def plain(text):
+    """Text only: control and format characters (escape sequences, CR,
+    tabs, bidi marks) become spaces, then runs of spaces collapse."""
+    text = "".join(" " if unicodedata.category(c)[0] == "C" else c for c in text)
+    return " ".join(text.split())
 
 
 def daemon_alive():
@@ -112,25 +218,37 @@ def cmd_send(args):
     if len(args) < 2:
         sys.exit("usage: hmail send NAME TEXT...")
     name, text = args[0], " ".join(args[1:])
-    text = " ".join(text.split())  # one line: a newline would submit early
+    text = plain(text)  # one line: a newline would submit early
     if not NAME_RE.match(name):
         sys.exit(f"hmail: bad agent name {name!r}")
     if not text:
         sys.exit("hmail: empty message")
-    alist = agents()
-    if not any(a.get("name") == name for a in alist):
+    if len(text) > MAX_LINE:
+        sys.exit(f"hmail: message has {len(text)} characters, over {MAX_LINE}; put the details in a file or ticket")
+    try:
+        alist = agents()
+    except (RuntimeError, OSError, ValueError, subprocess.TimeoutExpired):
+        alist = None  # no herdr here: in abox, or herdr is down
+    if alist is not None and not any(a.get("name") == name for a in alist):
         sys.exit(f"hmail: no agent {name} on this machine (herdr agent list)")
     # HMAIL_FROM names a sender that is no agent, like hpr for the human.
-    sender = own_name(alist) or os.environ.get("HMAIL_FROM") or "someone"
-    line = f"[{time.strftime('%H:%M')}] {sender}: {text}"
+    sender = (own_name(alist) if alist is not None else None) or os.environ.get("HMAIL_FROM") \
+        or ("someone" if alist is not None else "a boxed agent")
+    line = f"[{time.strftime('%H:%M')}] {plain(sender)[:64]}: {text}"
+    if alist is None:
+        # abox: herdr isn't reachable, only the mail folder is.
+        append_box(name, line)
+        if daemon_alive():
+            print(f"hmail: queued for {name} (no herdr here to check the name; the daemon delivers only to a running agent)")
+        else:
+            print(f"hmail: queued for {name}, but no hmail daemon is running: it waits until hmail.service runs", file=sys.stderr)
+        return
     if not daemon_alive():
         herdr("agent", "prompt", name, f"[hmail] {line}")
         print(f"hmail: no daemon running, prompted {name} directly")
         return
     try:
-        with Locked():
-            with open(MAILDIR / name, "a") as f:
-                f.write(line + "\n")
+        append_box(name, line)
     except OSError as e:
         # A sandbox that can't write the mail folder (Claude's, unless it
         # allows ~/.cache/hmail) still reaches herdr's socket.
@@ -162,11 +280,15 @@ def cmd_take(args):
 def cmd_list(_):
     if not MAILDIR.is_dir():
         return
-    for box in sorted(MAILDIR.iterdir()):
-        if box.name.startswith(".") or not box.is_file():
-            continue
-        for l in box.read_text().splitlines():
-            print(f"{box.name}\t{l}")
+    d = open_maildir()
+    try:
+        for name in sorted(os.listdir(d)):
+            if name.startswith("."):
+                continue
+            for l in (read_box(d, name) or "").splitlines():
+                print(f"{plain(name)}\t{plain(l)}")
+    finally:
+        os.close(d)
 
 
 # --- daemon ---------------------------------------------------------------
@@ -209,7 +331,13 @@ def opencode_input_empty(screen):
         i -= 1
     if not draft:
         return None
-    return all(not s.replace(" ", " ").strip() for s in draft)
+    text = [d.replace("\u00a0", " ").strip() for d in draft]
+    text = [t for t in text if t]
+    # A fresh OpenCode's dimmed placeholder, not typed text: without this a
+    # new OpenCode agent never gets mail (seen in homelab H-17).
+    if len(text) == 1 and re.fullmatch(r'Ask anything… "[^"]*"', text[0]):
+        return True
+    return not text
 
 
 # A plain rule; pi's modal-editor extension ends its input box's bottom rule
@@ -272,16 +400,56 @@ def safe_to_type(agent, st, now):
     return now - st.still_since >= 2 * POLL
 
 
+def batch(lines):
+    """The plain-text lines for one delivery (at most MAX_TYPE characters,
+    at least one line) and the raw ones left for the next round."""
+    out, size = [], 0
+    for i, raw in enumerate(lines):
+        l = plain(raw)
+        if len(l) > MAX_LINE:
+            l = l[:MAX_LINE] + " [cut]"
+        if out and size + len(l) > MAX_TYPE:
+            return out, lines[i:]
+        if l:
+            out.append(l)
+            size += len(l) + 5
+    return out, []
+
+
 def deliver(name, pane_id):
     lines = take(name)
     if not lines:
         return
-    text = "[hmail] " + "  |  ".join(lines)
+    out, rest = batch(lines)
+    if rest:
+        put_back(name, rest)
+    if not out:
+        return
+    text = "[hmail] " + "  |  ".join(out)
     try:
         herdr("agent", "prompt", pane_id, text)
     except Exception as e:
-        put_back(name, lines)
+        put_back(name, lines[: len(lines) - len(rest)])
         print(f"hmail: delivery to {name} failed, kept: {e}", file=sys.stderr)
+
+
+def mailboxes():
+    """Names with waiting mail: non-empty regular files, not followed."""
+    d = open_maildir()
+    try:
+        names = set()
+        for n in os.listdir(d):
+            if n.startswith("."):
+                continue
+            try:
+                st = os.stat(n, dir_fd=d, follow_symlinks=False)
+            except FileNotFoundError:
+                continue
+            if stat.S_ISREG(st.st_mode) and st.st_size:
+                names.add(n)
+        return names
+    finally:
+        os.close(d)
 
 
 def cmd_daemon(_):
@@ -289,9 +457,9 @@ def cmd_daemon(_):
     panes = {}
     while True:
         now = time.time()
-        HEARTBEAT.touch()
         try:
-            boxes = {p.name for p in MAILDIR.iterdir() if not p.name.startswith(".") and p.stat().st_size}
+            heartbeat()
+            boxes = mailboxes()
             alist = agents()
         except Exception as e:
             print(f"hmail: {e}", file=sys.stderr)
