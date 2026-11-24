@@ -165,6 +165,8 @@ hermes_guard() {
 # forwards only pane.report_agent and pane.report_agent_session for this
 # pane (OpenCode's and pi's status). It runs outside the box, listening in a
 # private folder that is bound into the box's own /tmp, and stops with abox.
+# It adds a resume command through abox to every session it forwards: herdr's
+# own (`opencode --session ID`) resumed the worker unboxed after a restart.
 # Hermes has no such integration (herdr reads its screen), so it gets none.
 relay_dir= relay_pid=
 relay_sock=/tmp/abox-herdr/relay.sock
@@ -177,8 +179,9 @@ if [ -n "$want_relay" ] && [ -n "${HERDR_PANE_ID:-}" ] && [ -S "$upstream" ]; th
         export HERDR_SOCKET_PATH=$relay_sock
     else
         relay_dir=$(mktemp -d -p "${XDG_RUNTIME_DIR:-/tmp}" abox-herdr.XXXXXX)
+        # The box's command too: herdr resumes the pane through abox with it.
         ABOX_HERDR_UPSTREAM=$upstream "$(dirname "$(readlink -f "$0")")/abox-herdr-relay" "$relay_dir/relay.sock" \
-            "$HERDR_PANE_ID" "$(basename "$1")" </dev/null &
+            "$HERDR_PANE_ID" -- "$@" </dev/null &
         relay_pid=$!
         trap 'kill "$relay_pid" 2>/dev/null; rm -rf "$relay_dir"' EXIT
         for _ in {1..50}; do [ -S "$relay_dir/relay.sock" ] && break; sleep 0.1; done

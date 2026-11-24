@@ -239,7 +239,7 @@ def cmd_send(args):
         # abox: herdr isn't reachable, only the mail folder is.
         append_box(name, line)
         if daemon_alive():
-            print(f"hmail: queued for {name} (no herdr here to check the name; the daemon delivers only to a running agent)")
+            print(f"hmail: queued for {name}, name unchecked: herdr isn't reachable (in abox, or herdr is down); the daemon delivers only to a running agent")
         else:
             print(f"hmail: queued for {name}, but no hmail daemon is running: it waits until hmail.service runs", file=sys.stderr)
         return

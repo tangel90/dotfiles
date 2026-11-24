@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""abox-herdr-relay LISTEN PANE AGENT: the only way from an abox box to herdr.
+"""abox-herdr-relay LISTEN PANE -- CMD [ARGS...]: the only way from an abox
+box to herdr. CMD and ARGS are what abox runs in the box (opencode, pi).
 
 abox hides herdr's socket from the box: through it a boxed worker could run
 `herdr pane run <pane> CMD` in any pane, the lead's and plain shells
@@ -12,18 +13,34 @@ a private folder that it binds into the box as HERDR_SOCKET_PATH. It takes
 one JSON request line per connection and forwards only the two status
 reports, for the box's own pane:
 
-    pane.report_agent          state, seq, agent_session_id
-    pane.report_agent_session  agent_session_id, session_start_source
+    pane.report_agent          state, seq, message, and the session
+    pane.report_agent_session  session_start_source, seq, and the session
+
+The session is agent_session_id for OpenCode (ses_ and letters and
+digits) and agent_session_path for pi (a resolved path to a .jsonl file
+in ~/.pi/agent/sessions/); anything else is refused. herdr keeps it and,
+when it restores panes after a restart, resumes the agent with it. Its
+built-in resume command is the bare `opencode --session ID` or `pi
+--session PATH`, which ran outside the box with full rights, in a
+session the box chose (homelab H-17, shown with a scratch herdr). So
+every forwarded session comes with resume_argv, which herdr prefers:
+`abox CMD ARGS... --session REF`, ARGS without an earlier --session,
+--continue or --resume. herdr resumes in the pane's saved folder, so
+abox boxes the same worktree again. If ARGS can't go in a resume
+command (an apostrophe or a control character, which herdr refuses),
+the relay forwards no session at all, and herdr restores the pane as a
+plain shell.
 
 The request is rebuilt from those fields; pane_id, agent and source are
 always PANE and AGENT (herdr:AGENT), whatever the box sent. Anything else
-(another method, a field of the wrong type or too long, a line over
-MAX_LINE bytes, no line within TIMEOUT seconds) gets an error reply and
-reaches no herdr. The relay exits when abox, its parent, does.
+(another method, a field of the wrong type or form, a line over MAX_LINE
+bytes, no line within TIMEOUT seconds) gets an error reply and reaches no
+herdr. The relay exits when abox, its parent, does.
 """
 
 import json
 import os
+import re
 import signal
 import socket
 import socketserver
@@ -37,9 +54,59 @@ MAX_STR = 512
 TIMEOUT = 3
 MAX_CONN = 8  # at once; more wait in the listen queue
 STATES = {"working", "idle", "blocked", "done", "unknown"}
-FIELDS = {  # method: {field: type}
-    "pane.report_agent": {"state": str, "seq": int, "agent_session_id": str},
-    "pane.report_agent_session": {"agent_session_id": str, "session_start_source": str},
+OPENCODE_ID = re.compile(r"ses_[A-Za-z0-9]{1,64}")
+PI_SESSIONS = os.path.realpath(os.path.expanduser("~/.pi/agent/sessions")) + "/"
+PATH_CHARS = re.compile(r"[A-Za-z0-9_.:/-]{1,512}")
+SESSION_FLAGS = {"--session", "-s", "--continue", "-c", "--resume", "-r"}
+
+
+def is_seq(v, agent):
+    return isinstance(v, int) and not isinstance(v, bool)
+
+
+def is_state(v, agent):
+    return v in STATES
+
+
+def is_message(v, agent):  # pi's "blocked" reason, shown by herdr
+    return isinstance(v, str) and len(v) <= 200 and v.isprintable()
+
+
+def is_start_source(v, agent):
+    return isinstance(v, str) and re.fullmatch(r"[a-z_]{1,32}", v) is not None
+
+
+def is_session_id(v, agent):
+    return agent == "opencode" and isinstance(v, str) and OPENCODE_ID.fullmatch(v) is not None
+
+
+def is_session_path(v, agent):
+    return (agent == "pi" and isinstance(v, str) and PATH_CHARS.fullmatch(v) is not None
+            and v.endswith(".jsonl") and os.path.realpath(v) == v and v.startswith(PI_SESSIONS))
+
+
+def resume_base(cmd, args):
+    """`abox CMD ARGS...` without session flags, or None when an argument
+    can't go into a herdr resume command."""
+    out, skip = ["abox", os.path.basename(cmd)], False
+    for a in args:
+        if skip:
+            skip = False
+            continue
+        flag = a.split("=", 1)[0]
+        if flag in SESSION_FLAGS:
+            skip = "=" not in a and flag in ("--session", "-s")
+            continue
+        if "'" in a or not a.isprintable() or len(a) > 1024:
+            return None
+        out.append(a)
+    return out
+
+
+SESSION = {"agent_session_id": is_session_id, "agent_session_path": is_session_path}
+FIELDS = {  # method: {field: check}
+    "pane.report_agent": {"state": is_state, "seq": is_seq, "message": is_message, **SESSION},
+    "pane.report_agent_session": {"seq": is_seq, "session_start_source": is_start_source, **SESSION},
 }
 UPSTREAM = os.environ.get("ABOX_HERDR_UPSTREAM") or os.path.expanduser("~/.config/herdr/herdr.sock")
 
@@ -48,8 +115,8 @@ def refuse(rid, why):
     return {"id": rid, "error": {"code": "abox_relay_refused", "message": why}}
 
 
-def rebuild(req, pane, agent):
-    """The forwarded request, or (None, reason)."""
+def rebuild(req, pane, agent, resume=None):
+    """The forwarded request, or (None, reason). resume: resume_base()."""
     if not isinstance(req, dict):
         return None, "request is not a JSON object"
     method, params = req.get("method"), req.get("params")
@@ -60,17 +127,22 @@ def rebuild(req, pane, agent):
     if params.get("pane_id", pane) != pane:
         return None, "a box reports only for its own pane"
     out = {"pane_id": pane, "agent": agent, "source": f"herdr:{agent}"}
-    for k, t in FIELDS[method].items():
-        if k not in params:
+    for k, ok in FIELDS[method].items():
+        if k not in params or params[k] is None:
             continue
-        v = params[k]
-        if t is int and (isinstance(v, bool) or not isinstance(v, int)):
-            return None, f"{k} must be an integer"
-        if t is str and (not isinstance(v, str) or len(v) > MAX_STR or not v.isprintable()):
-            return None, f"{k} must be a printable string of at most {MAX_STR} characters"
-        out[k] = v
+        if not ok(params[k], agent):
+            return None, f"{k} is not relayed in that form (see abox-herdr-relay)"
+        out[k] = params[k]
     if method == "pane.report_agent" and out.get("state") not in STATES:
         return None, f"state must be one of {', '.join(sorted(STATES))}"
+    ref = out.get("agent_session_id") or out.get("agent_session_path")
+    if ref and resume is None:
+        out.pop("agent_session_id", None)
+        out.pop("agent_session_path", None)
+        if method == "pane.report_agent_session":
+            return None, "this box's command can't be resumed through abox, so its session isn't reported"
+    elif ref:
+        out["resume_argv"] = [*resume, "--session", ref]
     rid = req.get("id")
     rid = rid if isinstance(rid, str) and len(rid) <= MAX_STR else "abox-relay"
     return {"id": rid, "method": method, "params": out}, None
@@ -115,7 +187,7 @@ class Handler(socketserver.BaseRequestHandler):
                 except ValueError:
                     req = None
                 rid = req.get("id") if isinstance(req, dict) and isinstance(req.get("id"), str) else None
-                fwd, why = rebuild(req, self.server.pane, self.server.agent)
+                fwd, why = rebuild(req, self.server.pane, self.server.agent, self.server.resume)
                 if fwd is None:
                     reply = refuse(rid, why)
                 else:
@@ -134,14 +206,17 @@ class Server(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
 
 
 def main():
-    if len(sys.argv) != 4:
-        sys.exit("usage: abox-herdr-relay LISTEN PANE AGENT")
-    listen, pane, agent = sys.argv[1:]
+    if len(sys.argv) < 5 or sys.argv[3] != "--":
+        sys.exit("usage: abox-herdr-relay LISTEN PANE -- CMD [ARGS...]")
+    listen, pane, cmd, args = sys.argv[1], sys.argv[2], sys.argv[4], sys.argv[5:]
+    agent = os.path.basename(cmd)
     parent = os.getppid()
     old = os.umask(0o077)
     srv = Server(listen, Handler)
     os.umask(old)
-    srv.pane, srv.agent = pane, agent
+    srv.pane, srv.agent, srv.resume = pane, agent, resume_base(cmd, args)
+    if srv.resume is None:
+        print("abox-herdr-relay: an argument can't go into a resume command; herdr won't resume this pane", file=sys.stderr)
     srv.slots = threading.BoundedSemaphore(MAX_CONN)
 
     def watch_parent():
