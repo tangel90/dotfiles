@@ -63,6 +63,17 @@ rw "$HOME/.local/tmp/opencode"   # OpenCode's preferred scratch folder
 [ -d "$HOME/.hermes" ] && rw "$HOME/.hermes"
 [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ] && args+=(--bind "$XDG_RUNTIME_DIR" "$XDG_RUNTIME_DIR")
 
+# An editor started in the box (Hermes' ctrl-g, pi's external editor) is
+# nvim, which writes its state (shada, logs, swap) and harpoon's marks on
+# exit and errors on a read-only home. Give it writable throwaway copies:
+# a tmpfs overlay over the real folders, so it reads plugins and config as
+# usual and nothing it writes reaches the host (bwrap 0.10+).
+if bwrap --help 2>&1 | grep -q -- --tmp-overlay; then
+    for d in "$HOME/.local/state/nvim" "$HOME/.local/share/nvim"; do
+        [ -d "$d" ] && args+=(--overlay-src "$d" --tmp-overlay "$d")
+    done
+fi
+
 hide() {
     if [ -d "$1" ]; then args+=(--tmpfs "$1")
     elif [ -e "$1" ]; then args+=(--ro-bind /dev/null "$1")
