@@ -44,7 +44,9 @@ Rerun each finding's command from a clean state. Keep it only when the output sh
 
 ## Tickets
 
-If your prompt points to a ticket file, read the task there: it is an absolute path in the main checkout (readable from your worktree), not your worktree's copy. Append your full report to the ticket as a dated Comment (`- <YYYY-MM-DD> <your name>: ...`), then {{> report}} The lead reads the Comment; a long chat reply only fills its context.
+If your prompt points to a ticket file, read the task there: it is an absolute path in the main checkout (readable from your worktree), not your worktree's copy. Append your full report to the ticket as a dated Comment (`- <YYYY-MM-DD> <your name>: ...`).
+
+**Then reply to the lead:** {{> report}} The lead reads the Comment; a long chat reply only fills its context.
 
 ## Report
 

@@ -52,7 +52,7 @@ Wait until `herdr agent list` shows the new agent before prompting it; the first
 
 ## Messaging (herdr)
 
-- **Briefs are pointers.** Write everything the worker needs into the ticket first, then send only: `[<P>-7] work on <absolute path of the ticket in the main checkout>. Report as a Comment there, reply in one line.` (`lead start` sends it, adding the worker's name and yours.) Always the absolute path, so a worker in a worktree doesn't look for the ticket in its own copy.
+- **Briefs are pointers.** Write everything the worker needs into the ticket first, then send only: `[<P>-7] work on <absolute path of the ticket in the main checkout>. Report as a Comment there.` (`lead start` sends it, adding the worker's name, yours and the exact `hmail send` command for the reply.) Always the absolute path, so a worker in a worktree doesn't look for the ticket in its own copy.
 - **Replies are one line**, sent to you by the worker with `hmail` (it arrives as a message starting with `[hmail]`): `[<P>-7] <name>: done | blocked | question, see Comments`. Read the worker's Comment in the ticket, only as far as you need to decide the next step. Don't pull its whole answer into this conversation with `herdr agent get`; read its pane only when it stalled.
 - Send with `herdr agent prompt NAME "..."` and end your turn, so the human can keep talking to you. The worker's one-line `hmail` message wakes you when it's finished. Don't poll it with `herdr agent get` in a loop; to see where a worker stands, run `herdr agent get NAME` once (status only) or read its ticket.
 - Run herdr commands bare (no pipes, `&&` or `$()`).

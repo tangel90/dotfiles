@@ -2,7 +2,7 @@
 
 <!-- snippet: report -->
 
-send that one line, and nothing more, to the lead as a shell command: `hmail send <lead> "[<ticket id>] <your name>: done | blocked | question, see Comments"` (it waits until the lead is idle and the human isn't typing there, then types it in), and end your turn with the same line. The lead's name is in your first prompt ("Lead: ..."), and so is yours ("You are ..."): both are herdr names, which `hmail` takes. Don't use SendMessage for this: it addresses Claude's own session names, which differ from herdr's. If the prompt says "No lead", only write the Comment. The lead doesn't watch for you going idle, so without the message it never hears back.
+send one line, and nothing more, to the lead as a shell command: `hmail send <lead> "[<ticket id>] <your name>: done | blocked | question, see Comments"` (it waits until the lead is idle and the human isn't typing there, then types it in), and end your turn with the same line. The lead's name is in your first prompt ("Lead: ..."), and so is yours ("You are ..."): both are herdr names, which `hmail` takes. Don't use SendMessage for this: it addresses Claude's own session names, which differ from herdr's. If the prompt says "No lead", only write the Comment. The lead doesn't watch for you going idle, so without the message it never hears back.
 
 <!-- snippet: reply-channel -->
 

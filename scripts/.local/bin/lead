@@ -304,10 +304,15 @@ def cmd_start(a):
                  f"from the role file, so drop --model")
     # Without a named lead (run from a plain shell), workers must not go
     # looking for one: they would pick whichever lead is running.
-    lead_note = f"Lead: {lead}." if lead else "No lead: report only as the Comment, prompt nobody."
+    # The reply command goes into the pointer itself: workers of every team
+    # reply with hmail, and a model that met it only mid-paragraph in its role
+    # text printed the reply in its own pane instead (agent-watcher AW-4).
+    reply = (f'Lead: {lead}. When done, send your one-line reply with this shell command: '
+             f'hmail send {lead} "[{tid}] {name}: done | blocked | question, see Comments"'
+             if lead else "No lead: report only as the Comment, prompt nobody.")
     # `lead ship` finds the reviewer's report by this name, and a Claude
     # worker can't see its herdr name, so the pointer tells it.
-    lead_note = f"You are {name}: sign your Comments and reply with that name. {lead_note}"
+    lead_note = f"You are {name}: sign your Comments with that name. {reply}"
 
     if a.role == "reviewer":
         branch = f"agent/{a.topic}"
@@ -320,7 +325,7 @@ def cmd_start(a):
             run(["git", "worktree", "add", "--detach", str(wt), branch], cwd=root)
         sha = quiet(["git", "rev-parse", "--short", branch], cwd=root)[1]
         msg = (f"[{tid}] review {branch} ({sha}) against {ticket}. "
-               f"Report as a Comment there, reply in one line. {lead_note}")
+               f"Report as a Comment there. {lead_note}")
     else:
         branch = f"agent/{br_pre}{a.topic}"
         wt = root / ".claude/worktrees" / f"{wt_pre}{a.topic}"
@@ -330,7 +335,7 @@ def cmd_start(a):
             run(["git", "worktree", "add", str(wt), branch], cwd=root)
         else:
             run(["git", "worktree", "add", str(wt), "-b", branch], cwd=root)
-        msg = f"[{tid}] work on {ticket}. Report as a Comment there, reply in one line. {lead_note}"
+        msg = f"[{tid}] work on {ticket}. Report as a Comment there. {lead_note}"
 
     if engine == "pi":
         f, model, thinking = pi_role(a.role)

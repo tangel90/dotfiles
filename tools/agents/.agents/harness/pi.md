@@ -2,7 +2,7 @@
 
 <!-- snippet: report -->
 
-send that one line, and nothing more, to the lead yourself, as a shell command: `hmail send <lead> "[<ticket id>] <your name>: done | blocked | question, see Comments"` (it waits until the lead is idle and the human isn't typing there, then types it in). The lead's name is in your first prompt ("Lead: ..."), and so is yours ("You are ..."); send to exactly that lead and nobody else. If the prompt says "No lead", only write the Comment. The lead can't see when you finish, so without the message it never hears back.
+send one line, and nothing more, to the lead yourself, as a shell command: `hmail send <lead> "[<ticket id>] <your name>: done | blocked | question, see Comments"` (it waits until the lead is idle and the human isn't typing there, then types it in). The lead's name is in your first prompt ("Lead: ..."), and so is yours ("You are ..."); send to exactly that lead and nobody else. If the prompt says "No lead", only write the Comment. The lead can't see when you finish, so without the message it never hears back.
 
 <!-- snippet: reply-channel -->
 

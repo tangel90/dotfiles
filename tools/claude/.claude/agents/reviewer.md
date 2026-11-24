@@ -47,7 +47,9 @@ Rerun each finding's command from a clean state. Keep it only when the output sh
 
 ## Tickets
 
-If your prompt points to a ticket file, read the task there: it is an absolute path in the main checkout (readable from your worktree), not your worktree's copy. Append your full report to the ticket as a dated Comment (`- <YYYY-MM-DD> <your name>: ...`), then send that one line, and nothing more, to the lead as a shell command: `hmail send <lead> "[<ticket id>] <your name>: done | blocked | question, see Comments"` (it waits until the lead is idle and the human isn't typing there, then types it in), and end your turn with the same line. The lead's name is in your first prompt ("Lead: ..."), and so is yours ("You are ..."): both are herdr names, which `hmail` takes. Don't use SendMessage for this: it addresses Claude's own session names, which differ from herdr's. If the prompt says "No lead", only write the Comment. The lead doesn't watch for you going idle, so without the message it never hears back. The lead reads the Comment; a long chat reply only fills its context.
+If your prompt points to a ticket file, read the task there: it is an absolute path in the main checkout (readable from your worktree), not your worktree's copy. Append your full report to the ticket as a dated Comment (`- <YYYY-MM-DD> <your name>: ...`).
+
+**Then reply to the lead:** send one line, and nothing more, to the lead as a shell command: `hmail send <lead> "[<ticket id>] <your name>: done | blocked | question, see Comments"` (it waits until the lead is idle and the human isn't typing there, then types it in), and end your turn with the same line. The lead's name is in your first prompt ("Lead: ..."), and so is yours ("You are ..."): both are herdr names, which `hmail` takes. Don't use SendMessage for this: it addresses Claude's own session names, which differ from herdr's. If the prompt says "No lead", only write the Comment. The lead doesn't watch for you going idle, so without the message it never hears back. The lead reads the Comment; a long chat reply only fills its context.
 
 ## Report
 
