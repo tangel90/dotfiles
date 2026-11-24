@@ -16,6 +16,10 @@ export COLORTERM="truecolor"
 # this; Hermes 0.23 builds its own and stays at 256 (its skin copes).
 export PROMPT_TOOLKIT_COLOR_DEPTH="DEPTH_24_BIT"
 export TMPDIR="$HOME/.local/tmp"
+# agent-browser 0.38 documents a 1 h idle shutdown but only applies it when
+# this is set (the --idle-timeout flag didn't either): terminal-browser's
+# daemons lived for days after their window closed.
+export AGENT_BROWSER_IDLE_TIMEOUT_MS=1800000
 export PAGER="less"
 export LESS="-iMSRx4 -XFQ"
 export PERSONALCONFIG="$HOME/personal"
