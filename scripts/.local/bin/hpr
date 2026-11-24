@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # hpr [--all] [OWNER/REPO]: fzf over a repo's pull requests, open one's diff
-# read-only in nvim (gh pr diff N | nvim -R -c 'set ft=diff' -).
+# read-only in nvim (gh pr diff N | nvim -R -c 'set ft=diff' -), and
+# squash-merge it after you've read it.
 #
 # The repo: OWNER/REPO if given, else the current folder's GitHub repo, else
 # one picked with fzf from your GitHub repos (for repos that live on another
@@ -8,16 +9,44 @@
 # merged and closed ones too.
 #
 # Keys: enter opens the diff in nvim (back to the list when nvim quits),
-# ctrl-o opens the pull request in the browser, ctrl-r reloads the list,
-# esc quits. The preview shows the description, checks and changed files.
+# alt-m squash-merges after showing the checks and asking, ctrl-o opens the
+# pull request in the browser, ctrl-r reloads the list, esc quits.
+# The merge uses the pull request's title as subject and its description as
+# body (the git rules' squash-merge format: the lead writes both, with the
+# ticket id in the title) and deletes the branch on GitHub.
 
 set -euo pipefail
+
+if [ "${1:-}" = __merge ]; then
+    # Called by fzf's alt-m: hpr __merge REPO N
+    repo=$2 n=$3
+    gh pr view "$n" --repo "$repo" --json number,title,state,mergeable,reviewDecision,baseRefName,headRefName \
+        --template '#{{.number}} {{.title}}
+{{.headRefName}} -> {{.baseRefName}}   state {{.state}}   mergeable {{.mergeable}}   review {{if .reviewDecision}}{{.reviewDecision}}{{else}}none{{end}}
+' 2>/dev/null || { echo "hpr: can't read #$n"; read -r -n1 -s -p 'press a key' </dev/tty; exit 0; }
+    echo
+    echo "checks:"
+    gh pr checks "$n" --repo "$repo" 2>/dev/null | awk -F'\t' '!seen[$1]++ {printf "  %-8s %s\n", $2, $1}' || echo "  none"
+    echo
+    read -r -p "Squash-merge #$n and delete its branch? [y/N] " ok </dev/tty
+    if [ "$ok" = y ] || [ "$ok" = Y ]; then
+        subject=$(gh pr view "$n" --repo "$repo" --json title --jq .title)
+        body=$(gh pr view "$n" --repo "$repo" --json body --jq .body)
+        if gh pr merge "$n" --repo "$repo" --squash --delete-branch --subject "$subject" --body "$body"; then
+            echo "merged #$n"
+        fi
+    else
+        echo "not merged"
+    fi
+    read -r -n1 -s -p 'press a key' </dev/tty
+    exit 0
+fi
 
 state=open repo=
 while [ $# -gt 0 ]; do
     case $1 in
         --all) state=all; shift ;;
-        -h|--help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         -*) echo "usage: hpr [--all] [OWNER/REPO]" >&2; exit 2 ;;
         *) repo=$1; shift ;;
     esac
@@ -36,19 +65,13 @@ list="gh pr list --repo '$repo' --state $state --limit 100 \
   --json number,title,author,headRefName,state,updatedAt \
   --template '{{range .}}{{printf \"#%-5v\" .number}}  {{printf \"%-7s\" .state}}  {{.title}}  ({{.headRefName}}, {{.author.login}}, {{timeago .updatedAt}}){{\"\\n\"}}{{end}}'"
 
-export HPR_REPO=$repo
+export HPR_REPO=$repo HPR_SELF=$0
 fzf --ansi --reverse --height 100% \
     --prompt "$repo PRs> " \
-    --header 'enter diff in nvim · ctrl-o browser · ctrl-r reload' \
+    --header 'enter diff in nvim · alt-m merge · ctrl-o browser · ctrl-r reload' \
     --bind "start:reload:$list" \
     --bind "ctrl-r:reload:$list" \
     --bind 'enter:execute(n={1}; gh pr diff "${n#\#}" --repo "$HPR_REPO" | nvim -R -c "set ft=diff" -)' \
+    --bind "alt-m:execute(n={1}; \"\$HPR_SELF\" __merge \"\$HPR_REPO\" \"\${n#\\#}\")+reload:$list" \
     --bind 'ctrl-o:execute-silent(n={1}; gh pr view "${n#\#}" --repo "$HPR_REPO" --web)' \
-    --preview 'n={1}; n=${n#\#}; gh pr view "$n" --repo "$HPR_REPO" --json title,state,author,body,files,statusCheckRollup --template "{{.title}}  [{{.state}}]  {{.author.login}}
-{{range .statusCheckRollup}}{{.name}}: {{if .conclusion}}{{.conclusion}}{{else}}{{.status}}{{end}}
-{{end}}
-{{range .files}}+{{.additions}} -{{.deletions}}  {{.path}}
-{{end}}
-{{.body}}" 2>/dev/null' \
-    --preview-window 'right,55%,wrap' \
     < /dev/null || true
