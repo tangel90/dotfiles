@@ -120,7 +120,8 @@ def cmd_send(args):
     alist = agents()
     if not any(a.get("name") == name for a in alist):
         sys.exit(f"hmail: no agent {name} on this machine (herdr agent list)")
-    sender = own_name(alist) or "someone"
+    # HMAIL_FROM names a sender that is no agent, like hpr for the human.
+    sender = own_name(alist) or os.environ.get("HMAIL_FROM") or "someone"
     line = f"[{time.strftime('%H:%M')}] {sender}: {text}"
     if not daemon_alive():
         herdr("agent", "prompt", name, f"[hmail] {line}")
