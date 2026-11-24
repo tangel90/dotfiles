@@ -323,6 +323,11 @@ def cmd_start(a):
     reply = (f'Lead: {lead}. When done, send your one-line reply with this shell command: '
              f'hmail send {lead} "[{tid}] {name}: done | blocked | question, see Comments"'
              if lead else "No lead: report only as the Comment, prompt nobody.")
+    # OpenCode and pi workers run in abox, which hides herdr's socket (homelab
+    # H-17): `herdr agent prompt` fails there, hmail only writes a file that
+    # hmail's daemon types in outside the box.
+    if lead and engine in ("opencode", "pi"):
+        reply += " herdr isn't reachable from your sandbox; hmail is."
     # `lead ship` finds the reviewer's report by this name, and a Claude
     # worker can't see its herdr name, so the pointer tells it.
     lead_note = f"You are {name}: sign your Comments with that name. {reply}"
