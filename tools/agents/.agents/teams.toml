@@ -64,6 +64,57 @@ label = "GLM-5.3"
 model = "opencode-go/glm-5.3"
 label = "GLM-5.3"
 
+# More teams for one harness: a table named <harness>-<id>. agents-gen writes
+# them beside the harness's default team; for OpenCode into
+# ~/.config/opencode/teams/<id>/, which `hoc --team <id>` links into a repo's
+# .opencode/agents (overriding the global agents there) and `lead start`
+# into each worker's worktree. A model may carry an effort variant after #.
+
+# Trial, 2026-11-24: model comparison on the OpenCode harness, on the Go plan.
+[opencode-go]
+name = "OpenCode Go"
+clear = "/new"
+lead_start = "`hoc --team go`"
+
+[opencode-go.roles.repo-lead]
+model = "opencode-go/qwen4-max"
+label = "Qwen4 Max"
+
+[opencode-go.roles.implementer]
+model = "opencode-go/hy4"
+label = "Hy4"
+
+[opencode-go.roles.reviewer]
+model = "opencode-go/claude-haiku-5-5#max"
+label = "Haiku 5.5"
+
+[opencode-go.roles.debugger]
+model = "opencode-go/claude-haiku-5-5#max"
+label = "Haiku 5.5"
+
+# Trial, 2026-11-24: the same comparison, all billed to the Zen
+# pay-as-you-go workspace (vps-projects).
+[opencode-zen]
+name = "OpenCode Zen"
+clear = "/new"
+lead_start = "`hoc --team zen`"
+
+[opencode-zen.roles.repo-lead]
+model = "opencode/gemini-4-hydrogen#xhigh"
+label = "Gemini 4 Hydrogen"
+
+[opencode-zen.roles.implementer]
+model = "opencode/claude-haiku-5-5#max"
+label = "Haiku 5.5"
+
+[opencode-zen.roles.reviewer]
+model = "opencode/deepseek-v4.1-flash#max"
+label = "DeepSeek V4.1 Flash"
+
+[opencode-zen.roles.debugger]
+model = "opencode/deepseek-v4.1-flash#max"
+label = "DeepSeek V4.1 Flash"
+
 # pi raises "medium" to "high" for Kimi and GLM; GPT-6 Luna keeps it.
 [pi]
 name = "pi"

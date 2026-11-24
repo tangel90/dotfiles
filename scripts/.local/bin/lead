@@ -34,7 +34,10 @@ lead still writes the PR body, the merge message and its Comments itself.
         An OpenCode worker (~/.config/opencode/agents/ROLE.md holds its
         model and instructions): lead writes the worktree's
         .opencode/opencode.jsonc (default_agent ROLE), keeps .opencode/ out
-        of git, and starts `opencode --standalone` in the abox sandbox. A pi
+        of git, and starts `opencode --standalone` in the abox sandbox. When
+        the main checkout's .opencode/agents links to another OpenCode team
+        (hoc --team ID), the worktree gets the same link, and the role file
+        comes from that team. A pi
         worker gets ~/.pi/agent/roles/ROLE.md appended to its prompt, in abox
         too. Workers of every team reply to the lead with hmail.
 
@@ -234,10 +237,16 @@ def write_opencode_config(root, wt, role):
     say(f"+ write {cfg}: default_agent {role}")
     exclude = Path(quiet(["git", "rev-parse", "--git-common-dir"], cwd=root)[1])
     exclude = (exclude if exclude.is_absolute() else root / exclude) / "info/exclude"
+    team = root / ".opencode/agents"
+    if team.is_symlink():
+        say(f"+ link {wt / '.opencode/agents'} -> {os.readlink(team)} (the repo's team)")
     if DRY:
         return
     cfg.parent.mkdir(parents=True, exist_ok=True)
     cfg.write_text(body + "\n")
+    link = wt / ".opencode/agents"
+    if team.is_symlink() and not link.exists() and not link.is_symlink():
+        link.symlink_to(os.readlink(team))
     lines = exclude.read_text().splitlines() if exclude.is_file() else []
     if ".opencode/" not in lines:
         exclude.parent.mkdir(parents=True, exist_ok=True)
@@ -345,7 +354,9 @@ def cmd_start(a):
         run(["ha", "--host", "--kind", "pi", "--typed", "--tab", "workers", name,
              "abox", "pi", *args], cwd=wt)
     elif engine == "opencode":
-        agent_file = Path.home() / ".config/opencode/agents" / f"{a.role}.md"
+        team = root / ".opencode/agents"
+        agent_dir = team.resolve() if team.is_symlink() else Path.home() / ".config/opencode/agents"
+        agent_file = agent_dir / f"{a.role}.md"
         if not agent_file.is_file():
             sys.exit(f"lead: no OpenCode agent {agent_file}; --engine opencode works for: "
                      + ", ".join(sorted(x.stem for x in agent_file.parent.glob("*.md"))))
