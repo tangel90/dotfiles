@@ -212,7 +212,9 @@ def opencode_input_empty(screen):
     return all(not s.replace(" ", " ").strip() for s in draft)
 
 
-FULL_RULE = re.compile(r"^\s*─{8,}\s*$")
+# A plain rule; pi's modal-editor extension ends its input box's bottom rule
+# with a mode label (NORMAL, INSERT), which still counts as a rule.
+FULL_RULE = re.compile(r"^\s*─{8,}\s*(?:NORMAL|INSERT)?\s*$")
 
 
 def pi_input_empty(screen):
