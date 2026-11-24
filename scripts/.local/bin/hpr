@@ -10,12 +10,29 @@
 #
 # Keys: enter opens the diff in nvim (back to the list when nvim quits),
 # alt-m squash-merges after showing the checks and asking, ctrl-o opens the
-# pull request in the browser, ctrl-r reloads the list, esc quits.
+# pull request in the browser (on a machine without one, such as the VPS, it
+# shows the link and copies it, through OSC 52 where needed), ctrl-r reloads
+# the list, esc quits.
 # The merge uses the pull request's title as subject and its description as
 # body (the git rules' squash-merge format: the lead writes both, with the
-# ticket id in the title) and deletes the branch on GitHub.
+# ticket id in the title) and deletes the branch on GitHub. After a merge,
+# the repo's lead (herdr agent <repo>-lead on this machine, if it runs) gets
+# a one-line hmail, so it can close the ticket and clean up.
 
 set -euo pipefail
+
+if [ "${1:-}" = __web ]; then
+    # Called by fzf's ctrl-o: hpr __web REPO N
+    url=$(gh pr view "$3" --repo "$2" --json url --jq .url)
+    if [ -n "${BROWSER:-}${DISPLAY:-}${WAYLAND_DISPLAY:-}" ] && command -v xdg-open >/dev/null 2>&1; then
+        xdg-open "$url" >/dev/null 2>&1 &
+        exit 0
+    fi
+    printf '%s' "$url" | clipboard-copy 2>/dev/null || true
+    printf 'No browser on this machine; the link (copied to the clipboard):\n\n%s\n\n' "$url"
+    read -r -n1 -s -p 'press a key' </dev/tty
+    exit 0
+fi
 
 if [ "${1:-}" = __merge ]; then
     # Called by fzf's alt-m: hpr __merge REPO N
@@ -34,6 +51,13 @@ if [ "${1:-}" = __merge ]; then
         body=$(gh pr view "$n" --repo "$repo" --json body --jq .body)
         if gh pr merge "$n" --repo "$repo" --squash --delete-branch --subject "$subject" --body "$body"; then
             echo "merged #$n"
+            lead=${repo##*/}-lead
+            if herdr agent get "$lead" >/dev/null 2>&1; then
+                hmail send "$lead" "[hpr] the human squash-merged PR #$n ($subject). Set its ticket done, close its workers and worktrees; deploy only as this repo's CLAUDE.md says." \
+                    && echo "told $lead"
+            else
+                echo "no $lead running on this machine to tell"
+            fi
         fi
     else
         echo "not merged"
@@ -73,5 +97,5 @@ fzf --ansi --reverse --height 100% \
     --bind "ctrl-r:reload:$list" \
     --bind 'enter:execute(n={1}; gh pr diff "${n#\#}" --repo "$HPR_REPO" | nvim -R -c "set ft=diff" -)' \
     --bind "alt-m:execute(n={1}; \"\$HPR_SELF\" __merge \"\$HPR_REPO\" \"\${n#\\#}\")+reload:$list" \
-    --bind 'ctrl-o:execute-silent(n={1}; gh pr view "${n#\#}" --repo "$HPR_REPO" --web)' \
+    --bind "ctrl-o:execute(n={1}; \"\$HPR_SELF\" __web \"\$HPR_REPO\" \"\${n#\\#}\")" \
     < /dev/null || true
