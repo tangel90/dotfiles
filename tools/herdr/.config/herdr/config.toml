@@ -161,72 +161,72 @@ key = "prefix+t"            # replaces new_tab (now prefix+c)
 type = "popup"
 command = "cd \"${HERDR_ACTIVE_PANE_CWD:-$HOME}\" && exec \"$HOME/.local/bin/ht\""
 description = "ticket board (ht), started in the pane's directory so . means its repo"
-width = "90%"
-height = "85%"
+width = "96%"
+height = "94%"
 
 [[keys.command]]
 key = "prefix+shift+g"      # replaces new_worktree
 type = "popup"
 command = "exec \"$HOME/.local/bin/hwt\""
 description = "the agents' git worktrees: branch, ticket, agent, commits ahead, uncommitted files (hwt)"
-width = "90%"
-height = "85%"
+width = "96%"
+height = "94%"
 
 [[keys.command]]
 key = "prefix+i"
 type = "popup"
 command = "cd \"${HERDR_ACTIVE_PANE_CWD:-$HOME}\" && exec lazygit"
 description = "lazygit in the pane's directory"
-width = "90%"
-height = "85%"
+width = "96%"
+height = "94%"
 
 [[keys.command]]
 key = "prefix+e"            # replaces edit_scrollback, now prefix+shift+e
 type = "popup"
 command = "cd \"${HERDR_ACTIVE_PANE_CWD:-$HOME}\" && exec yazi"
 description = "yazi in the pane's directory"
-width = "90%"
-height = "85%"
+width = "96%"
+height = "94%"
 
 [[keys.command]]
 key = "prefix+alt+e"        # yazi on the VPS over SFTP; [sftp.vps] in the untracked ~/.config/yazi/vfs.toml (desktop only)
 type = "popup"
 command = "grep -qs '^\\[sftp\\.vps\\]' ~/.config/yazi/vfs.toml && exec yazi sftp://vps; echo 'no [sftp.vps] in ~/.config/yazi/vfs.toml on this machine'; read -r _"
 description = "yazi on the VPS (sftp://vps)"
-width = "90%"
-height = "85%"
+width = "96%"
+height = "94%"
 
 [[keys.command]]
 key = "prefix+o"            # open_notification_target moved to prefix+a; hnvim is unbound
 type = "popup"
 command = "\"$HOME/.local/bin/hw\" --here"
 description = "open a file below the pane's directory in a new tab (hw)"
-width = "90%"
-height = "85%"
+width = "96%"
+height = "94%"
 
 [[keys.command]]
 key = "prefix+shift+o"
 type = "popup"
 command = "\"$HOME/.local/bin/hw\""
 description = "open any file under ~ in a new tab (hw)"
-width = "90%"
-height = "85%"
+width = "96%"
+height = "94%"
 
 [[keys.command]]
 key = "prefix+shift+a"
 type = "popup"
 command = "\"$HOME/.local/bin/hagent\""
 description = "start a Claude subagent definition as an agent in a new tab (hagent)"
-width = "90%"
-height = "85%"
+width = "96%"
+height = "94%"
 
 [[keys.command]]
 key = "prefix+s"            # replaces settings, now prefix+shift+s
 type = "popup"
 command = "\"$HOME/.local/bin/hp\""
 description = "project picker: workspaces, chats, folders"
-width = "90%"
-height = "85%"
+width = "96%"
+height = "94%"
 
 [[keys.command]]
 key = "prefix+v"            # replaces split_vertical, now prefix+shift+v
@@ -251,32 +251,32 @@ key = "prefix+p"             # replaces previous_tab (alt+left), as tmux's prefi
 type = "popup"
 command = "GPG_TTY=$(tty) \"$HOME/.local/bin/open-pass\" copy"
 description = "copy a pass entry's first line to the clipboard (open-pass)"
-width = "80%"
-height = "70%"
+width = "90%"
+height = "85%"
 
 [[keys.command]]
 key = "prefix+shift+p"       # replaces rename_pane (prefix+ctrl+p), as tmux's prefix+P
 type = "popup"
 command = "GPG_TTY=$(tty) \"$HOME/.local/bin/open-pass\" show"
 description = "show a pass entry read-only in nvim (open-pass)"
-width = "90%"
-height = "85%"
+width = "96%"
+height = "94%"
 
 [[keys.command]]
 key = "prefix+backtick"
 type = "popup"
 command = "cd \"${HERDR_ACTIVE_PANE_CWD:-$HOME}\" && exec zsh -i"
 description = "scratch shell in the pane's directory"
-width = "80%"
-height = "75%"
+width = "90%"
+height = "85%"
 
 [[keys.command]]
 key = "prefix+shift+r"       # replaces reload_config, as tmux's prefix+R (script-runner)
 type = "popup"
 command = "\"$HOME/.local/bin/hrun\""
 description = "pick a command or script and run it (hrun)"
-width = "90%"
-height = "85%"
+width = "96%"
+height = "94%"
 
 [experimental]
 kitty_graphics = true
