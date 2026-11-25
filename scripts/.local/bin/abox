@@ -22,9 +22,10 @@
 #
 #   A profile per agent, picked by the command's name: its own state folder
 #   writable (sessions, settings, its provider login), and what herdr needs
-#   from it. Another agent's state stays read-only, so a boxed Hermes can't
-#   rewrite OpenCode's or pi's sessions, nor the other way round. A command
-#   without a profile (`abox bash`) gets the shared box only.
+#   from it. Every other agent's state is hidden, so a boxed Hermes can't
+#   read OpenCode's or pi's sessions and keys, nor the other way round. A
+#   command without a profile (`abox bash`) gets the shared box only, with
+#   all agents' state hidden.
 #
 #     opencode  ~/.local/share/opencode, ~/.local/state/opencode; herdr relay
 #     pi        ~/.pi; herdr relay
@@ -35,10 +36,10 @@
 # pi's status reports to herdr go through abox-herdr-relay, which forwards
 # only those, for this pane, with a resume command through abox.
 #
-# Not covered: every agent reads its own provider key to work (OpenCode's
-# ~/.local/share/opencode/auth.json, pi's ~/.pi/agent/auth.json, Hermes'
-# ~/.hermes), and the other agents' keys stay readable too. Revoke a key at
-# its provider if an agent ever misbehaves.
+# Not covered: every agent reads its own provider key to work (OpenCode's in
+# its database in ~/.local/share/opencode, pi's ~/.pi/agent/auth.json,
+# Hermes' ~/.hermes/.env). Revoke a key at its provider if an agent ever misbehaves.
+# Claude's transcripts (~/.claude/projects) stay readable to every box.
 
 set -euo pipefail
 
@@ -186,6 +187,12 @@ case $agent in
         [ -d "$HOME/.hermes" ] && rw "$HOME/.hermes"
         [ -z "$dry" ] && hermes_guard ;;
 esac
+# Every other agent's state is hidden, not only read-only: it holds that
+# agent's provider key, its sessions and tokens such as Hermes' Discord bot
+# token in ~/.hermes/.env, which a worker could otherwise read and use.
+[ "$agent" = opencode ] || { hide "$HOME/.local/share/opencode"; hide "$HOME/.local/state/opencode"; }
+[ "$agent" = pi ] || hide "$HOME/.pi"
+[ "$agent" = hermes ] || hide "$HOME/.hermes"
 
 # herdr inside the box: no socket at all, except abox-herdr-relay's, which
 # forwards only pane.report_agent and pane.report_agent_session for this
