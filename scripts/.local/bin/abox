@@ -1,51 +1,69 @@
 #!/usr/bin/env bash
-# abox [--dry-run] [--] CMD [ARGS...]: run CMD (an OpenCode worker, or the
-# pi or Hermes agent) in a bubblewrap sandbox, started in a git worktree, or
-# in a plain project folder (then only that folder is writable).
-# `lead start --engine opencode` runs `abox opencode --standalone` through ha.
+# abox [--dry-run] [--] AGENT [ARGS...]: run a coding agent (OpenCode, pi,
+# Hermes, or any other command) in a bubblewrap sandbox, started in a git
+# worktree or in a plain project folder. `lead start` runs its workers as
+# `abox opencode ...` and `abox pi ...`; Hermes starts as `abox hermes`.
 #
-# OpenCode has no sandbox of its own, and its permission rules only cover its
-# own tools: a shell command could still read anything the user can. Here the
-# whole system is read-only, and only what a worker needs is writable:
-#   the worktree, the repo's git dir (commits), the main checkout's tickets/,
-#   OpenCode's state and scratch folder, pi's (~/.pi) and Hermes' (~/.hermes)
-#   state, ~/.cache, a private /tmp.
-# Hidden (an empty file or directory in their place): the Claude login, SSH
-# keys, the GitHub CLI login, dclaude's token, the password store and
-# OpenCode's service password. The network stays (the model API needs it).
-# herdr's sockets are hidden too (homelab H-17): through them a worker could
-# run `herdr pane run` in any pane, outside the box. The worker reports to
-# its lead with `hmail send`, which only writes a file in ~/.cache/hmail;
-# hmail's daemon, outside, types it in. OpenCode's and pi's status reports
-# go through abox-herdr-relay, which forwards only those, for this pane.
-# XDG_RUNTIME_DIR is an empty private folder, and the system bus is hidden:
-# the user bus would let `systemd-run --user` start a unit outside the box.
-# The Docker socket is hidden too (the system one and a rootless one in
-# XDG_RUNTIME_DIR), and DOCKER_HOST is unset: the docker group is
-# root-equivalent, so `docker run -v /any/path:/x` would read files the user
-# can't, such as the homelab service data in /srv/homelab (homelab H-7).
-# Boxed workers therefore can't run docker or docker compose (not even
-# `compose config`); the lead and CI do that.
+# The agents' own permission rules only cover their own tools: a shell
+# command they run could still read and write anything the user can. A box
+# has two parts:
 #
-# Not covered: OpenCode reads its own key (~/.local/share/opencode/auth.json)
-# to work, so a worker in the same box can read it too. Revoke it in the
-# OpenCode console if a worker ever misbehaves.
+#   The shared box, the same for every agent: the whole system read-only;
+#   writable only the project (in a git repo the worktree, the repo's git dir
+#   for commits, the main checkout's tickets/ for a worker's report),
+#   ~/.cache (hmail's mailboxes among them), a scratch folder
+#   (~/.local/tmp/abox, the box's TMPDIR) and a private /tmp. Hidden (an
+#   empty file or folder in their place): the Claude login, SSH keys, the
+#   GitHub CLI login, dclaude's token, the password store, ~/.gnupg,
+#   OpenCode's service password, herdr's sockets and ~/.config/herdr
+#   (homelab H-17: through them a worker ran `herdr pane run` in any pane,
+#   outside the box), the Docker sockets and the system bus; XDG_RUNTIME_DIR
+#   is an empty private folder. The network stays: the model APIs need it.
+#
+#   A profile per agent, picked by the command's name: its own state folder
+#   writable (sessions, settings, its provider login), and what herdr needs
+#   from it. Another agent's state stays read-only, so a boxed Hermes can't
+#   rewrite OpenCode's or pi's sessions, nor the other way round. A command
+#   without a profile (`abox bash`) gets the shared box only.
+#
+#     opencode  ~/.local/share/opencode, ~/.local/state/opencode; herdr relay
+#     pi        ~/.pi; herdr relay
+#     hermes    ~/.hermes; refuses to start next to an unboxed Hermes daemon
+#
+# Workers report to their lead with `hmail send`, which only writes a file
+# in ~/.cache/hmail; hmail's daemon, outside, types it in. OpenCode's and
+# pi's status reports to herdr go through abox-herdr-relay, which forwards
+# only those, for this pane, with a resume command through abox.
+#
+# Not covered: every agent reads its own provider key to work (OpenCode's
+# ~/.local/share/opencode/auth.json, pi's ~/.pi/agent/auth.json, Hermes'
+# ~/.hermes), and the other agents' keys stay readable too. Revoke a key at
+# its provider if an agent ever misbehaves.
 
 set -euo pipefail
 
 dry=
 [ "${1:-}" = --dry-run ] && { dry=1; shift; }
 [ "${1:-}" = -- ] && shift
-(( $# )) || { echo "usage: abox [--dry-run] [--] CMD [ARGS...]" >&2; exit 2; }
+(( $# )) || { echo "usage: abox [--dry-run] [--] AGENT [ARGS...]" >&2; exit 2; }
 command -v bwrap >/dev/null || { echo "abox: bwrap is missing (pacman -S bubblewrap)" >&2; exit 1; }
+agent=$(basename "$1")
 
 args=(--ro-bind / / --dev /dev --proc /proc --tmpfs /tmp --die-with-parent)
 rw() { [ -e "$1" ] || mkdir -p "$1"; args+=(--bind "$1" "$1"); }
+hide() {
+    if [ -d "$1" ]; then args+=(--tmpfs "$1")
+    elif [ -e "$1" ]; then args+=(--ro-bind /dev/null "$1")
+    fi
+}
 
-# In a git repo: the worktree, the shared git dir (commits from a worktree)
-# and the main checkout's tickets/ (a worker's report), as a lead's workers
-# need. Outside one (pi, Hermes in a plain folder): just this folder, but
-# never the home folder or anything above it, which would open all of it.
+# --- The shared box -------------------------------------------------------
+
+# The project. In a git repo: the worktree, the shared git dir (commits from
+# a worktree) and the main checkout's tickets/ (a worker's report). Outside
+# one: just this folder, but never the home folder or anything above it,
+# which would open all of it. The project comes first among the binds:
+# hermes_guard reads it back from a box's bwrap command line.
 if top=$(git rev-parse --show-toplevel 2>/dev/null); then
     common=$(cd "$(git rev-parse --git-common-dir)" && pwd)
     main=$(dirname "$common")
@@ -59,20 +77,18 @@ else
     esac
     rw "$top"
 fi
-rw "$HOME/.local/share/opencode"
-rw "$HOME/.local/state/opencode"
 rw "$HOME/.cache"
-rw "$HOME/.local/tmp/opencode"   # OpenCode's preferred scratch folder
-# pi and Hermes keep sessions, settings and their provider login here; only
-# when installed, so a machine without them gets no empty folders.
-[ -d "$HOME/.pi" ] && rw "$HOME/.pi"
-[ -d "$HOME/.hermes" ] && rw "$HOME/.hermes"
+# The scratch folder, the box's TMPDIR (the login's ~/.local/tmp is
+# read-only here; tests use it through os.tmpdir()).
+scratch=$HOME/.local/tmp/abox
+rw "$scratch"
+
 # XDG_RUNTIME_DIR gets an empty private tmpfs, not the real one: that holds
 # the user bus (bus) and the user manager (systemd/private), through which
 # `systemd-run --user` starts a unit outside the box that reads anything,
 # the gh token and the Docker socket included (homelab H-15); also the
 # gpg-agent's SSH socket and other tools' daemons (herdr-core's too).
-# Nothing a boxed worker needs lives there: tools that keep sockets there
+# Nothing a boxed agent needs lives there: tools that keep sockets there
 # (agent-browser) start their own in here.
 if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
     args+=(--perms 0700 --tmpfs "$XDG_RUNTIME_DIR")
@@ -89,11 +105,6 @@ if bwrap --help 2>&1 | grep -q -- --tmp-overlay; then
     done
 fi
 
-hide() {
-    if [ -d "$1" ]; then args+=(--tmpfs "$1")
-    elif [ -e "$1" ]; then args+=(--ro-bind /dev/null "$1")
-    fi
-}
 hide "$HOME/.claude/.credentials.json"
 hide "$HOME/.ssh"
 hide "$HOME/.config/gh"
@@ -107,11 +118,13 @@ hide /run/docker.sock   # /var/run is a link to /run
 hide "$HOME/.config/herdr"
 # A rootless Docker socket would be in XDG_RUNTIME_DIR, which is empty here.
 unset DOCKER_HOST
-# The system bus: nothing a worker runs needs it (homelab H-15).
+# The system bus: nothing an agent runs needs it (homelab H-15).
 hide /run/dbus/system_bus_socket
 # Both point into the real XDG_RUNTIME_DIR (the user bus, and gpg-agent's
 # SSH socket through herdr's link), so they would only dangle.
 unset DBUS_SESSION_BUS_ADDRESS SSH_AUTH_SOCK
+
+# --- The agent's profile --------------------------------------------------
 
 # Hermes runs its agent, tools included, in one background daemon (its
 # "gateway") per Hermes home, shared by every hermes client and started by
@@ -159,7 +172,20 @@ hermes_guard() {
         exit 1
     fi
 }
-[ "$(basename "$1")" = hermes ] && [ -z "$dry" ] && hermes_guard
+
+want_relay=
+case $agent in
+    opencode)
+        rw "$HOME/.local/share/opencode"
+        rw "$HOME/.local/state/opencode"
+        want_relay=1 ;;
+    pi)
+        [ -d "$HOME/.pi" ] && rw "$HOME/.pi"
+        want_relay=1 ;;
+    hermes)
+        [ -d "$HOME/.hermes" ] && rw "$HOME/.hermes"
+        [ -z "$dry" ] && hermes_guard ;;
+esac
 
 # herdr inside the box: no socket at all, except abox-herdr-relay's, which
 # forwards only pane.report_agent and pane.report_agent_session for this
@@ -172,7 +198,6 @@ relay_dir= relay_pid=
 relay_sock=/tmp/abox-herdr/relay.sock
 upstream=${HERDR_SOCKET_PATH:-$HOME/.config/herdr/herdr.sock}
 unset HERDR_SOCKET_PATH HERDR_BIN_PATH
-case "$(basename "$1")" in opencode|pi) want_relay=1 ;; *) want_relay= ;; esac
 if [ -n "$want_relay" ] && [ -n "${HERDR_PANE_ID:-}" ] && [ -S "$upstream" ]; then
     if [ -n "$dry" ]; then
         args+=(--bind /RELAY-DIR /tmp/abox-herdr)
@@ -194,15 +219,16 @@ if [ -n "$want_relay" ] && [ -n "${HERDR_PANE_ID:-}" ] && [ -S "$upstream" ]; th
     fi
 fi
 
+# --- Environment and start ------------------------------------------------
+
 # herdr recognises an agent typed into a pane by HERDR_AGENT (as for dclaude):
 # the command's name, which is the herdr kind for opencode, pi and hermes.
-export HERDR_AGENT=${HERDR_AGENT:-$(basename "$1")}
-# Writable places for what defaults to read-only paths in here: TMPDIR (the
-# login's ~/.local/tmp; os.tmpdir() in tests), and agent-browser's profile
-# (terminal-browser's own folder), one per worktree so parallel workers don't
-# share a browser profile.
-export TMPDIR="$HOME/.local/tmp/opencode"
-export AGENT_BROWSER_PROFILE="$HOME/.local/tmp/opencode/browser/$(basename "$top")"
+export HERDR_AGENT=${HERDR_AGENT:-$agent}
+# agent-browser's profile defaults to terminal-browser's own, read-only
+# folder: one per project in the scratch folder, so parallel workers never
+# share a browser profile (it locks).
+export TMPDIR=$scratch
+export AGENT_BROWSER_PROFILE="$scratch/browser/$(basename "$top")"
 mkdir -p "$AGENT_BROWSER_PROFILE"
 if [ -n "$dry" ]; then
     printf '%q ' bwrap "${args[@]}" --chdir "$PWD" "$@"; echo
