@@ -7,7 +7,8 @@ Tickets are the files tickets/<P>-<NNN>-<slug>.md that repo-lead (or a sprint
 hub) keeps, in the format of the tickets skill
 (tools/agents/.agents/skills/tickets/SKILL.md); ht reads their
 "# <ID> <title>", "Status:" and "Owner:" lines. Repos are the open herdr
-workspaces' roots plus ~/*/ and ~/projects/*/ when they have a tickets/ folder.
+workspaces' roots, the repos the running herdr agents work in (at any depth)
+and ~/*/, ~/projects/*/, each when it has a tickets/ folder.
 
 The query filters; every word must match:
 
@@ -129,9 +130,35 @@ def repos():
         for key in ("repo_root", "checkout_path"):
             if wt.get(key):
                 roots.add(Path(wt[key]))
+    # Agents' folders reach repos at any depth; herdr's workspace list carries
+    # no worktree for plain folders, so it alone misses them.
+    for a in agents():
+        root = tickets_root(a.get("foreground_cwd") or a.get("cwd") or "")
+        if root:
+            roots.add(root)
     for pattern in ("*/tickets", "projects/*/tickets"):
         roots.update(p.parent for p in HOME.glob(pattern) if p.is_dir())
     return sorted(r for r in roots if (r / "tickets").is_dir())
+
+
+def tickets_root(cwd):
+    """The nearest folder at or above cwd with a tickets/ folder, below ~;
+    for a worktree outside its repo, the main checkout's."""
+    if not cwd:
+        return None
+    start = Path(cwd)
+    for d in (start, *start.parents):
+        if d == HOME or d == d.parent:
+            break
+        if (d / "tickets").is_dir():
+            return d
+    try:
+        out = subprocess.run(["git", "-C", cwd, "rev-parse", "--path-format=absolute", "--git-common-dir"],
+                             capture_output=True, text=True, timeout=5)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    main = Path(out.stdout.strip()).parent if out.returncode == 0 else None
+    return main if main and (main / "tickets").is_dir() else None
 
 
 def parse(path):
