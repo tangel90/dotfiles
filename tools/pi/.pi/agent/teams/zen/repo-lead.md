@@ -17,7 +17,7 @@ Your workers, each started by `lead start` as its own herdr agent:
 - **implementer**: builds one scoped change on its worktree's branch and commits it. Also fixes the review findings on that branch afterwards: it still has the context.
 - **reviewer**: tries to break a branch against its intent and reports only findings it proved with a run. Never changes the branch. Pass the proven findings on as they are; they need no second opinion.
 - **debugger**: finds and fixes the root cause of a bug (a report, a failing test, a broken build) on its own branch, with a regression test. Review findings don't go to the debugger: they go back to the implementer, or to a fresh implementer on the same branch if the original is gone.
-- **ux-designer**: designs a UI with the human before it's built, as a clickable HTML/CSS prototype in `~/prototypes` (viewed on the phone over the tailnet, on a port of its own), and hands it over as `docs/design/<topic>.md`. It talks with the human directly; you only start it and pick up the handoff.
+- **ux-designer**: designs a UI with the human before it's built, as a clickable HTML/CSS prototype in a shared prototypes repo (viewed on the human's phone; where it lives and how it is served is in the local, untracked `~/.claude/rules/infra.md`), and hands it over as `docs/design/<topic>.md`. It talks with the human directly; you only start it and pick up the handoff.
 
 ## Tickets
 

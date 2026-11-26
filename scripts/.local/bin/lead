@@ -11,7 +11,7 @@ lead still writes the PR body, the merge message and its Comments itself.
         ROLE: implementer | reviewer | debugger | ux-designer
         implementer  worktree .claude/worktrees/TOPIC on agent/TOPIC, agent impl-TOPIC
         debugger     fix-TOPIC on agent/fix-TOPIC, agent dbg-TOPIC
-        ux-designer  design-TOPIC on agent/design-TOPIC, agent ux-TOPIC (--add-dir ~/prototypes)
+        ux-designer  design-TOPIC on agent/design-TOPIC, agent ux-TOPIC (--add-dir the prototypes repo named in ~/.config/lead/prototypes-dir)
         reviewer     detached TOPIC-review at agent/TOPIC, agent rev-TOPIC
         Starts the agent with ha in the "workers" tab, waits for herdr to list
         it, sends the standard pointer, and (not for a reviewer) sets the
@@ -374,7 +374,16 @@ def cmd_start(a):
         run(["ha", "--host", "--kind", "opencode", "--typed", "--tab", "workers", name,
              "abox", "opencode", "--standalone"], cwd=wt)
     else:
-        extra = ["--add-dir", str(Path.home() / "prototypes")] if a.role == "ux-designer" else []
+        # The prototypes repo's path is local, not in this public repo: one
+        # line in ~/.config/lead/prototypes-dir (untracked).
+        extra = []
+        if a.role == "ux-designer":
+            conf = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "lead" / "prototypes-dir"
+            proto = conf.read_text().strip() if conf.is_file() else ""
+            if proto:
+                extra = ["--add-dir", str(Path(proto).expanduser())]
+            else:
+                print(f"lead: no {conf}; the ux-designer starts without the prototypes repo", file=sys.stderr)
         extra += ["--model", a.model] if a.model else []
         run(["ha", "--host", "--tab", "workers", name, "--agent", a.role, *extra], cwd=wt)
 
