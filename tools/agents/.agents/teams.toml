@@ -85,12 +85,12 @@ model = "opencode-go/hy4"
 label = "Hy4"
 
 [opencode-go.roles.reviewer]
-model = "opencode-go/glm-5.3"
-label = "GLM-5.3"
+model = "opencode-go/claude-haiku-5-5#high"
+label = "Haiku 5.5"
 
 [opencode-go.roles.debugger]
-model = "opencode-go/glm-5.3"
-label = "GLM-5.3"
+model = "opencode-go/claude-haiku-5-5#high"
+label = "Haiku 5.5"
 
 # Trial, 2026-11-24: the same comparison, all billed to the Zen
 # pay-as-you-go workspace (vps-projects).
@@ -119,9 +119,11 @@ label = "DeepSeek V4.1 Flash"
 # OpenCode. The default team is the Go one (`hpi`, all on the Go plan);
 # `hpi --team zen` the Zen one (all on the Zen pay-as-you-go key, which pi
 # needs as its `opencode` login). No thinking line: pi's default for that
-# model. 2026-11-26: the Go teams' reviewer and debugger are back on
-# GLM-5.3: Haiku 5.5 at thinking max used most of the Go plan's week in
-# one evening (agent-watcher, 82M tokens).
+# model. 2026-11-26: the Go teams' reviewer and debugger run Haiku 5.5 at
+# high, not max. On the Go plan Haiku is among the cheapest models
+# (cache reads $0.01 per million, $0.05 above 100k context; GLM-5.3
+# $0.26), so its volume, not its price, was the problem: the review
+# brakes in the roles address that.
 [pi]
 name = "pi Go"
 clear = "/new"
@@ -136,12 +138,14 @@ model = "opencode-go/hy4"
 label = "Hy4"
 
 [pi.roles.reviewer]
-model = "opencode-go/glm-5.3"
-label = "GLM-5.3"
+model = "opencode-go/claude-haiku-5-5"
+thinking = "high"
+label = "Haiku 5.5"
 
 [pi.roles.debugger]
-model = "opencode-go/glm-5.3"
-label = "GLM-5.3"
+model = "opencode-go/claude-haiku-5-5"
+thinking = "high"
+label = "Haiku 5.5"
 
 [pi-zen]
 name = "pi Zen"
