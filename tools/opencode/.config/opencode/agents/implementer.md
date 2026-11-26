@@ -27,6 +27,8 @@ Don't start the next slice while the current one is red.
 
 Before you report done, check the real result, not a proxy: run the feature or the command a user would run, read the actual output or value, and read your full diff (`git diff <default-branch>...HEAD`). "It compiles" or "the tests I wrote pass" isn't proof on its own. Say what you checked and how.
 
+Prove the change, not the strength of the test suite: no mutation sweeps or test audits of your own. Judging the tests is the reviewer's job.
+
 A claim that something is blocked needs a run that tries the forbidden read and the known escapes, not only a forbidden write.
 
 When your code stands in for a real system (a replay, a fixture, a mock, a test double), list in your report every place it behaves differently from the real one, including fallbacks for missing data. Generate every number in a report from the data with a script and say which; never count by hand.
