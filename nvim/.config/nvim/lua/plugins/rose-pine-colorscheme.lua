@@ -55,6 +55,13 @@ return {
             -- NOTE: Highlight groups are extended (merged) by default. Disable this
             -- per group via `inherit = false`
             highlight_groups = {
+                -- Diff buffers (`git diff | nvim`, hpr's o) like lazygit: coloured
+                -- text in the terminal's green and red (Ghostty's default palette,
+                -- Tomorrow Night), no tinted blocks behind whole lines.
+                diffAdded = { fg = '#b5bd68', inherit = false },
+                diffRemoved = { fg = '#cc6666', inherit = false },
+                ['@diff.plus'] = { fg = '#b5bd68', inherit = false },
+                ['@diff.minus'] = { fg = '#cc6666', inherit = false },
                 -- Comment = { fg = "foam" },
                 -- StatusLine = { fg = "love", bg = "love", blend = 15 },
                 -- VertSplit = { fg = "muted", bg = "muted" },
