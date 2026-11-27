@@ -34,6 +34,7 @@ a dated Comment shows its file's modification age instead, marked "~"
 The board starts in key mode, like herdr's prefix+g popup: j/k move, single
 keys set the filter (h human, t triage, r review, p progress, a active,
 c closed, l all; m toggles only mine, d toggles last action over 14 days;
+Opened from a repo with tickets, the board starts filtered to that repo (#.).
 . toggles the repo of the pane ht was opened from, w cycles through the repos
 with tickets, listed in the header while a repo filter is on; i cycles the
 intents the same way, ~ opens search with "~" typed), q or esc
@@ -417,9 +418,13 @@ def board():
                  f' || echo "change-preview-label({KEYS_LABEL})+change-preview({keys})+show-preview"')
     show_brief = (f'[ "$FZF_PREVIEW_LABEL" = "{KEYS_LABEL}" ] && echo "change-preview-label()+change-preview({brief})"'
                   ' || echo toggle-preview')
+    # Opened in a repo with tickets (its herdr workspace, a worktree of it),
+    # the board starts on that repo's tickets; . clears the filter.
+    here = repo_of(os.environ.get("HERDR_ACTIVE_PANE_CWD") or os.getcwd())
+    start = "#." if here and (here / "tickets").is_dir() else ""
     subprocess.run(
         ["fzf", "--height=100%", "--ansi", "--disabled", "--delimiter", "\t", "--with-nth", "2", "--no-sort",
-         "--layout", "reverse", "--prompt", "tickets> ", "--header", HELP,
+         "--layout", "reverse", "--prompt", "tickets> ", "--header", HELP, "--query", start,
          "--preview", brief, "--preview-window", "down,40%,wrap,hidden",
          "--bind", f"start:{reload}+{header}", "--bind", f"change:{reload}+{header}",
          "--bind", "j:down", "--bind", "k:up", "--bind", "q:abort",
