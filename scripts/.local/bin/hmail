@@ -19,7 +19,8 @@ and, as an excluded command, from Claude's sandbox). Two things hand it over:
   with what the human sends.
 
 The input box counts as empty when Claude's `❯` line between the two rules
-holds nothing, or, for any harness, when the screen is still exactly what it
+holds nothing or only dimmed text (its `Try "..."` hint and its suggested
+next prompt, such as "merged it, what's next": typed text is never dim), or, for any harness, when the screen is still exactly what it
 was when the agent turned idle (nothing was typed since).
 
 Without a running daemon (no heartbeat for 30 s) `send` falls back to
@@ -297,9 +298,43 @@ def cmd_list(_):
 RULE = re.compile(r"^\s*─{4,}.*─\s*$")
 
 
-def claude_input_empty(screen):
+SGR = re.compile(r"\x1b\[([0-9;:]*)m")
+ESC = re.compile(r"\x1b(\[[0-?]*[ -/]*[@-~]|\][^\x07\x1b]*(\x07|\x1b\\)|.)")
+
+
+def strip_ansi(text):
+    return ESC.sub("", text)
+
+
+def all_dim(ansi_line):
+    """True when every visible character after the first ❯ is drawn dim
+    (SGR 2). Claude dims its suggested next prompt and its hints; what the
+    human types is drawn normally."""
+    _, sep, line = ansi_line.partition("❯")
+    if not sep:
+        return False
+    dim, pos, seen = False, 0, False
+    for m in list(SGR.finditer(line)) + [None]:
+        chunk = strip_ansi(line[pos : m.start() if m else len(line)])
+        if chunk.replace("\u00a0", " ").strip():
+            if not dim:
+                return False
+            seen = True
+        if m is None:
+            break
+        for code in (m.group(1) or "0").replace(":", ";").split(";"):
+            if code in ("", "0", "22"):
+                dim = False
+            elif code == "2":
+                dim = True
+        pos = m.end()
+    return seen
+
+
+def claude_input_empty(screen, ansi=None):
     """Claude's input box: the lines between the last two full rules,
-    the first starting with ❯. None when the layout isn't recognised."""
+    the first starting with ❯. None when the layout isn't recognised.
+    ansi, the same screen with colours, lets dimmed text count as empty."""
     lines = screen.splitlines()
     rules = [i for i, l in enumerate(lines) if RULE.match(l)]
     if len(rules) < 2:
@@ -310,6 +345,10 @@ def claude_input_empty(screen):
     rest = body[0].lstrip()[1:]
     if re.fullmatch(r'\s*Try "[^"]*"\s*', rest) and len(body) == 1:
         return True  # Claude's dimmed suggestion, not typed text
+    if ansi is not None and len(body) == 1 and rest.replace("\u00a0", " ").strip():
+        prompts = [l for l in ansi.splitlines() if "❯" in l]
+        if prompts and all_dim(prompts[-1]):
+            return True  # suggested next prompt, drawn dim
     return all(not s.replace(" ", " ").strip() for s in [rest, *body[1:]])
 
 
@@ -366,11 +405,13 @@ class Pane:
         self.status = None
         self.idle_screen = None  # screen when the agent turned idle
         self.screen = None
+        self.ansi = None  # the same screen with colours
         self.still_since = time.time()
 
 
 def read_screen(pane_id):
-    return herdr("pane", "read", pane_id, "--source", "visible", "--lines", "60")
+    """The visible screen with colours; strip_ansi gives the text."""
+    return herdr("pane", "read", pane_id, "--source", "visible", "--lines", "60", "--format", "ansi")
 
 
 def input_empty(agent, st):
@@ -379,7 +420,7 @@ def input_empty(agent, st):
         return None
     parser = BOX_PARSERS.get(agent.get("agent"))
     if parser:
-        empty = parser(st.screen)
+        empty = parser(st.screen, st.ansi) if parser is claude_input_empty else parser(st.screen)
         if empty is not None:
             return empty
     if st.idle_screen is not None:
@@ -479,9 +520,11 @@ def cmd_daemon(_):
             turned_idle = st.status is not None and status in ("idle", "done") and st.status not in ("idle", "done")
             if turned_idle or a.get("name") in boxes:
                 try:
-                    screen = read_screen(pid)
+                    ansi = read_screen(pid)
+                    screen = strip_ansi(ansi)
                 except Exception:
-                    screen = None
+                    ansi = screen = None
+                st.ansi = ansi
                 if screen != st.screen:
                     st.screen, st.still_since = screen, now
                 if turned_idle:
